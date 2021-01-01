@@ -11,9 +11,11 @@ enum TokenValue {
     TOK_ID,
     TOK_IF,
     TOK_INTEGER,
+    TOK_STRING,
     TOK_MINUS,
     TOK_MULT,
     TOK_PLUS,
+    TOK_DOT,
     TOK_SEMICOLON,
     TOK_MBRACKETL,TOK_MBRACKETR, // ()
     TOK_CBRACKETL,TOK_CBRACKETR, // []
@@ -28,9 +30,11 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_ID",
     "TOK_IF",
     "TOK_INTEGER",
+    "TOK_STRING",
     "TOK_MINUS",
     "TOK_MULT",
     "TOK_PLUS",
+    "TOK_DOT",
     "TOK_SEMICOLON",
     "TOK_MBRACKETL","TOK_MBRACKETR",
     "TOK_CBRACKETL","TOK_CBRACKETR",
@@ -72,8 +76,17 @@ class Lexer{
         if(*current == ' '){
             while(*current == ' '){Next();}
         }
+        if(*current == '"'){
+            Next();
+            int start = position;
+            while(*current != '"'){Next();}
+            int length = position - start;
+            Next();
+            return Token(TOK_STRING,Text.substr(start,length));
+        }
         if(*current == ';'){Next();return Token(TOK_SEMICOLON,";");}
         if(*current == ','){Next();return Token(TOK_COMMA,",");}
+        if(*current == '.'){Next();return Token(TOK_DOT,".");}
         if(*current == '+'){Next();return Token(TOK_PLUS,"+");}
         if(*current == '-'){Next();return Token(TOK_MINUS,"-");}
         if(*current == '*'){Next();return Token(TOK_MULT,"*");}
