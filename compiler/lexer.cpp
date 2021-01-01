@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include "error.cpp"
 using namespace std;
 #define NTOKEN 1000
 //定义词法单元值
@@ -14,7 +15,9 @@ enum TokenValue {
     TOK_MULT,
     TOK_PLUS,
     TOK_SEMICOLON,
-    TOK_UNDEFINED,
+    TOK_MBRACKETL,TOK_MBRACKETR, // ()
+    TOK_CBRACKETL,TOK_CBRACKETR, // []
+    TOK_BBRACKETL,TOK_BBRACKETR, // {}
 };
 string TOKEN_VALUE_DESCRIPTION[] =
 {
@@ -29,7 +32,9 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_MULT",
     "TOK_PLUS",
     "TOK_SEMICOLON",
-    "TOK_UNDEFINED",
+    "TOK_MBRACKETL","TOK_MBRACKETR",
+    "TOK_CBRACKETL","TOK_CBRACKETR",
+    "TOK_BBRACKETL","TOK_BBRACKETR",
 };
 //标签和标签的值
 typedef class _Token {
@@ -74,6 +79,9 @@ class Lexer{
         if(*current == '*'){Next();return Token(TOK_MULT,"*");}
         if(*current == '/'){Next();return Token(TOK_DIV,"/");}
         if(*current == '='){Next();return Token(TOK_EQUAL,"=");}
+        if(*current == '('){Next();return Token(TOK_MBRACKETL,"(");}if(*current == ')'){Next();return Token(TOK_MBRACKETR,")");}
+        if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
+        if(*current == '{'){Next();return Token(TOK_BBRACKETL,"{");}if(*current == '}'){Next();return Token(TOK_BBRACKETR,"}");}
         if(isdigit(*current)){
             int begin = position;
             while(isdigit(*current)){Next();}
@@ -88,11 +96,32 @@ class Lexer{
             //Next();
             return Token(TOK_ID,Text.substr(begin,length));
         }
+        throw ParserError("Undefined Token at" + to_string(position));
     }
+};
+
+enum AST_nodeType{
+    _statement,
+    _expression,
 };
 
 class AST{
     public:
+    AST_nodeType type;
     string this_node;
     vector<AST> nodes; // 通过检查nodes的size来确认是否为节点
+    AST(Lexer &lexer){
+        try{
+            for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
+                if(tok.type == TOK_ID){
+
+                }
+                else if(tok.type == TOK_MBRACKETR || tok.type == TOK_CBRACKETR || tok.type == TOK_BBRACKETR){
+                    return;
+                }
+            }
+        }catch(ParserError s){
+            s.what();
+        }
+    }
 };
