@@ -7,14 +7,15 @@ enum TokenValue {
     TOK_COMMA,          //逗号
     TOK_DIV,
     TOK_END,
-    TOK_EQUAL,
+    TOK_EQUAL,TOK_2EQUAL,TOK_NOTEQUAL,TOK_MAXEQUAL,TOK_MINEQUAL,
+    TOK_MAX,TOK_MIN,
     TOK_ID,
     TOK_IF,
     TOK_INTEGER,
     TOK_STRING,
-    TOK_MINUS,
+    TOK_MINUS,TOK_2MINUS,
     TOK_MULT,
-    TOK_PLUS,
+    TOK_PLUS,TOK_2PLUS,
     TOK_DOT,
     TOK_SEMICOLON,
     TOK_MBRACKETL,TOK_MBRACKETR, // ()
@@ -26,14 +27,15 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_COMMA",
     "TOK_DIV",
     "TOK_END",
-    "TOK_EQUAL",
+    "TOK_EQUAL","TOK_2EQUAL","TOK_NOTEQUAL","TOK_MAXEQUAL","TOK_MINEQUAL",
+    "TOK_MAX","TOK_MIN",
     "TOK_ID",
     "TOK_IF",
     "TOK_INTEGER",
     "TOK_STRING",
-    "TOK_MINUS",
+    "TOK_MINUS","TOK_2MINUS",
     "TOK_MULT",
-    "TOK_PLUS",
+    "TOK_PLUS","TOK_2PLUS",
     "TOK_DOT",
     "TOK_SEMICOLON",
     "TOK_MBRACKETL","TOK_MBRACKETR",
@@ -45,7 +47,12 @@ typedef class _Token {
     public:
     int  type;
     string str;
+    _Token(){type = TOK_END;}
     _Token(int Type,string Str){type = Type;str=Str;}
+    bool operator==(const _Token &other){
+        if(type == other.type && str == other.str)  return true;
+        return false;
+    }
 } Token;
 
 class Lexer{
@@ -62,12 +69,41 @@ class Lexer{
         current++;
         position++;
     }
+    void Reset(){
+        text_begin = &Text[0];
+        text_end = &Text[Text.length()];
+        current = text_begin;
+        position = 0;
+    }
     Lexer(string t){
         Text = t;
         text_begin = &Text[0];
         text_end = &Text[Text.length()];
         current = text_begin;
         position = 0;
+    }
+    bool IsExpression(){
+        int flag1=0,flag2=0,flag3=0;
+        for(int i = 0;i < Text.length();i++){
+                 if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
+            else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
+            else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
+            if(flag1 == 0 && flag2 == 0 && flag3 == 0){
+                if((i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')        ||
+                    Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!'  )
+                {
+                    return true;
+                }
+            }
+            else if(flag1 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '('\n");
+            else if(flag2 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '['\n");
+            else if(flag3 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '{'\n");
+        }
+        return false;
+    }
+    Lexer subLexer(int begin = INT_MAX,int length = INT_MAX){
+        return Lexer(Text.substr((begin == INT_MAX) ? position : begin,(length == INT_MAX) ? Text.length() : length));
     }
     Token getNextToken(){
         if(*current == '\0'){
@@ -87,11 +123,26 @@ class Lexer{
         if(*current == ';'){Next();return Token(TOK_SEMICOLON,";");}
         if(*current == ','){Next();return Token(TOK_COMMA,",");}
         if(*current == '.'){Next();return Token(TOK_DOT,".");}
-        if(*current == '+'){Next();return Token(TOK_PLUS,"+");}
-        if(*current == '-'){Next();return Token(TOK_MINUS,"-");}
+        if(*current == '+'){
+            Next();
+            if(*current == '+'){Next();return Token(TOK_2PLUS,"++");}
+            else return Token(TOK_PLUS,"+");
+        }
+        if(*current == '-'){
+            Next();
+            if(*current == '-'){Next();return Token(TOK_2MINUS,"--");}
+            else return Token(TOK_MINUS,"-");
+        }
         if(*current == '*'){Next();return Token(TOK_MULT,"*");}
         if(*current == '/'){Next();return Token(TOK_DIV,"/");}
-        if(*current == '='){Next();return Token(TOK_EQUAL,"=");}
+        if(*current == '='){
+            Next();
+            if(*current == '=') {Next();return Token(TOK_2EQUAL,"==");}
+            else return Token(TOK_EQUAL,"=");
+        }
+        if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + to_string(position));} }
+        if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,"<=");}else{return Token(TOK_MAX,"<");} }
+        if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,">=");}else{return Token(TOK_MIN,">");} }
         if(*current == '('){Next();return Token(TOK_MBRACKETL,"(");}if(*current == ')'){Next();return Token(TOK_MBRACKETR,")");}
         if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
         if(*current == '{'){Next();return Token(TOK_BBRACKETL,"{");}if(*current == '}'){Next();return Token(TOK_BBRACKETR,"}");}
@@ -114,27 +165,74 @@ class Lexer{
 };
 
 enum AST_nodeType{
-    _statement,
-    _expression,
+    FunctionDeclaration,
+    ClassDeclaration,
+    IfStatement,
+    ForStatement,
+    FunctionCallStatement,
+    VariableDeclaration,
+    ExpressionStatement,
+    Args,
+    Id,
+    Unused,
 };
 
-class AST{
-    public:
-    AST_nodeType type;
-    string this_node;
-    vector<AST> nodes; // 通过检查nodes的size来确认是否为节点
-    AST(Lexer &lexer){
-        try{
-            for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
-                if(tok.type == TOK_ID){
+string AST_nodeType[] = {
+    "FunctionDeclaration",
+    "ClassDeclaration",
+    "IfStatement",
+    "ForStatement",
+    "FunctionCallStatement",
+    "VariableDeclaration",
+    "ExpressionStatement",
+    "Args",
+    "Id",
+    "Unused"
+};
 
-                }
-                else if(tok.type == TOK_MBRACKETR || tok.type == TOK_CBRACKETR || tok.type == TOK_BBRACKETR){
-                    return;
-                }
+struct RegisterStatus{
+    bool IsUsed_This;
+    bool IsUsed_High;
+    bool IsUsed_Low;
+};
+
+struct Symbol{
+    string name;
+    size_t alloc_addr;
+    size_t alloc_size;
+};
+
+map<string,RegisterStatus> RegsStat;
+map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
+
+class ASTree{
+    public:
+    int nodeT;
+    Token this_node;
+    vector<ASTree> node;
+    public:
+    ASTree(){nodeT = Unused;} // For STL Vector
+    ASTree(int nodeT,Token tok){
+        this->nodeT = nodeT,this_node = tok,this->node = node;
+    };
+    ASTree(Lexer &lexer){
+        lexer.Reset(); // reset lexer to first token
+        Token current_tok = lexer.getNextToken();
+        if(lexer.IsExpression()){
+
+        }
+        if(current_tok.type == TOK_ID){
+            if(current_tok.str == "int"){
+                nodeT = VariableDeclaration;
+                this_node = current_tok;
+                node.push_back( ASTree( Id,lexer.getNextToken() ) );
+                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
+                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Int definition");
+                auto templex = lexer.subLexer();
+                node.push_back( ASTree( templex ) );
             }
-        }catch(ParserError s){
-            s.what();
         }
     }
 };
+
+//int main(){}
