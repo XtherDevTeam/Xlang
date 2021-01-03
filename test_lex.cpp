@@ -19,9 +19,9 @@ int main(){
             }
             cout << "IsExpression(): " << lexer.IsExpression() << endl;
             ASTree ast(lexer);
+            StartDebuger();
         }catch(ParserError &e){
             e.what();
         }
-        StartDebuger();
     }
 }

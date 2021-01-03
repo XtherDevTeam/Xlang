@@ -21,6 +21,7 @@ enum TokenValue {
     TOK_MBRACKETL,TOK_MBRACKETR, // ()
     TOK_CBRACKETL,TOK_CBRACKETR, // []
     TOK_BBRACKETL,TOK_BBRACKETR, // {}
+    TOK_CHARTER,
 };
 string TOKEN_VALUE_DESCRIPTION[] =
 {
@@ -41,6 +42,7 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_MBRACKETL","TOK_MBRACKETR",
     "TOK_CBRACKETL","TOK_CBRACKETR",
     "TOK_BBRACKETL","TOK_BBRACKETR",
+    "TOK_CHARTER",
 };
 //标签和标签的值
 typedef class _Token {
@@ -56,10 +58,10 @@ typedef class _Token {
 } Token;
 
 class Lexer{
+    public:
     string Text; // Put the codes here
     char *text_begin,*current,*text_end; // current char and text begin pointter,and text end pointer
     int position; // for get substr
-    public:
     void Next(){
         if(current == text_end){
             return;
@@ -102,6 +104,15 @@ class Lexer{
         }
         return false;
     }
+    bool EndOfText(){
+        if(*current == ' '){
+            while(*current == ' '){Next();}
+        }
+        if(*current == '\0'){
+            return true;
+        }
+        return false;
+    }
     Lexer subLexer(int begin = INT_MAX,int length = INT_MAX){
         return Lexer(Text.substr((begin == INT_MAX) ? position : begin,(length == INT_MAX) ? Text.length() : length));
     }
@@ -115,10 +126,23 @@ class Lexer{
         if(*current == '"'){
             Next();
             int start = position;
-            while(*current != '"'){Next();}
+            while(*current != '"'){if(*current == '\\'){Next();Next();}else{Next();}}
             int length = position - start;
             Next();
             return Token(TOK_STRING,Text.substr(start,length));
+        }
+        if(*current == '\''){
+            Next();
+            int start = position;
+            while(*current != '\''){
+                if(*current == '\\'){Next();Next();}
+                else{
+                    Next();
+                }
+            }
+            int length = position - start;
+            Next();
+            return Token(TOK_CHARTER,Text.substr(start,length));
         }
         if(*current == ';'){Next();return Token(TOK_SEMICOLON,";");}
         if(*current == ','){Next();return Token(TOK_COMMA,",");}
@@ -172,6 +196,7 @@ enum AST_nodeType{
     FunctionCallStatement,
     VariableDeclaration,
     ExpressionStatement,
+    BlockStatement,
     Args,
     Id,
     Unused,
@@ -196,14 +221,18 @@ struct RegisterStatus{
     bool IsUsed_Low;
 };
 
-struct Symbol{
+class Symbol{
+    public:
     string name;
     size_t alloc_addr;
     size_t alloc_size;
+    Symbol(){}
+    Symbol(string name,size_t allocadr,size_t size){ this->name = name;this->alloc_addr = allocadr;this->alloc_size = size; }
 };
 
 map<string,RegisterStatus> RegsStat;
 map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
+size_t symbol_top = 0;
 
 class ASTree{
     public:
@@ -225,12 +254,61 @@ class ASTree{
             if(current_tok.str == "int"){
                 nodeT = VariableDeclaration;
                 this_node = current_tok;
-                node.push_back( ASTree( Id,lexer.getNextToken() ) );
+                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
+                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,4);
+                symbol_top+=4+1; // href to next top
                 if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
                 else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Int definition");
                 auto templex = lexer.subLexer();
                 node.push_back( ASTree( templex ) );
+                return;
             }
+            if(current_tok.str == "char"){
+                nodeT = VariableDeclaration;
+                this_node = current_tok;
+                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
+                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,1);
+                symbol_top+=1+1; // href to next top
+                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
+                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Charter definition");
+                auto templex = lexer.subLexer();
+                node.push_back( ASTree( templex ) );
+                return;
+            }
+            if(current_tok.str == "ptr"){
+                nodeT = VariableDeclaration;
+                this_node = current_tok;
+                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
+                if(current_tok.str != "int" || current_tok.str != "char")  throw ParserError("Processing AST: Invalid pointer definition");
+                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
+                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,1);
+                symbol_top+=1+1; // href to next top
+                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
+                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid pointer definition");
+                auto templex = lexer.subLexer();
+                node.push_back( ASTree( templex ) );
+                return;
+            }else{
+                if(symbol_table[current_tok.str].name == "")  throw ParserError("Processing AST:Undefined symbol:" + current_tok.str);
+                this_node = current_tok;
+                if(lexer.getNextToken().type != TOK_END){
+                    auto templex = lexer.subLexer();
+                    node.push_back( ASTree( templex ) );
+                }
+                return;
+            }
+        }
+        if(current_tok.type == TOK_INTEGER){
+            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Interger doesn't any sub variable!");
+            this->nodeT = Id;
+            this_node = current_tok;
+            return;
+        }
+        if(current_tok.type = TOK_CHARTER){
+            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Charter doesn't any sub variable!");
+            this->nodeT = Id;
+            this_node = current_tok;
+            return;
         }
     }
 };
