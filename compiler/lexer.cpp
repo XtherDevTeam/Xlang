@@ -18,9 +18,9 @@ enum TokenValue {
     TOK_PLUS,TOK_2PLUS,
     TOK_DOT,
     TOK_SEMICOLON,
-    TOK_MBRACKETL,TOK_MBRACKETR, // ()
+    TOK_ARGSTATEMENT,
     TOK_CBRACKETL,TOK_CBRACKETR, // []
-    TOK_BBRACKETL,TOK_BBRACKETR, // {}
+    TOK_BLOCK, // Block statement
     TOK_CHARTER,
 };
 string TOKEN_VALUE_DESCRIPTION[] =
@@ -39,9 +39,9 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_PLUS","TOK_2PLUS",
     "TOK_DOT",
     "TOK_SEMICOLON",
-    "TOK_MBRACKETL","TOK_MBRACKETR",
+    "TOK_ARGSTATEMENT",
     "TOK_CBRACKETL","TOK_CBRACKETR",
-    "TOK_BBRACKETL","TOK_BBRACKETR",
+    "TOK_BLOCK",
     "TOK_CHARTER",
 };
 //标签和标签的值
@@ -164,12 +164,40 @@ class Lexer{
             if(*current == '=') {Next();return Token(TOK_2EQUAL,"==");}
             else return Token(TOK_EQUAL,"=");
         }
+        if(*current == '{'){
+            Next();
+            int start = position;
+            int count = 0;
+            while(true){
+                if(*current == '{'){ count++; }
+                if(*current == '}'){ count--; if(count == -1){break;} }
+                if(*current == '\0')  throw ParserError("TokenError: Cannot find '}' in this text");
+                if(*current == '\\'){Next();Next();}
+                Next();
+            }
+            int length = position - start;
+            Next();
+            return Token(TOK_BLOCK,Text.substr(start,length));
+        }
+        if(*current == '('){
+            Next();
+            int start = position;
+            int count = 0;
+            while(true){
+                if(*current == '('){ count++; }
+                if(*current == ')'){ count--; if(count == -1){break;} }
+                if(*current == '\0')  throw ParserError("TokenError: Cannot find ')' in this text");
+                if(*current == '\\'){Next();Next();}
+                Next();
+            }
+            int length = position - start;
+            Next();
+            return Token(TOK_ARGSTATEMENT,Text.substr(start,length));
+        }
         if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + to_string(position));} }
         if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,"<=");}else{return Token(TOK_MAX,"<");} }
         if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,">=");}else{return Token(TOK_MIN,">");} }
-        if(*current == '('){Next();return Token(TOK_MBRACKETL,"(");}if(*current == ')'){Next();return Token(TOK_MBRACKETR,")");}
         if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
-        if(*current == '{'){Next();return Token(TOK_BBRACKETL,"{");}if(*current == '}'){Next();return Token(TOK_BBRACKETR,"}");}
         if(isdigit(*current)){
             int begin = position;
             while(isdigit(*current)){Next();}
@@ -256,7 +284,7 @@ class ASTree{
                 this_node = current_tok;
                 node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
                 symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,4);
-                symbol_top+=4+1; // href to next top
+                symbol_top+=8+1; // href to next top
                 if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
                 else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Int definition");
                 auto templex = lexer.subLexer();
@@ -279,12 +307,15 @@ class ASTree{
                 nodeT = VariableDeclaration;
                 this_node = current_tok;
                 node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
-                if(current_tok.str != "int" || current_tok.str != "char")  throw ParserError("Processing AST: Invalid pointer definition");
+                if(current_tok.str != "int" && current_tok.str != "char")  throw ParserError("Processing AST: Invalid pointer definition");
                 node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
                 symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,1);
-                symbol_top+=1+1; // href to next top
+                symbol_top+=8+1; // href to next top
                 if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
-                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid pointer definition");
+                else if(current_tok.type != TOK_EQUAL){
+                    cout << "wtf?";
+                    throw ParserError("Processing AST: Invalid pointer definition");
+                }
                 auto templex = lexer.subLexer();
                 node.push_back( ASTree( templex ) );
                 return;

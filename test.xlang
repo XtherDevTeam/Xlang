@@ -1,7 +1,15 @@
 import headers from "vm/lib/include/std.xlang";
+import staticvmlib from "vm/lib/api.lib";
 
 int i=0;
 ptr int pI = i;
+ptr char test="hello,World!";
+
+func int ConsoleOutput(ptr char: output){
+    asm "pop reg0";
+    asm "out 1,reg0";
+    return 0;
+}
 
 func int main(int: argc,ptr char: argv){
     std.print("INT SOURCE: $int PTR_ADDR: $ptr",i,pI);
