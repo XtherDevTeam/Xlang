@@ -17,6 +17,7 @@ enum TokenValue {
     TOK_MULT,
     TOK_PLUS,TOK_2PLUS,
     TOK_DOT,
+    TOK_COLON,
     TOK_SEMICOLON,
     TOK_ARGSTATEMENT,
     TOK_CBRACKETL,TOK_CBRACKETR, // []
@@ -38,6 +39,7 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_MULT",
     "TOK_PLUS","TOK_2PLUS",
     "TOK_DOT",
+    "TOK_COLON",
     "TOK_SEMICOLON",
     "TOK_ARGSTATEMENT",
     "TOK_CBRACKETL","TOK_CBRACKETR",
@@ -158,6 +160,7 @@ class Lexer{
             else return Token(TOK_MINUS,"-");
         }
         if(*current == '*'){Next();return Token(TOK_MULT,"*");}
+        if(*current == ':'){Next();return Token(TOK_COLON,":");}
         if(*current == '/'){Next();return Token(TOK_DIV,"/");}
         if(*current == '='){
             Next();
@@ -330,7 +333,7 @@ class ASTree{
             }
         }
         if(current_tok.type == TOK_INTEGER){
-            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Interger doesn't any sub variable!");
+            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Interger doesn't any sub script!");
             this->nodeT = Id;
             this_node = current_tok;
             return;
