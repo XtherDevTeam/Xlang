@@ -2,6 +2,7 @@
     "files.associations": {
         "*.xs0": "java",
         "array": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "string": "cpp"
     }
 }

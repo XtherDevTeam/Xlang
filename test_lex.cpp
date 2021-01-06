@@ -19,6 +19,7 @@ int main(){
             }
             cout << "IsExpression(): " << lexer.IsExpression() << endl;
             ASTree ast(lexer);
+            ast.prettyPrint();
             StartDebuger();
         }catch(ParserError &e){
             e.what();

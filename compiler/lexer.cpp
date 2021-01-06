@@ -241,6 +241,7 @@ string AST_nodeType[] = {
     "FunctionCallStatement",
     "VariableDeclaration",
     "ExpressionStatement",
+    "BlockStatement",
     "Args",
     "Id",
     "Unused"
@@ -261,6 +262,13 @@ class Symbol{
     Symbol(string name,size_t allocadr,size_t size){ this->name = name;this->alloc_addr = allocadr;this->alloc_size = size; }
 };
 
+string emptyStr(int size){
+    string s="";
+    s.resize(size);
+    for(int i = 0;i < size;i++){s[i] = ' ';}
+    return s;
+}
+
 map<string,RegisterStatus> RegsStat;
 map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
 size_t symbol_top = 0;
@@ -272,20 +280,39 @@ class ASTree{
     vector<ASTree> node;
     public:
     ASTree(){nodeT = Unused;} // For STL Vector
-    ASTree(int nodeT,Token tok){
-        this->nodeT = nodeT,this_node = tok,this->node = node;
+    ASTree(int nodet,Token tok){
+        nodeT = nodet;
+        this_node = tok;
     };
+    void prettyPrint(int swap=1){
+        cout << "{\n" << emptyStr(swap);
+        printf("Type: \"%s\",\n" , AST_nodeType[nodeT].c_str());
+        cout << emptyStr(swap);
+        printf(
+            "{ Type: \"%s\" , Content: \"%s\" },\n",
+            TOKEN_VALUE_DESCRIPTION[this_node.type].c_str(),
+            this_node.str.c_str()
+        );
+        cout << emptyStr(swap) << "[" << ((node.size() <= 1) ? ' ' : '\n');
+        for(auto i=0;i<node.size();i++){
+            cout << emptyStr(swap+1);
+            node[i].prettyPrint(swap+2);
+            cout << emptyStr(swap+1);
+        }
+        cout << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "}\n";
+    }
     ASTree(Lexer &lexer){
         lexer.Reset(); // reset lexer to first token
         Token current_tok = lexer.getNextToken();
         if(lexer.IsExpression()){
-
+            //TODO: ADD EXPRESSION AST GENRATEOR
+            return;
         }
         if(current_tok.type == TOK_ID){
             if(current_tok.str == "int"){
                 nodeT = VariableDeclaration;
                 this_node = current_tok;
-                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
+                node.push_back( ASTree( Id , ( current_tok = lexer.getNextToken() ) ) );
                 symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,4);
                 symbol_top+=8+1; // href to next top
                 if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
@@ -316,7 +343,6 @@ class ASTree{
                 symbol_top+=8+1; // href to next top
                 if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
                 else if(current_tok.type != TOK_EQUAL){
-                    cout << "wtf?";
                     throw ParserError("Processing AST: Invalid pointer definition");
                 }
                 auto templex = lexer.subLexer();
@@ -332,18 +358,36 @@ class ASTree{
                 return;
             }
         }
-        if(current_tok.type == TOK_INTEGER){
-            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Interger doesn't any sub script!");
-            this->nodeT = Id;
+        if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
+            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Constant doesn't any sub script!");
+            nodeT = Id;
             this_node = current_tok;
             return;
         }
-        if(current_tok.type = TOK_CHARTER){
-            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Charter doesn't any sub variable!");
-            this->nodeT = Id;
-            this_node = current_tok;
+        if(current_tok.type == TOK_ARGSTATEMENT){
+            int count1,count2,count3; // (),[],{} don't find ','
+            string temp_str = current_tok.str.substr(1,current_tok.str.length() - 1),current_str = "";
+            for (size_t i = 0; i < temp_str.length(); i++){
+                if(temp_str[i] == '(')  count1++;
+                else if(temp_str[i] == '[')  count2++;
+                else if(temp_str[i] == '{')  count3++;
+                else if(temp_str[i] == ')')  count1--;
+                else if(temp_str[i] == ']')  count2--;
+                else if(temp_str[i] == '}')  count3--;
+                else if(temp_str[i] == ',' && !count1 && !count2 && !count3){
+                    Lexer temp_lexer(current_str);
+                    node.push_back( ASTree(temp_lexer) );
+                    continue;
+                }
+                else{
+                    current_str += temp_str[i];
+                }
+            }
+            Lexer temp_lexer(current_str);
+            node.push_back( ASTree(temp_lexer) );
             return;
         }
+
     }
 };
 
