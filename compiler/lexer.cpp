@@ -21,6 +21,7 @@ enum TokenValue {
     TOK_SEMICOLON,
     TOK_ARGSTATEMENT,
     TOK_CBRACKETL,TOK_CBRACKETR, // []
+    TOK_MBRACKET,
     TOK_BLOCK, // Block statement
     TOK_CHARTER,
 };
@@ -43,6 +44,7 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_SEMICOLON",
     "TOK_ARGSTATEMENT",
     "TOK_CBRACKETL","TOK_CBRACKETR",
+    "TOK_MBRACKET",
     "TOK_BLOCK",
     "TOK_CHARTER",
 };
@@ -299,13 +301,37 @@ class ASTree{
             node[i].prettyPrint(swap+2);
             cout << emptyStr(swap+1);
         }
-        cout << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "}\n";
+        cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "}\n";
     }
     ASTree(Lexer &lexer){
         lexer.Reset(); // reset lexer to first token
         Token current_tok = lexer.getNextToken();
         if(lexer.IsExpression()){
             //TODO: ADD EXPRESSION AST GENRATEOR
+            return;
+        }
+        if(current_tok.type == TOK_ARGSTATEMENT){
+            int count1=0,count2=0,count3=0; // (),[],{} don't find ','
+            string temp_str = current_tok.str,current_str = "";
+            for (size_t i = 0; i < temp_str.length(); i++){
+                if(temp_str[i] == '(')  count1++;
+                else if(temp_str[i] == '[')  count2++;
+                else if(temp_str[i] == '{')  count3++;
+                else if(temp_str[i] == ')')  count1--;
+                else if(temp_str[i] == ']')  count2--;
+                else if(temp_str[i] == '}')  count3--;
+                else if(temp_str[i] == ',' && count1 == 0 && count2 == 0 && count3 == 0){
+                    Lexer temp_lexer(current_str);
+                    node.push_back( ASTree(temp_lexer) );
+                    current_str.clear();
+                    continue;
+                }
+                current_str += temp_str[i];
+            }
+            nodeT=Args;
+            this_node = Token(TOK_MBRACKET,"()");
+            Lexer temp_lexer(current_str);
+            node.push_back( ASTree(temp_lexer) );
             return;
         }
         if(current_tok.type == TOK_ID){
@@ -364,30 +390,6 @@ class ASTree{
             this_node = current_tok;
             return;
         }
-        if(current_tok.type == TOK_ARGSTATEMENT){
-            int count1,count2,count3; // (),[],{} don't find ','
-            string temp_str = current_tok.str.substr(1,current_tok.str.length() - 1),current_str = "";
-            for (size_t i = 0; i < temp_str.length(); i++){
-                if(temp_str[i] == '(')  count1++;
-                else if(temp_str[i] == '[')  count2++;
-                else if(temp_str[i] == '{')  count3++;
-                else if(temp_str[i] == ')')  count1--;
-                else if(temp_str[i] == ']')  count2--;
-                else if(temp_str[i] == '}')  count3--;
-                else if(temp_str[i] == ',' && !count1 && !count2 && !count3){
-                    Lexer temp_lexer(current_str);
-                    node.push_back( ASTree(temp_lexer) );
-                    continue;
-                }
-                else{
-                    current_str += temp_str[i];
-                }
-            }
-            Lexer temp_lexer(current_str);
-            node.push_back( ASTree(temp_lexer) );
-            return;
-        }
-
     }
 };
 
