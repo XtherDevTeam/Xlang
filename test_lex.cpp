@@ -1,11 +1,6 @@
 #include "compiler/lexer.cpp"
 using namespace std;
 
-void StartDebuger(){
-    cout << "Press ^C to debug...";
-    getchar();
-}
-
 int main(){
     while(!cin.eof()){
         try{

@@ -2,6 +2,12 @@
 #include "error.cpp"
 using namespace std;
 #define NTOKEN 1000
+
+void StartDebuger(){
+    cout << "Press ^C to debug...";
+    getchar();
+}
+
 //定义词法单元值
 enum TokenValue {
     TOK_COMMA,          //逗号
@@ -61,6 +67,12 @@ typedef class _Token {
     }
 } Token;
 
+int getOperatorLevel(Token tok){
+    if(tok.type == TOK_2EQUAL || tok.type == TOK_MINEQUAL || tok.type == TOK_MAXEQUAL || tok.type == TOK_NOTEQUAL || tok.type == TOK_MAX || tok.type == TOK_MIN)  return 2;
+    if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 1;
+    if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 0;
+    else return INT_MAX;
+}
 class Lexer{
     public:
     string Text; // Put the codes here
@@ -90,6 +102,7 @@ class Lexer{
     }
     bool IsExpression(){
         int flag1=0,flag2=0,flag3=0;
+        bool starflag = 0;
         for(int i = 0;i < Text.length();i++){
                  if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
@@ -99,7 +112,8 @@ class Lexer{
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
                     Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!'  )
                 {
-                    return true;
+                    if(starflag == 0 && Text[i] == '*')  starflag = true; // 如果还有第二个星号，或者其他符号直接返回
+                    else return true;
                 }
             }
             else if(flag1 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '('\n");
@@ -139,10 +153,7 @@ class Lexer{
             Next();
             int start = position;
             while(*current != '\''){
-                if(*current == '\\'){Next();Next();}
-                else{
-                    Next();
-                }
+                if(*current == '\\'){Next();Next();}else{Next();}
             }
             int length = position - start;
             Next();
@@ -301,13 +312,37 @@ class ASTree{
             node[i].prettyPrint(swap+2);
             cout << emptyStr(swap+1);
         }
-        cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "}\n";
+        cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "},\n";
     }
     ASTree(Lexer &lexer){
         lexer.Reset(); // reset lexer to first token
         Token current_tok = lexer.getNextToken();
         if(lexer.IsExpression()){
+            lexer.Reset();
             //TODO: ADD EXPRESSION AST GENRATEOR
+            int sb = 0; // 哨兵一，记录上一个token的位置
+            cout << "WTF????\n";
+            Token lastEvalToken;int lastEvalPosL = 0,lastEvalPosR = 0;char lock_status;
+            for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
+                cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
+                if(lock_status){lock_status = 0;lastEvalPosR = sb;}
+                if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){
+                    cout << "\033[31m" << tok.str << "\033[0m" << sb << lexer.Text.substr(0,sb) << endl;
+                    lastEvalToken = tok;
+                    lastEvalPosL = sb;
+                    lock_status = true;
+                    StartDebuger(); 
+                }
+                sb = lexer.position;
+            }
+            // 遍历完成，获得最高级的左数和右树
+            Lexer LeftTokenList (lexer.Text.substr(0,lastEvalPosL));
+            //cout << lexer.Text.substr(0,lastEvalPosL) << lastEvalPosL;
+            Lexer RightTokenList(lexer.Text.substr(lastEvalPosR));
+            this_node = lastEvalToken;
+            nodeT = ExpressionStatement;
+            node.push_back( ASTree(LeftTokenList) );
+            node.push_back( ASTree(RightTokenList) );
             return;
         }
         if(current_tok.type == TOK_ARGSTATEMENT){
