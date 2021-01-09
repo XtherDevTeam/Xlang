@@ -27,6 +27,7 @@ enum TokenValue {
     TOK_SEMICOLON,
     TOK_ARGSTATEMENT,
     TOK_CBRACKETL,TOK_CBRACKETR, // []
+    TOK_BBRACKET,
     TOK_MBRACKET,
     TOK_BLOCK, // Block statement
     TOK_CHARTER,
@@ -50,6 +51,7 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_SEMICOLON",
     "TOK_ARGSTATEMENT",
     "TOK_CBRACKETL","TOK_CBRACKETR",
+    "TOK_BBRACKET",
     "TOK_MBRACKET",
     "TOK_BLOCK",
     "TOK_CHARTER",
@@ -96,17 +98,17 @@ class Lexer{
     }
     Lexer(string t){
         Text = t;
+        int realstart;
+        for(realstart=0;realstart < Text.length();realstart++){
+            if(Text[realstart] != ' ') break;
+        }
+        Text = Text.substr(realstart);
         text_begin = &Text[0];
         text_end = &Text[Text.length()];
         current = text_begin;
         position = 0;
     }
     bool IsExpression(){
-        int realstart;
-        for(realstart=0;realstart < Text.length();realstart++){
-            if(Text[realstart] != ' ') break;
-        }
-        Text = Text.substr(realstart);
 
         int flag1=0,flag2=0,flag3=0,iscontent = 0;
         bool starflag = 0,isexpr = 0;
@@ -133,15 +135,6 @@ class Lexer{
             else if(flag3 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '{'\n");
         }
         return isexpr;
-    }
-    bool EndOfText(){
-        if(*current == ' '){
-            while(*current == ' '){Next();}
-        }
-        if(*current == '\0'){
-            return true;
-        }
-        return false;
     }
     Lexer subLexer(int begin = INT_MAX,int length = INT_MAX){
         return Lexer(Text.substr((begin == INT_MAX) ? position : begin,(length == INT_MAX) ? Text.length() : length));
@@ -223,6 +216,11 @@ class Lexer{
             return Token(TOK_ID,Text.substr(begin,length));
         }
         throw ParserError("Undefined Token at" + to_string(position));
+    }
+    bool EndOfText(){
+        char* pOld = current;int pos = position;
+        if(*(current+1) != '\0')  return false;
+        return true;
     }
 };
 
@@ -323,8 +321,8 @@ class ASTree{
             node.push_back( ASTree(RightTokenList) );
             return;
         }
-        if(current_tok.type == TOK_ARGSTATEMENT){
-            int count1=0,count2=0,count3=0; // (),[],{} don't find ','
+        if(current_tok.type == TOK_BLOCK){
+            int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
             string temp_str = current_tok.str,current_str = "";
             for (size_t i = 0; i < temp_str.length(); i++){
                 if(temp_str[i] == '(')  count1++;
@@ -333,7 +331,33 @@ class ASTree{
                 else if(temp_str[i] == ')')  count1--;
                 else if(temp_str[i] == ']')  count2--;
                 else if(temp_str[i] == '}')  count3--;
-                else if(temp_str[i] == ',' && count1 == 0 && count2 == 0 && count3 == 0){
+                else if(temp_str[i] == '"')  instr = !instr;
+                else if(temp_str[i] == ';' && count1 == 0 && count2 == 0 && count3 == 0 && instr == 0){
+                    Lexer temp_lexer(current_str);
+                    node.push_back( ASTree(temp_lexer) );
+                    current_str.clear();
+                    continue;
+                }
+                current_str += temp_str[i];
+            }
+            nodeT=BlockStatement;
+            this_node = Token(TOK_BBRACKET ,"{}");
+            Lexer temp_lexer(current_str);
+            node.push_back( ASTree(temp_lexer) );
+            return;
+        }
+        if(current_tok.type == TOK_ARGSTATEMENT){
+            int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
+            string temp_str = current_tok.str,current_str = "";
+            for (size_t i = 0; i < temp_str.length(); i++){
+                if(temp_str[i] == '(')  count1++;
+                else if(temp_str[i] == '[')  count2++;
+                else if(temp_str[i] == '{')  count3++;
+                else if(temp_str[i] == ')')  count1--;
+                else if(temp_str[i] == ']')  count2--;
+                else if(temp_str[i] == '}')  count3--;
+                else if(temp_str[i] == '"')  instr = !instr;
+                else if(temp_str[i] == ',' && count1 == 0 && count2 == 0 && count3 == 0 && instr == 0){
                     Lexer temp_lexer(current_str);
                     node.push_back( ASTree(temp_lexer) );
                     current_str.clear();
@@ -349,6 +373,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_ID){
             if(lexer.EndOfText()){
+                cout << lexer.Text << lexer.position << endl;
                 this_node = current_tok;
                 this->nodeT = Id;
                 return;
@@ -357,7 +382,7 @@ class ASTree{
             this_node = current_tok;
             int sb = lexer.position,lastTokPosition = lexer.position;
             for (auto tok = lexer.getNextToken(); tok.type != TOK_END; tok = lexer.getNextToken()){
-                //cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
+                cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
                 if(tok.type == TOK_COMMA){
                     Lexer templex( lexer.Text.substr(sb,lastTokPosition - sb) );
                     node.push_back( ASTree(templex) );
@@ -367,6 +392,13 @@ class ASTree{
                     string s = lexer.Text.substr(sb,lastTokPosition - sb);
                     if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
                     Lexer templex( "("+tok.str+")" );
+                    node.push_back( ASTree(templex) );
+                    sb = lexer.position;
+                }
+                if(tok.type == TOK_BLOCK){
+                    string s = lexer.Text.substr(sb,lastTokPosition - sb);
+                    if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
+                    Lexer templex( "{"+tok.str+"}" );
                     node.push_back( ASTree(templex) );
                     sb = lexer.position;
                 }
