@@ -70,10 +70,12 @@ typedef class _Token {
 } Token;
 
 int getOperatorLevel(Token tok){
-    if(tok.type == TOK_EQUAL) return true;
+    // 计算符等级由高到低
+    if(tok.type == TOK_EQUAL) return 3;
     if(tok.type == TOK_2EQUAL || tok.type == TOK_MINEQUAL || tok.type == TOK_MAXEQUAL || tok.type == TOK_NOTEQUAL || tok.type == TOK_MAX || tok.type == TOK_MIN)  return 2;
     if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 1;
     if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 0;
+    if(tok.type == TOK_DOT) return -1;
     else return INT_MAX;
 }
 class Lexer{
@@ -98,10 +100,13 @@ class Lexer{
     }
     Lexer(string t){
         Text = t;
-        int realstart;
-        for(realstart=0;realstart < Text.length();realstart++){
-            if(Text[realstart] != ' ') break;
+        int realstart=0;
+        if(Text[0] == ' '){
+            for(realstart=0;realstart < Text.length();realstart++){
+                if(Text[realstart] != ' ') break;
+            }
         }
+
         Text = Text.substr(realstart);
         text_begin = &Text[0];
         text_end = &Text[Text.length()];
@@ -125,7 +130,7 @@ class Lexer{
             if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
                 if((i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')        ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=')
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || Text[i] == '.')
                 {
                     isexpr = 1;
                 }
@@ -404,8 +409,10 @@ class ASTree{
                 }
                 lastTokPosition = lexer.position;    
             }
-            Lexer last( lexer.Text.substr(sb) );
-            node.push_back( ASTree(last) );
+            if(lexer.Text.substr(sb) != ""){
+                Lexer last( lexer.Text.substr(sb) );
+                node.push_back( ASTree(last) );
+            }
             return;
         }
         if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
