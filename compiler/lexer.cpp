@@ -68,6 +68,7 @@ typedef class _Token {
 } Token;
 
 int getOperatorLevel(Token tok){
+    if(tok.type == TOK_EQUAL) return true;
     if(tok.type == TOK_2EQUAL || tok.type == TOK_MINEQUAL || tok.type == TOK_MAXEQUAL || tok.type == TOK_NOTEQUAL || tok.type == TOK_MAX || tok.type == TOK_MIN)  return 2;
     if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 1;
     if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 0;
@@ -101,27 +102,37 @@ class Lexer{
         position = 0;
     }
     bool IsExpression(){
-        int flag1=0,flag2=0,flag3=0;
-        bool starflag = 0;
+        int realstart;
+        for(realstart=0;realstart < Text.length();realstart++){
+            if(Text[realstart] != ' ') break;
+        }
+        Text = Text.substr(realstart);
+
+        int flag1=0,flag2=0,flag3=0,iscontent = 0;
+        bool starflag = 0,isexpr = 0;
         if(Text[0] == '*') starflag = true;
         for(int i = ( (starflag) ? 1 : 0 );i < Text.length();i++){
                  if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
             else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
-            if(flag1 == 0 && flag2 == 0 && flag3 == 0){
+            else if(Text[i] == '"') iscontent = !iscontent;
+            //cout << "\033[30m" << Text[i] << iscontent << flag1 << flag2 << flag3 << ((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0) << "\033[0m" << endl;
+            if((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0){
+                return false;
+            }
+            if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
                 if((i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')        ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!'  )
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=')
                 {
-                    //else return true;
-                    return true;
+                    isexpr = 1;
                 }
             }
             else if(flag1 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '('\n");
             else if(flag2 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '['\n");
             else if(flag3 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '{'\n");
         }
-        return false;
+        return isexpr;
     }
     bool EndOfText(){
         if(*current == ' '){
@@ -216,28 +227,20 @@ class Lexer{
 };
 
 enum AST_nodeType{
-    FunctionDeclaration,
-    ClassDeclaration,
-    IfStatement,
-    ForStatement,
     FunctionCallStatement,
-    VariableDeclaration,
     ExpressionStatement,
     BlockStatement,
+    NormalStatement,
     Args,
     Id,
     Unused,
 };
 
 string AST_nodeType[] = {
-    "FunctionDeclaration",
-    "ClassDeclaration",
-    "IfStatement",
-    "ForStatement",
     "FunctionCallStatement",
-    "VariableDeclaration",
     "ExpressionStatement",
     "BlockStatement",
+    "NormalStatement",
     "Args",
     "Id",
     "Unused"
@@ -306,13 +309,9 @@ class ASTree{
             int sb = 0; // 哨兵一，记录上一个token的位置
             Token lastEvalToken;int lastEvalPosL = 0,lastEvalPosR = 0;char lock_status;
             for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
-                cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
+                //cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
                 if(lock_status){lock_status = 0;lastEvalPosR = sb;}
-                if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){
-                    lastEvalToken = tok;
-                    lastEvalPosL = sb;
-                    lock_status = true;
-                }
+                if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){lastEvalToken = tok;lastEvalPosL = sb;lock_status = true;}
                 sb = lexer.position;
             }
             // 遍历完成，获得最高级的左数和右树
@@ -349,51 +348,33 @@ class ASTree{
             return;
         }
         if(current_tok.type == TOK_ID){
-            if(current_tok.str == "int"){
-                nodeT = VariableDeclaration;
+            if(lexer.EndOfText()){
                 this_node = current_tok;
-                node.push_back( ASTree( Id , ( current_tok = lexer.getNextToken() ) ) );
-                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,4);
-                symbol_top+=8+1; // href to next top
-                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
-                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Int definition");
-                auto templex = lexer.subLexer();
-                node.push_back( ASTree( templex ) );
+                this->nodeT = Id;
                 return;
             }
-            if(current_tok.str == "char"){
-                nodeT = VariableDeclaration;
-                this_node = current_tok;
-                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
-                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,1);
-                symbol_top+=1+1; // href to next top
-                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
-                else if(current_tok.type != TOK_EQUAL) throw ParserError("Processing AST: Invalid Charter definition");
-                auto templex = lexer.subLexer();
-                node.push_back( ASTree( templex ) );
-                return;
-            }
-            if(current_tok.str == "ptr"){
-                nodeT = VariableDeclaration;
-                this_node = current_tok;
-                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
-                if(current_tok.str != "int" && current_tok.str != "char")  throw ParserError("Processing AST: Invalid pointer definition");
-                node.push_back( ASTree( Id,( current_tok = lexer.getNextToken() ) ) );
-                symbol_table[current_tok.str] = Symbol(current_tok.str,symbol_top,1);
-                symbol_top+=8+1; // href to next top
-                if(( current_tok = lexer.getNextToken() ).type==TOK_END)  return; // Nothing can script again
-                else if(current_tok.type != TOK_EQUAL){
-                    throw ParserError("Processing AST: Invalid pointer definition");
+            this->nodeT = NormalStatement;
+            this_node = current_tok;
+            int sb = lexer.position,lastTokPosition = lexer.position;
+            for (auto tok = lexer.getNextToken(); tok.type != TOK_END; tok = lexer.getNextToken()){
+                //cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
+                if(tok.type == TOK_COMMA){
+                    Lexer templex( lexer.Text.substr(sb,lastTokPosition - sb) );
+                    node.push_back( ASTree(templex) );
+                    sb = lexer.position;
                 }
-                auto templex = lexer.subLexer();
-                node.push_back( ASTree( templex ) );
-                return;
-            }else{
-                if(symbol_table[current_tok.str].name == "")  throw ParserError("Processing AST:Undefined symbol:" + current_tok.str);
-                this_node = current_tok;
-                // TODO: Add symbol sub script
-                return;
+                if(tok.type == TOK_ARGSTATEMENT){
+                    string s = lexer.Text.substr(sb,lastTokPosition - sb);
+                    if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
+                    Lexer templex( "("+tok.str+")" );
+                    node.push_back( ASTree(templex) );
+                    sb = lexer.position;
+                }
+                lastTokPosition = lexer.position;    
             }
+            Lexer last( lexer.Text.substr(sb) );
+            node.push_back( ASTree(last) );
+            return;
         }
         if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
             if(lexer.getNextToken().type != TOK_END){
