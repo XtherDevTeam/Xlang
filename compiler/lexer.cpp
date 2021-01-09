@@ -69,8 +69,8 @@ typedef class _Token {
 
 int getOperatorLevel(Token tok){
     if(tok.type == TOK_2EQUAL || tok.type == TOK_MINEQUAL || tok.type == TOK_MAXEQUAL || tok.type == TOK_NOTEQUAL || tok.type == TOK_MAX || tok.type == TOK_MIN)  return 2;
-    if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 1;
-    if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 0;
+    if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 1;
+    if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 0;
     else return INT_MAX;
 }
 class Lexer{
@@ -103,7 +103,8 @@ class Lexer{
     bool IsExpression(){
         int flag1=0,flag2=0,flag3=0;
         bool starflag = 0;
-        for(int i = 0;i < Text.length();i++){
+        if(Text[0] == '*') starflag = true;
+        for(int i = ( (starflag) ? 1 : 0 );i < Text.length();i++){
                  if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
             else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
@@ -112,8 +113,8 @@ class Lexer{
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
                     Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!'  )
                 {
-                    if(starflag == 0 && Text[i] == '*')  starflag = true; // 如果还有第二个星号，或者其他符号直接返回
-                    else return true;
+                    //else return true;
+                    return true;
                 }
             }
             else if(flag1 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '('\n");
@@ -152,9 +153,7 @@ class Lexer{
         if(*current == '\''){
             Next();
             int start = position;
-            while(*current != '\''){
-                if(*current == '\\'){Next();Next();}else{Next();}
-            }
+            while(*current != '\''){if(*current == '\\'){Next();Next();}else{Next();}}
             int length = position - start;
             Next();
             return Token(TOK_CHARTER,Text.substr(start,length));
@@ -162,34 +161,18 @@ class Lexer{
         if(*current == ';'){Next();return Token(TOK_SEMICOLON,";");}
         if(*current == ','){Next();return Token(TOK_COMMA,",");}
         if(*current == '.'){Next();return Token(TOK_DOT,".");}
-        if(*current == '+'){
-            Next();
-            if(*current == '+'){Next();return Token(TOK_2PLUS,"++");}
-            else return Token(TOK_PLUS,"+");
-        }
-        if(*current == '-'){
-            Next();
-            if(*current == '-'){Next();return Token(TOK_2MINUS,"--");}
-            else return Token(TOK_MINUS,"-");
-        }
+        if(*current == '+'){Next();if(*current == '+'){Next();return Token(TOK_2PLUS,"++");}else{return Token(TOK_PLUS,"+");}}
+        if(*current == '-'){Next();if(*current == '-'){Next();return Token(TOK_2MINUS,"--");}else{return Token(TOK_MINUS,"-");}}
         if(*current == '*'){Next();return Token(TOK_MULT,"*");}
         if(*current == ':'){Next();return Token(TOK_COLON,":");}
         if(*current == '/'){Next();return Token(TOK_DIV,"/");}
-        if(*current == '='){
-            Next();
-            if(*current == '=') {Next();return Token(TOK_2EQUAL,"==");}
-            else return Token(TOK_EQUAL,"=");
-        }
+        if(*current == '='){ Next();if(*current == '=') {Next();return Token(TOK_2EQUAL,"==");}else{return Token(TOK_EQUAL,"=");} }
         if(*current == '{'){
             Next();
             int start = position;
             int count = 0;
             while(true){
-                if(*current == '{'){ count++; }
-                if(*current == '}'){ count--; if(count == -1){break;} }
-                if(*current == '\0')  throw ParserError("TokenError: Cannot find '}' in this text");
-                if(*current == '\\'){Next();Next();}
-                Next();
+                if(*current == '{'){ count++; }if(*current == '}'){ count--; if(count == -1){break;} }if(*current == '\0'){throw ParserError("TokenError: Cannot find '}' in this text");}if(*current == '\\'){Next();Next();}Next();
             }
             int length = position - start;
             Next();
@@ -321,23 +304,19 @@ class ASTree{
             lexer.Reset();
             //TODO: ADD EXPRESSION AST GENRATEOR
             int sb = 0; // 哨兵一，记录上一个token的位置
-            cout << "WTF????\n";
             Token lastEvalToken;int lastEvalPosL = 0,lastEvalPosR = 0;char lock_status;
             for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
                 cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
                 if(lock_status){lock_status = 0;lastEvalPosR = sb;}
                 if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){
-                    cout << "\033[31m" << tok.str << "\033[0m" << sb << lexer.Text.substr(0,sb) << endl;
                     lastEvalToken = tok;
                     lastEvalPosL = sb;
                     lock_status = true;
-                    StartDebuger(); 
                 }
                 sb = lexer.position;
             }
             // 遍历完成，获得最高级的左数和右树
             Lexer LeftTokenList (lexer.Text.substr(0,lastEvalPosL));
-            //cout << lexer.Text.substr(0,lastEvalPosL) << lastEvalPosL;
             Lexer RightTokenList(lexer.Text.substr(lastEvalPosR));
             this_node = lastEvalToken;
             nodeT = ExpressionStatement;
@@ -412,19 +391,20 @@ class ASTree{
             }else{
                 if(symbol_table[current_tok.str].name == "")  throw ParserError("Processing AST:Undefined symbol:" + current_tok.str);
                 this_node = current_tok;
-                if(lexer.getNextToken().type != TOK_END){
-                    auto templex = lexer.subLexer();
-                    node.push_back( ASTree( templex ) );
-                }
+                // TODO: Add symbol sub script
                 return;
             }
         }
         if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
-            if(lexer.getNextToken().type != TOK_END) throw ParserError("Processing AST: Constant doesn't any sub script!");
+            if(lexer.getNextToken().type != TOK_END){
+                cout << lexer.Text << endl;
+                throw ParserError("Processing AST: Constant doesn't any sub script!");
+            }
             nodeT = Id;
             this_node = current_tok;
             return;
         }
+        this->nodeT=Unused;
     }
 };
 
