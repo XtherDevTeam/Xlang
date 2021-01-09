@@ -378,7 +378,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_ID){
             if(lexer.EndOfText()){
-                cout << lexer.Text << lexer.position << endl;
+                //cout << lexer.Text << lexer.position << endl;
                 this_node = current_tok;
                 this->nodeT = Id;
                 return;
@@ -387,7 +387,7 @@ class ASTree{
             this_node = current_tok;
             int sb = lexer.position,lastTokPosition = lexer.position;
             for (auto tok = lexer.getNextToken(); tok.type != TOK_END; tok = lexer.getNextToken()){
-                cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
+                //cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
                 if(tok.type == TOK_COMMA){
                     Lexer templex( lexer.Text.substr(sb,lastTokPosition - sb) );
                     node.push_back( ASTree(templex) );
