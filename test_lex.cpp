@@ -1,4 +1,4 @@
-#include "compiler/lexer.cpp"
+#include "compiler/core.cpp"
 using namespace std;
 
 int main(){
