@@ -479,7 +479,6 @@ class ASTree{
                         symbol_table[node[i].node[0].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].node[0].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].node[0].this_node.str].name = node[i].node[0].this_node.str;
-                        cout << "defined: " << node[i].node[0].this_node.str << endl;
                         symbol_top += TypePool[this_node.str].allocSize;
                         string tmp = node[i].node[1].dumpToAsm();
                         ret += tmp;
@@ -525,8 +524,11 @@ class ASTree{
                     ret += node[1].dumpToAsm();
                     int val_regid = getLastUsedRegister();
                     ret += "mov_m [reg" + to_string(save_regid) + "],";
-                    if(node[1].this_node.type == TOK_ID) ret += "[reg" + to_string(getLastUsedRegister()) + "]," + to_string(symbol_table[node[0].this_node.str].alloc_size) + ";\n";
+                    if(node[1].this_node.type != TOK_INTEGER && node[1].this_node.type != TOK_STRING && node[1].this_node.type != TOK_CHARTER) ret += "[reg" + to_string(getLastUsedRegister()) + "]," + to_string(symbol_table[node[0].this_node.str].alloc_size) + ";\n";
                     else ret += "reg" + to_string(getLastUsedRegister()) + "," + to_string(symbol_table[node[0].this_node.str].alloc_size) + ";\n";
+                    RegsStat[save_regid].IsUsed_This = false; // unlock register
+                }else{
+                    throw ParserError("赋值语句必须有一个可修改的左值!\n");
                 }
             }
         }
