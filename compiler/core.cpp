@@ -281,6 +281,12 @@ RegisterStatus RegsStat[32];
 map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
 size_t symbol_top = 0;
 
+void printSymbol_Table(){
+    for(auto iter = symbol_table.begin();iter != symbol_table.end();iter++){
+        cout << iter->first << ":" << iter->second.alloc_addr << "," << iter->second.alloc_size << endl;
+    }
+}
+
 int getLastUsedRegister(){
     for(int i = 0;i < 32;i++){
         if(RegsStat[i].IsUsed_This == false) return i;
@@ -448,9 +454,11 @@ class ASTree{
     string dumpToAsm(){
         string ret;
         if(nodeT == BlockStatement){
+            int old_symbol_top = symbol_top;
             for(int i = 0;i < node.size();i++){
                 ret += node[i].dumpToAsm();
             }
+            symbol_top = old_symbol_top; // reset to first symbol top;不保存在block的所作所为
             return ret;
         }
         if(nodeT == NormalStatement){
@@ -471,19 +479,21 @@ class ASTree{
                         symbol_table[node[i].node[0].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].node[0].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].node[0].this_node.str].name = node[i].node[0].this_node.str;
+                        cout << "defined: " << node[i].node[0].this_node.str << endl;
                         symbol_top += TypePool[this_node.str].allocSize;
                         string tmp = node[i].node[1].dumpToAsm();
                         ret += tmp;
-                        ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],reg" + to_string(getLastUsedRegister()) + ";\n";
+                        if(node[i].node[1].this_node.type != TOK_ID) ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],reg" + to_string(getLastUsedRegister()) + ";\n";
+                        else ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],[reg" + to_string(getLastUsedRegister()) + "];\n";
                     }
                 }
             }
         }
         if(nodeT == Id){
             if(this_node.type == TOK_ID){
-                if(symbol_table.find(this_node.str) != symbol_table.end())  throw ParserError("Undefined Id:" + this_node.str);
+                if(symbol_table.find(this_node.str) == symbol_table.end())  throw ParserError("Undefined Id:" + this_node.str);
                 RegsStat[getLastUsedRegister()].IsUsed_This = true;
-                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + ",[" + to_string(symbol_table[this_node.str].alloc_addr) + "];\n";
+                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + "," + to_string(symbol_table[this_node.str].alloc_addr) + ";\n";
                 RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
             }
             if(this_node.type == TOK_INTEGER){
@@ -504,6 +514,20 @@ class ASTree{
                 RegsStat[getLastUsedRegister()].IsUsed_This = true;
                 ret += "mov reg" + to_string(getLastUsedRegister() - 1) + "," + to_string((int)string_addr) + ";\n";
                 RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
+            }
+        }
+        if(nodeT == ExpressionStatement){
+            if(this_node.str == "="){
+                if(symbol_table.find(node[0].this_node.str) != symbol_table.end() || (node[0].nodeT == ExpressionStatement && node[0].this_node.str == ".") ){
+                    ret += node[0].dumpToAsm();
+                    int save_regid = getLastUsedRegister();
+                    RegsStat[save_regid].IsUsed_This = true; // lock register
+                    ret += node[1].dumpToAsm();
+                    int val_regid = getLastUsedRegister();
+                    ret += "mov_m [reg" + to_string(save_regid) + "],";
+                    if(node[1].this_node.type == TOK_ID) ret += "[reg" + to_string(getLastUsedRegister()) + "]," + to_string(symbol_table[node[0].this_node.str].alloc_size) + ";\n";
+                    else ret += "reg" + to_string(getLastUsedRegister()) + "," + to_string(symbol_table[node[0].this_node.str].alloc_size) + ";\n";
+                }
             }
         }
         return ret;
