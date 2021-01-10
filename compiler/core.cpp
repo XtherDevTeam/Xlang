@@ -251,30 +251,37 @@ struct RegisterStatus{
     bool IsUsed_High;
     bool IsUsed_Low;
 };
-
-class Symbol{
-    public:
-    string name;
-    size_t alloc_addr;
-    size_t alloc_size;
-    Symbol(){}
-    Symbol(string name,size_t allocadr,size_t size){ this->name = name;this->alloc_addr = allocadr;this->alloc_size = size; }
-};
-
 string emptyStr(int size){
     string s="";
     s.resize(size);
     for(int i = 0;i < size;i++){s[i] = ' ';}
     return s;
 }
-
 class TypeName{
     public:
+    int type_top;
     int allocSize;
+    int allocAddr;
     map<string,TypeName> SubVariable;
     TypeName(int allocsize){allocSize = allocsize;}
+    void InsertVariable(string s,int allocsize){
+        SubVariable[s].allocAddr = type_top;
+        type_top += allocsize;
+        SubVariable[s].allocSize = allocsize;
+        allocSize = type_top;
+    }
     TypeName(){}
 };
+class Symbol{
+    public:
+    string name;
+    string type;
+    size_t alloc_addr;
+    size_t alloc_size;
+    Symbol(){}
+    Symbol(string type,string name,size_t allocadr,size_t size){ this->type = type;this->name = name;this->alloc_addr = allocadr;this->alloc_size = size; }
+};
+
 
 map<string,TypeName> TypePool; // 类型池
 RegisterStatus RegsStat[32];
@@ -467,15 +474,16 @@ class ASTree{
                 for(int i = 0;i<node.size();i++){
                     // Not an expression
                     if(node[i].nodeT == Id && node[i].this_node.type == TOK_ID){
+                        symbol_table[node[i].this_node.str].type = this_node.str;
                         symbol_table[node[i].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].this_node.str].name = node[i].this_node.str;
                         symbol_top += TypePool[this_node.str].allocSize;
-                        ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],0;\n";
+                        ret += "mov [" + to_string(symbol_table[node[i].this_node.str].alloc_addr) + "],0;\n";
                     }
                     // It has init value
                     if(node[i].nodeT == ExpressionStatement && node[i].this_node.type == TOK_EQUAL){
-                        //node[i].node[0]
+                        symbol_table[node[i].node[0].this_node.str].type = this_node.str;
                         symbol_table[node[i].node[0].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].node[0].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].node[0].this_node.str].name = node[i].node[0].this_node.str;
@@ -484,6 +492,19 @@ class ASTree{
                         ret += tmp;
                         if(node[i].node[1].this_node.type != TOK_ID) ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],reg" + to_string(getLastUsedRegister()) + ";\n";
                         else ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],[reg" + to_string(getLastUsedRegister()) + "];\n";
+                    }
+                }
+            }
+            if(this_node.str == "struct"){
+                //TypePool[node[0].this_node.str]
+                for(int i = 0;i < node[1].node.size();i++){
+                    if(TypePool.find(node[1].node[i].this_node.str) != TypePool.end()){
+                        for(int j = 0;j < node[1].node[i].node.size();j++){
+                            if(node[i].nodeT == Id && node[i].this_node.type == TOK_ID){
+                                TypePool[node[0].this_node.str].SubVariable[node[1].node[i].node[j].this_node.str] = TypePool[node[1].node[i].this_node.str]; // WARN: There maybe a bomb in tomorrow
+                                TypePool[node[0].this_node.str].InsertVariable(node[1].node[i].node[j].this_node.str,TypePool[node[1].node[i].this_node.str].allocSize);
+                            }
+                        }
                     }
                 }
             }
@@ -529,6 +550,20 @@ class ASTree{
                     RegsStat[save_regid].IsUsed_This = false; // unlock register
                 }else{
                     throw ParserError("赋值语句必须有一个可修改的左值!\n");
+                }
+            }
+            if(this_node.str == "."){
+                if(node[0].nodeT == Id){
+                    // It's a variable name
+                    if(node[0].this_node.type != TOK_ID) throw ParserError("成员语句必须有一个可修改的左值!\n");
+                    if(symbol_table.find(node[0].this_node.str) == symbol_table.end())  throw ParserError("Undefined Id:" + node[0].this_node.str);
+                    ret += node[0].dumpToAsm(); // get variable addres to reg0;
+                    ret += "add reg" + to_string(getLastUsedRegister()) + "," + to_string(TypePool[symbol_table[node[0].this_node.str].type].SubVariable[node[1].this_node.str].allocAddr) + ";\n";
+                }
+                if(node[0].nodeT == NormalStatement){
+                    ret += node[0].dumpToAsm(); // get variable addres to reg0;
+                    ret += "mov reg" + to_string(getLastUsedRegister()) + ",reg10;\n"; // reg10 return value save as here
+                    ret += "add reg" + to_string(getLastUsedRegister()) + "," + to_string(TypePool[symbol_table[node[0].this_node.str].type].SubVariable[node[1].this_node.str].allocAddr) + ";\n";
                 }
             }
         }
