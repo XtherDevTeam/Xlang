@@ -71,7 +71,7 @@ typedef class _Token {
 
 int getOperatorLevel(Token tok){
     // 计算符等级由高到低
-    if(tok.type == TOK_EQUAL) return 3;
+    if(tok.type == TOK_EQUAL || tok.type == TOK_COLON) return 3;
     if(tok.type == TOK_2EQUAL || tok.type == TOK_MINEQUAL || tok.type == TOK_MAXEQUAL || tok.type == TOK_NOTEQUAL || tok.type == TOK_MAX || tok.type == TOK_MIN)  return 2;
     if(tok.type == TOK_PLUS || tok.type == TOK_MINUS) return 1;
     if(tok.type == TOK_MULT || tok.type == TOK_DIV)  return 0;
@@ -128,9 +128,9 @@ class Lexer{
                 return false;
             }
             if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
-                if((i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')        ||
+                if( (i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')       ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || Text[i] == '.')
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || Text[i] == '.' || Text[i] == ':')
                 {
                     isexpr = 1;
                 }
@@ -223,14 +223,12 @@ class Lexer{
         throw ParserError("Undefined Token at" + to_string(position));
     }
     bool EndOfText(){
-        char* pOld = current;int pos = position;
-        if(*(current+1) != '\0')  return false;
-        return true;
+        if(*(current+1) == '\0' || *(current) == '\0'){return true;}
+        return false;
     }
 };
 
 enum AST_nodeType{
-    FunctionCallStatement,
     ExpressionStatement,
     BlockStatement,
     NormalStatement,
@@ -240,7 +238,6 @@ enum AST_nodeType{
 };
 
 string AST_nodeType[] = {
-    "FunctionCallStatement",
     "ExpressionStatement",
     "BlockStatement",
     "NormalStatement",
@@ -271,9 +268,31 @@ string emptyStr(int size){
     return s;
 }
 
-map<string,RegisterStatus> RegsStat;
+class TypeName{
+    public:
+    int allocSize;
+    map<string,TypeName> SubVariable;
+    TypeName(int allocsize){allocSize = allocsize;}
+    TypeName(){}
+};
+
+map<string,TypeName> TypePool; // 类型池
+RegisterStatus RegsStat[32];
 map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
 size_t symbol_top = 0;
+
+int getLastUsedRegister(){
+    for(int i = 0;i < 32;i++){
+        if(RegsStat[i].IsUsed_This == false) return i;
+    }
+    return INT_MAX;
+}
+
+void InitTypePool(){
+    TypePool["int"] = TypeName(8);
+    TypePool["ptr"] = TypeName(8);
+    TypePool["char"] = TypeName(1);
+}
 
 class ASTree{
     public:
@@ -425,6 +444,69 @@ class ASTree{
             return;
         }
         this->nodeT=Unused;
+    }
+    string dumpToAsm(){
+        string ret;
+        if(nodeT == BlockStatement){
+            for(int i = 0;i < node.size();i++){
+                ret += node[i].dumpToAsm();
+            }
+            return ret;
+        }
+        if(nodeT == NormalStatement){
+            if(TypePool.find(this_node.str) != TypePool.end()){
+                // first token is a typename
+                for(int i = 0;i<node.size();i++){
+                    // Not an expression
+                    if(node[i].nodeT == Id && node[i].this_node.type == TOK_ID){
+                        symbol_table[node[i].this_node.str].alloc_addr = symbol_top;
+                        symbol_table[node[i].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
+                        symbol_table[node[i].this_node.str].name = node[i].this_node.str;
+                        symbol_top += TypePool[this_node.str].allocSize;
+                        ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],0;\n";
+                    }
+                    // It has init value
+                    if(node[i].nodeT == ExpressionStatement && node[i].this_node.type == TOK_EQUAL){
+                        //node[i].node[0]
+                        symbol_table[node[i].node[0].this_node.str].alloc_addr = symbol_top;
+                        symbol_table[node[i].node[0].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
+                        symbol_table[node[i].node[0].this_node.str].name = node[i].node[0].this_node.str;
+                        symbol_top += TypePool[this_node.str].allocSize;
+                        string tmp = node[i].node[1].dumpToAsm();
+                        ret += tmp;
+                        ret += "mov [" + to_string(symbol_table[node[i].node[0].this_node.str].alloc_addr) + "],reg" + to_string(getLastUsedRegister()) + ";\n";
+                    }
+                }
+            }
+        }
+        if(nodeT == Id){
+            if(this_node.type == TOK_ID){
+                if(symbol_table.find(this_node.str) != symbol_table.end())  throw ParserError("Undefined Id:" + this_node.str);
+                RegsStat[getLastUsedRegister()].IsUsed_This = true;
+                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + ",[" + to_string(symbol_table[this_node.str].alloc_addr) + "];\n";
+                RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
+            }
+            if(this_node.type == TOK_INTEGER){
+                RegsStat[getLastUsedRegister()].IsUsed_This = true;
+                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + "," + this_node.str + ";\n";
+                RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
+            }
+            if(this_node.type == TOK_CHARTER){
+                RegsStat[getLastUsedRegister()].IsUsed_This = true;
+                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + "," + to_string((int)this_node.str[0]) + ";\n";
+                RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
+            }
+            if(this_node.type == TOK_STRING){
+                size_t string_addr = symbol_top;
+                ret += "@pool allocate " + to_string(symbol_top) + " \"" + this_node.str + "\";\n";
+                symbol_top += this_node.str.length();
+                // return char pointer
+                RegsStat[getLastUsedRegister()].IsUsed_This = true;
+                ret += "mov reg" + to_string(getLastUsedRegister() - 1) + "," + to_string((int)string_addr) + ";\n";
+                RegsStat[getLastUsedRegister() - 1].IsUsed_This = false;
+            }
+        }
+        return ret;
     }
 };
 

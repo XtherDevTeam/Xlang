@@ -2,6 +2,7 @@
 using namespace std;
 
 int main(){
+    InitTypePool();
     while(!cin.eof()){
         try{
             string input;
@@ -14,7 +15,7 @@ int main(){
             }
             cout << "IsExpression(): " << lexer.IsExpression() << endl;
             ASTree ast(lexer);
-            ast.prettyPrint();
+            cout << "generated asmcode:\n" << ast.dumpToAsm() << endl;
             StartDebuger();
         }catch(ParserError &e){
             e.what();

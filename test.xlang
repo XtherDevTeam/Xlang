@@ -1,17 +1,6 @@
-import headers from "vm/lib/include/std.xlang";
-import staticvmlib from "vm/lib/api.lib";
+import headers from "@vmlib-1.0/lang/std.xlang";
 
-int i=0;
-ptr int pI = i;
-ptr char test="hello,World!";
-
-func(int)ConsoleOutput(ptr char: output){
-    asm "pop reg0";
-    asm "out 1,reg0";
+func(int) main(int argc,int ptr argv){
+    ConsoleOutput("Hello,World!");
     return 0;
 }
-
-func(int)main(int: argc,ptr char: argv){
-    std.print("INT SOURCE: $int PTR_ADDR: $ptr",i,pI);
-    return 1145141919810;
-};
