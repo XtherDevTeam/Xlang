@@ -508,6 +508,11 @@ class ASTree{
                     }
                 }
             }
+            if(this_node.str == "func"){
+                // node[0] -> typename
+                // node[1] -> funcname
+                if(TypePool.find(node[0].this_node.str) == TypePool.end())  throw ParserError("Undefined Typename: " + node[0].this_node.str);
+            }
         }
         if(nodeT == Id){
             if(this_node.type == TOK_ID){
