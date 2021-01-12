@@ -278,8 +278,9 @@ class Symbol{
     string type;
     size_t alloc_addr;
     size_t alloc_size;
+    size_t frame;
     Symbol(){}
-    Symbol(string type,string name,size_t allocadr,size_t size){ this->type = type;this->name = name;this->alloc_addr = allocadr;this->alloc_size = size; }
+    Symbol(string type,string name,size_t allocadr,size_t size,size_t frame){ this->type = type;this->name = name;this->alloc_addr = allocadr;this->alloc_size = size;this->frame = frame; }
 };
 
 
@@ -287,6 +288,7 @@ map<string,TypeName> TypePool; // 类型池
 RegisterStatus RegsStat[32];
 map<string,Symbol> symbol_table; // Flat memory manager,to locate struct's subvar,just <struct offset>+<variable addr>
 size_t symbol_top = 0;
+stack<size_t> this_frame;
 
 void printSymbol_Table(){
     for(auto iter = symbol_table.begin();iter != symbol_table.end();iter++){
@@ -295,16 +297,19 @@ void printSymbol_Table(){
 }
 
 int getLastUsedRegister(){
-    for(int i = 0;i < 32;i++){
+    for(int i = 0;i < 30;i++){
         if(RegsStat[i].IsUsed_This == false) return i;
     }
     return INT_MAX;
 }
 
-void InitTypePool(){
+void InitCompiler(){
+    // INIT TYPE POOL
     TypePool["int"] = TypeName(8);
     TypePool["ptr"] = TypeName(8);
     TypePool["char"] = TypeName(1);
+    // INIT FRAME STACK
+    this_frame.push(0);
 }
 
 class ASTree{
@@ -478,6 +483,7 @@ class ASTree{
                         symbol_table[node[i].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].this_node.str].name = node[i].this_node.str;
+                        symbol_table[node[i].this_node.str].frame = this_frame.top();
                         symbol_top += TypePool[this_node.str].allocSize;
                         ret += "mov [" + to_string(symbol_table[node[i].this_node.str].alloc_addr) + "],0;\n";
                     }
@@ -487,6 +493,7 @@ class ASTree{
                         symbol_table[node[i].node[0].this_node.str].alloc_addr = symbol_top;
                         symbol_table[node[i].node[0].this_node.str].alloc_size = TypePool[this_node.str].allocSize;
                         symbol_table[node[i].node[0].this_node.str].name = node[i].node[0].this_node.str;
+                        symbol_table[node[i].node[0].this_node.str].frame = this_frame.top();
                         symbol_top += TypePool[this_node.str].allocSize;
                         string tmp = node[i].node[1].dumpToAsm();
                         ret += tmp;
@@ -511,7 +518,31 @@ class ASTree{
             if(this_node.str == "func"){
                 // node[0] -> typename
                 // node[1] -> funcname
+                prettyPrint();
                 if(TypePool.find(node[0].this_node.str) == TypePool.end())  throw ParserError("Undefined Typename: " + node[0].this_node.str);
+                //if(symbol_table.find(node[1].this_node.str) == symbol_table.end())  throw ParserError("Undefined Variable: " + node[0].this_node.str);
+                if(node[1].nodeT != Args || node[1].this_node.type != TOK_MBRACKET) throw ParserError("Invalid Syntax");
+                ret += node[0].node[0].this_node.str + ":\n";
+                string get_arg_asm;
+                this_frame.push(this_frame.top() + symbol_top);
+                size_t old_symbol_top = symbol_top;
+                symbol_top = 0; // reset symbol top
+                for(int i=0;i < node[1].node.size();i++){
+                    if(node[1].node[i].nodeT != ExpressionStatement || node[1].node[i].this_node.type != TOK_COLON)  throw ParserError("Invalid Args Definition");
+                    if(TypePool.find(node[1].node[i].node[0].this_node.str) == TypePool.end())  throw ParserError("Undefined Typename: " + node[0].this_node.str);
+                    symbol_table[node[1].node[i].node[1].this_node.str].frame = this_frame.top();
+                    symbol_table[node[1].node[i].node[1].this_node.str].alloc_addr = symbol_top;
+                    symbol_table[node[1].node[i].node[1].this_node.str].alloc_size = TypePool[node[1].node[i].node[0].this_node.str].allocSize;
+                    symbol_table[node[1].node[i].node[1].this_node.str].name = node[1].node[i].node[1].this_node.str;
+                    symbol_table[node[1].node[i].node[1].this_node.str].type = node[1].node[i].node[0].this_node.str;
+                    get_arg_asm += "mov_m [" + to_string(symbol_top) + "],[reg30]," + to_string(TypePool[node[1].node[i].node[0].this_node.str].allocSize) + ";\n";
+                    get_arg_asm += "add reg30," + to_string(TypePool[node[1].node[i].node[0].this_node.str].allocSize) + ";\n";
+                    symbol_top += TypePool[node[1].node[i].node[0].this_node.str].allocSize;
+                }
+                get_arg_asm += "add reg31," + to_string(old_symbol_top) + ";\n";
+                ret += get_arg_asm;
+                ret += node[2].dumpToAsm();
+                symbol_top = old_symbol_top;
             }
         }
         if(nodeT == Id){

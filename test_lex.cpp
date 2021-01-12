@@ -2,7 +2,7 @@
 using namespace std;
 
 int main(){
-    InitTypePool();
+    InitCompiler();
     while(!cin.eof()){
         try{
             string input;
