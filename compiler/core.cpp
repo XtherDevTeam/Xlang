@@ -421,9 +421,7 @@ class ASTree{
                 }
                 lastTokPosition = lexer.position;    
             }
-            if(node.size() == 1 && node.empty() == false && node[0].nodeT == Args){
-                this->nodeT = FunctionCallStatement;
-            }
+            if(node.size() == 1 && node.empty() == false && node[0].nodeT == Args)  this->nodeT = FunctionCallStatement;
             if(lexer.Text.substr(sb) != ""){
                 Lexer last( lexer.Text.substr(sb) );
                 node.push_back( ASTree(last) );
@@ -443,6 +441,7 @@ class ASTree{
     }
     string dumpToAsm(){
         
+        return "";
     }
 };
 
