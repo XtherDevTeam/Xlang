@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include "error.cpp"
+#include "basic_type.cpp"
 using namespace std;
 #define NTOKEN 1000
 
@@ -270,6 +271,19 @@ class Symbol{
     Symbol(string type,string name,size_t allocadr,size_t size,size_t frame){ this->type = type;this->name = name;this->alloc_addr = allocadr;this->alloc_size = size;this->frame = frame; }
 };
 
+int getASMType(string s){
+}
+
+class ASMStatement{
+    int type;
+    vector<ASM_Arg> args;
+    ASMStatement(string com){
+        
+    }
+    string dumpToStr(){
+
+    };
+};
 
 RegisterStatus RegsStat[32];
 
@@ -439,9 +453,9 @@ class ASTree{
         }
         this->nodeT=Unused;
     }
-    string dumpToAsm(){
+    vector<ASMStatement> dumpToAsm(){
         
-        return "";
+        //return "";
     }
 };
 

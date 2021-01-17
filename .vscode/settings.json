@@ -3,7 +3,12 @@
         "*.xs0": "java",
         "array": "cpp",
         "iostream": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "atomic": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "sstream": "cpp",
+        "regex": "cpp"
     },
     "cmake.configureOnOpen": false
 }

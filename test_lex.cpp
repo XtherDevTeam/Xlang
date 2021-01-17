@@ -15,7 +15,7 @@ int main(){
             }
             cout << "IsExpression(): " << lexer.IsExpression() << endl;
             ASTree ast(lexer);
-            cout << "generated asmcode:\n" << ast.dumpToAsm() << endl;
+            //cout << "generated asmcode:\n" << ast.dumpToAsm() << endl;
             StartDebuger();
         }catch(ParserError &e){
             e.what();
