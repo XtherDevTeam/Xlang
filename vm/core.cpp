@@ -4,6 +4,7 @@
 #include "../compiler/basic_type.cpp"
 #include "const.cpp"
 
+using namespace std;
 typedef unsigned long int addr_t;
 
 struct ByteCode{
@@ -60,11 +61,18 @@ int LoadVMExec(char* filename,VMExec* vme){
     return VM_SUCCES_LOADED;
 }
 
+struct heap_item_t{
+    addr_t c[3];
+    addr_t& operator[](int index){
+        return c[index];
+    }
+};
+
 class Runtime_Heap{
     public:
     char* allocate_addr;
     addr_t top = 0;
-    vector<addr_t[3]> heap_item; // {IsUsing, start, end}
+    vector<heap_item_t> heap_item; // {IsUsing, start, end}
     Runtime_Heap(size_t alloc){
         top = 0;
         allocate_addr = (char*)malloc(alloc);
@@ -93,7 +101,12 @@ class Runtime_Heap{
             heap_item[spare_pos][0] = 1;
             addr_t tmp = heap_item[spare_pos][2];
             heap_item[spare_pos][2] = heap_item[spare_pos][1] + _Size;
-            heap_item.push_back({0,heap_item[spare_pos][1] + _Size,tmp});
+            heap_item_t hit;
+            // {0,heap_item[spare_pos][1] + _Size,tmp}
+            hit[0] = 0;
+            hit[1] = heap_item[spare_pos][1] + _Size;
+            hit[2] = tmp;
+            heap_item.push_back(hit);
             return spare_pos;
         }
         return INT_MAX;
@@ -107,7 +120,12 @@ class Runtime_Heap{
             return tmp;
         }
         memcpy(allocate_addr+top,c.chc,8);
-        heap_item.push_back({1,top,top+8});
+        heap_item_t hit;
+        //hit.c = {1,top,top+8};
+        hit[0] = 1;
+        hit[1] = top;
+        hit[2] = top+8;
+        heap_item.push_back(hit);
         top += 8;
         return heap_item.size() - 1; 
     }
@@ -119,7 +137,12 @@ class Runtime_Heap{
             return tmp;
         }
         memcpy(allocate_addr + top,_Src,sz);
-        heap_item.push_back({1,top,top+sz});
+        heap_item_t hit;
+        //hit.c = {1,top,top+sz};
+        hit[0] = 1;
+        hit[1] = top;
+        hit[2] = top+sz;
+        heap_item.push_back(hit);
         top += sz;
         return heap_item.size() - 1; 
     }
@@ -147,7 +170,9 @@ class VMRuntime{
         this->vme = vme;
     }
     void Run(addr_t _AllocSize){
-        heap = Runtime_Heap(_AllocSize / 4);
+        malloc_place = (char*)malloc(_AllocSize);
+        program = (ByteCode*)malloc_place;
+        memcpy(program,vme.code_array,vme.head.code_length * 9);
     }
     VMRuntime(VMExec vme){
         memset(&regs,0,32*sizeof(Content));
