@@ -34,10 +34,17 @@ struct VMExecHeader{
 
 int s=sizeof(CodeLabel);
 
+struct ConstantPool{
+    addr_t size,count;
+    size_t* items;
+    char* pool;
+};
+
 struct VMExec{
     VMExecHeader head;
     CodeLabel* label_array;
     ByteCode* code_array;
+    ConstantPool cpool;
 };
 
 void VMExec_Serialization(char* filename,VMExec vme){
@@ -46,6 +53,10 @@ void VMExec_Serialization(char* filename,VMExec vme){
     write(fd,&vme.head,sizeof(vme.head));
     write(fd,vme.label_array,vme.head.code_label_count * 48);
     write(fd,vme.code_array,vme.head.code_length * 9);
+    write(fd,&vme.cpool.count,8);
+    write(fd,&vme.cpool.size,8);
+    write(fd,vme.cpool.items,vme.cpool.count * 8);
+    write(fd,vme.cpool.pool,vme.cpool.size);
 }
 
 int LoadVMExec(char* filename,VMExec* vme){
@@ -58,6 +69,12 @@ int LoadVMExec(char* filename,VMExec* vme){
     vme->code_array = (ByteCode*)malloc(vme->head.code_length * 9);
     if(vme->code_array == NULL) return VM_FAILED_OPEN;
     else if(read(fd,vme->code_array,vme->head.code_length * 9) == -1) return VM_FAILED_OPEN;
+    if(read(fd,&vme->cpool,sizeof(addr_t) * 8) == -1) return VM_FAILED_OPEN;
+    vme->cpool.items = (size_t*)malloc(vme->cpool.count * 8);
+    vme->cpool.pool = (char*)malloc(vme->cpool.size);
+    read(fd,&vme->cpool.items,vme->cpool.count * 8);
+    read(fd,&vme->cpool.pool,vme->cpool.size);
+
     return VM_SUCCES_LOADED;
 }
 
@@ -155,6 +172,17 @@ class Runtime_Heap{
     }
 };
 
+struct Device{
+    char device_name[32];
+    void* (device_request)(void* linked_vmruntime,char req_motd,addr_t args);
+    void* (different_request)(void* linked_vmruntime,addr_t args);
+};
+
+struct DevicePackage{
+    vector<int> require_int_num;
+    char device_name[32];
+};
+
 class VMRuntime{
     VMExec vme;
     char* malloc_place;
@@ -162,6 +190,7 @@ class VMRuntime{
     Content      regs[32];
     Runtime_Heap heap;
     ByteCode*    program;
+    char* constant_pool;
 
     Content& getRegRefernce(int rid){
         return regs[rid];
@@ -170,9 +199,22 @@ class VMRuntime{
         this->vme = vme;
     }
     void Run(addr_t _AllocSize){
+        if(_AllocSize == 0){
+            // allocate by program
+            _AllocSize = vme.head.code_length * 9 * 5;
+        }
         malloc_place = (char*)malloc(_AllocSize);
-        program = (ByteCode*)malloc_place;
+        char* memtop = malloc_place;
+
+        constant_pool = (char*)memtop;
+        memcpy(memtop,vme.cpool.pool,vme.cpool.size);
+        memtop += vme.cpool.size;
+
+        program = (ByteCode*)memtop;
         memcpy(program,vme.code_array,vme.head.code_length * 9);
+        memtop += vme.head.code_length * 9;
+
+
     }
     VMRuntime(VMExec vme){
         memset(&regs,0,32*sizeof(Content));

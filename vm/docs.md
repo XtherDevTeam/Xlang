@@ -42,3 +42,41 @@ rt.Run(<memsize default 4096*1024>);
 -  - reg30 **memory offset register**<br> 
      reg31 **function args addres register**<br>
      reg32 **return value register**<br>
+
+## ConstantPool
+- Q: What is Constant Pool?
+- A: It's a block of init memory,it has all of static variable 's init value
+- Q: How does it work?
+```c++
+ptr char a="Hello,World"
+```
+Covert to asm:
+```c++
+@constpool "Hello,World";// load to constant pool
+push 0;
+```
+
+```
+__________________________
+| Item            | Size |
+--------------------------
+| Count           | 8    |
+| Item Array      | c*
+--------------------------
+```
+
+## About Device Dymlic Library
+
+```c++
+// A device source code sample
+// By xiaokang00010 at 2021/1/22
+#include "vm/core.cpp"
+using namespace std;
+
+DevicePackage init_device(){
+     // How to know it's an interput device?
+     // That's easy,becaude int device name must be "Basic Interput Device"
+     DevicePackage ret;
+     strcpy(ret.device_name,"Basic Interput Device");
+}
+```
