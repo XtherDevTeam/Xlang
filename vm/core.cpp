@@ -1,3 +1,4 @@
+#include <iostream>
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -102,6 +103,7 @@ class Runtime_Heap{
     // Find Non-using block
     int findNonUsing(int _Size){
         int spare_pos = -1; // if this_item.size > _Size , then put that here
+        if(heap_item.empty()) return INT_MAX;
         for(int i = 0;i < heap_item.size();i++){
             // Find Non-using block
             if(heap_item[i][0] == 0){
@@ -172,6 +174,45 @@ class Runtime_Heap{
     }
 };
 
+class Runtime_Stack{
+    char* allocate_addr;
+    addr_t fp,sp;
+    public:
+    Runtime_Stack(char* aaddr){
+        allocate_addr = aaddr;
+        fp = 0;
+        sp = 0;
+    }
+    Runtime_Stack(){
+        fp = 0;
+        sp = 0;
+    }
+    // Normal push function for 8 bytes
+    void push(Content s){
+        memcpy(allocate_addr - fp - sp - 8,s.chc,8);
+        sp+=8;
+    }
+    // String push function
+    void push(char* s,addr_t length){
+        memcpy(allocate_addr-fp-sp-length,s,length);
+        sp += length;
+    }
+    // Normal pop function
+    Content pop(){
+        Content s;
+        //cout << "sp:" << sp << endl;
+        sp -= 8;
+        memcpy(s.chc,allocate_addr - fp - sp - 8,8); // WARN: 虽然我也不知道为什么这里还要减一次sp，但！是！鸽子飞起来就好！
+        return s;
+    }
+    char* pop(addr_t size){
+        char* ret = (char*)malloc(size);
+        sp -= size;
+        memcpy(ret,allocate_addr - fp - sp + size,size); // WARN: 同上
+        return ret;
+    }
+};
+
 struct Device{
     char device_name[32];
     void* (device_request)(void* linked_vmruntime,char req_motd,addr_t args);
@@ -187,10 +228,13 @@ class VMRuntime{
     VMExec vme;
     char* malloc_place;
     public:
-    Content      regs[32];
-    Runtime_Heap heap;
-    ByteCode*    program;
-    char* constant_pool;
+    addr_t           pc;
+    map<string,bool> vm_rules;
+    Content          regs[32];
+    Runtime_Heap     heap;
+    Runtime_Stack    stack_a;
+    ByteCode*        program;
+    char*            constant_pool;
 
     Content& getRegRefernce(int rid){
         return regs[rid];
@@ -198,7 +242,7 @@ class VMRuntime{
     int Bind_VMExec(VMExec vme){
         this->vme = vme;
     }
-    void Run(addr_t _AllocSize){
+    void Run(addr_t _AllocSize = 0){
         if(_AllocSize == 0){
             // allocate by program
             _AllocSize = vme.head.code_length * 9 * 5;
@@ -214,7 +258,11 @@ class VMRuntime{
         memcpy(program,vme.code_array,vme.head.code_length * 9);
         memtop += vme.head.code_length * 9;
 
-
+        heap.allocate_addr = (char*) memtop;
+        stack_a = Runtime_Stack(malloc_place + _AllocSize - 1);
+        if(vm_rules["verbose"] == true){
+            printf("Xtime VM Core[1.0.01]\nStarting...\n");
+        }
     }
     VMRuntime(VMExec vme){
         memset(&regs,0,32*sizeof(Content));
