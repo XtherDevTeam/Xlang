@@ -8,7 +8,10 @@
         "*.tcc": "cpp",
         "fstream": "cpp",
         "sstream": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "vector": "cpp",
+        "iosfwd": "cpp",
+        "iterator": "cpp"
     },
     "cmake.configureOnOpen": false
 }

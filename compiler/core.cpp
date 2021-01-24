@@ -260,46 +260,38 @@ string emptyStr(int size){
     for(int i = 0;i < size;i++){s[i] = ' ';}
     return s;
 }
-class Symbol{
+
+struct ASM_Command{
+    string Main;
+    vector<string> args;
+};
+
+class ASMBlock{
+    ASM_Command temp;
     public:
-    string name;
-    string type;
-    size_t alloc_addr;
-    size_t alloc_size;
-    size_t frame;
-    Symbol(){}
-    Symbol(string type,string name,size_t allocadr,size_t size,size_t frame){ this->type = type;this->name = name;this->alloc_addr = allocadr;this->alloc_size = size;this->frame = frame; }
-};
-
-int getASMType(string s){
-}
-
-class ASMStatement{
-    int type;
-    vector<ASM_Arg> args;
-    ASMStatement(string com){
-        
+    vector<ASM_Command> lists;
+    ASMBlock(){}
+    void operator+=(ASMBlock& o){
+        for(int i = 0;i < o.lists.size();i++){
+            lists.push_back(o.lists[i]);
+        }
     }
-    string dumpToStr(){
-
-    };
-};
-
-RegisterStatus RegsStat[32];
-
-int getLastUsedRegister(){
-    for(int i = 0;i < 30;i++){
-        if(RegsStat[i].IsUsed_This == false) return i;
+    ASM_Command& operator[](int index){return lists[index];}
+    ASMBlock& genCommand(string s){
+        if(temp.Main != ""){
+            lists.push_back(temp);
+            temp.Main = "";
+            temp.args.clear();
+        }
+        temp.Main = s;
+        return *this;
     }
-    return INT_MAX;
-}
-
-void InitCompiler(){
-    // INIT TYPE POOL
-    //TypePool["int"] = TypeName(8);
-    //TypePool["ptr"] = TypeName(8);
-    //TypePool["char"] = TypeName(1);
-}
+    ASMBlock& genArg(string s){
+        if(temp.Main == ""){throw ParserError("You must make a command beforce add arg.");}
+        temp.args.push_back(s);
+        return *this;
+    }
+};
 
 class ASTree{
     public:
@@ -453,10 +445,19 @@ class ASTree{
         }
         this->nodeT=Unused;
     }
-    vector<ASMStatement> dumpToAsm(){
-        
-        //return "";
-    }
 };
 
-//int main(){}
+namespace ASTree_APIs{
+    namespace MemberExpression{
+        bool hasFunctionCallStatement(ASTree ast){
+            if(ast.node.empty()) return false;
+            if(ast.nodeT == FunctionCallStatement) return true;
+            if(ast.nodeT == ExpressionStatement && ast.this_node.type == TOK_DOT){
+                for(int i = 0;i < ast.node.size();i++){
+                    if(hasFunctionCallStatement(ast.node[i])) return true;
+                }
+            }
+            return false;
+        }
+    };
+};

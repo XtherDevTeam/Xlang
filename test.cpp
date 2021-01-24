@@ -1,7 +1,8 @@
-#include <bits/stdc++.h>
+#include "compiler/compiler.cpp"
 using namespace std;
 
 int main(){
-    stack<size_t> frame;
-    cout << frame.top() << endl;
+    Lexer lex("ast.wdnm.print(\"Hello,World\",114514)");
+    ASTree ast(lex);
+    
 }
