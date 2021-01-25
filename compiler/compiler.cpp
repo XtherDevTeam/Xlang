@@ -49,7 +49,7 @@ class TypeName{
         if(objects.find(s) != objects.end()) throw CompileError("Already Exist: " + s);
         objects[s] = t;
     }
-    size_t getOffset(ASTree ast,size_t originoffset){
+    size_t getOffset(ASTree ast,size_t originoffset = 0){
         if(ast.nodeT != ExpressionStatement || ast.this_node.str != "."){
             if(ast.nodeT == Id){
                 return originoffset;
@@ -89,12 +89,13 @@ class Symbol{
         _Typename = typename_;
         if(type_pool.find(_Typename) == type_pool.end()) throw CompileError("Undefined Typename as " + _Typename);
     }
+    Symbol(){}
 };
 
 map<string,Symbol> symbol_table;
 
 string getFunctionRealName(ASTree a,TypeName& this_scope){
-    if(!ASTree_APIs::MemberExpression::hasFunctionCallStatement(a))  return "";
+    if(!ASTree_APIs::MemberExpression::hasFunctionCallStatement(a))  return ""; // It's a stupid fix.But,It's work now.
     else{
         if(a.node[1].nodeT == FunctionCallStatement) return "_@" + this_scope.name  + "_" + a.node[1].this_node.str;
         else{
@@ -107,6 +108,11 @@ string getFunctionRealName(ASTree a){
     if(a.nodeT != ExpressionStatement) return "";
     if(type_pool.find(a.node[0].this_node.str) == type_pool.end()) return "";
     return getFunctionRealName(a,type_pool[a.node[0].this_node.str]);
+}
+
+ASTree getFunctionCallArgs(ASTree ast){
+    if(ast.nodeT == FunctionCallStatement) return ast.node[0];
+    else if(ast.nodeT == ExpressionStatement && ast.this_node.type == TOK_DOT) return getFunctionCallArgs(ast.node[1]);
 }
 
 ConstantPool cp;
@@ -167,8 +173,10 @@ ASMBlock dumpToAsm(ASTree ast){
             .genCommand("mov").genArg(to_string(cp.items[cp.count])).genArg("reg" + to_string(getLastUsingRegId())).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg("[" + to_string(symbol_table[ast.this_node.str].frame_position) + "]").genArg("reg" + to_string(getLastUsingRegId()));
+            return ASMBlock().genCommand("mov").genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genArg("reg" + to_string(getLastUsingRegId()));
         }
+        if(ast.this_node.str == "true")  return ASMBlock().genCommand("mov").genArg("1").genArg("reg" + to_string(getLastUsingRegId()));
+        if(ast.this_node.str == "false")  return ASMBlock().genCommand("mov").genArg("0").genArg("reg" + to_string(getLastUsingRegId()));
     }
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV){
@@ -183,14 +191,33 @@ ASMBlock dumpToAsm(ASTree ast){
             else if(ast.this_node.type == TOK_MINUS) ab.genCommand("sub");
             else if(ast.this_node.type == TOK_MULT) ab.genCommand("mul");
             else if(ast.this_node.type == TOK_DIV) ab.genCommand("div");
-            if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER) ab.genArg(to_string(getLastUsingRegId() - 2));
-            else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg(to_string(getLastUsingRegId() - 2));
-            else ab.genArg("[" + to_string(getLastUsingRegId() - 2) + "]");
-            if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg(to_string(getLastUsingRegId() - 1));
-            else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg(to_string(getLastUsingRegId() - 1));
-            else ab.genArg("[" + to_string(getLastUsingRegId() - 1) + "]");
+            // Xlang变量的dumpASM会传地址
+            if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
+            else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
+            else ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
+            if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
+            else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
+            else ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
             RegState[getLastUsingRegId() - 1] = false;
             RegState[getLastUsingRegId() - 1] = false;
+            return ab;
+        }
+        if(ast.this_node.type == TOK_DOT){
+            int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
+            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).push();
+        }
+        if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast)){
+            string func_name = getFunctionRealName(ast);
+            ASTree args = getFunctionCallArgs(ast);
+            ASMBlock asb;
+            asb.genCommand("save").push();
+            if(args.nodeT == NormalStatement && args.this_node.type == TOK_ARGSTATEMENT){
+                for(int i = 0;i < args.node.size();i++){
+                    asb += dumpToAsm(args.node[i]);
+                    asb.genCommand("push").genArg(to_string(getLastUsingRegId())).push();
+                }
+            }
+            return ASMBlock().genCommand("call").genArg(func_name);
         }
     }
 }
