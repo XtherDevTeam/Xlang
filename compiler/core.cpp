@@ -274,7 +274,7 @@ class ASMBlock{
     public:
     vector<ASM_Command> lists;
     ASMBlock(){}
-    void operator+=(ASMBlock& o){
+    void operator+=(ASMBlock o){
         for(int i = 0;i < o.lists.size();i++){
             lists.push_back(o.lists[i]);
         }

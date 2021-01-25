@@ -118,16 +118,21 @@ namespace ConstPool_Apis
         cpool.items = (size_t*)malloc(1024);
         memset(cpool.items,0,1024);
     }
-    void Insert(ConstantPool cpool,char* _Src,addr_t size){
+    addr_t Insert(ConstantPool cpool,char* _Src,addr_t size){
         memcpy(cpool.pool + cpool.items[cpool.count],_Src,size);
+        if(cpool.count == 0){
+            cpool.items[cpool.count] = size;
+            return cpool.items[cpool.count];
+        }
         cpool.count++;
         cpool.items[cpool.count] = cpool.items[cpool.count-1] + size;
+        return cpool.items[cpool.count-1];
     }
 } // namespace ConstPool_Apis
 
 
 void InitCompiler(){
-    
+    ConstPool_Apis::Init(cp);
     type_pool["int"]    = TypeName("int",__BASIC_8BYTE);
     type_pool["char"]   = TypeName("char",__BASIC_1BYTE);
     type_pool["double"] = TypeName("double",__BASIC_8BYTE);
@@ -144,15 +149,48 @@ int getLastUsingRegId(){
     return INT_MAX;
 }
 
+VarType getMemberType(ASTree ast,TypeName& scope){
+    if(ast.nodeT == Id) return scope[ast.this_node.str].type;
+    return getMemberType(ast.node[1],scope[ast.node[1].node[0].this_node.str]);
+}
+VarType getMemberType(ASTree ast){
+    return getMemberType(ast,type_pool[ast.node[0].this_node.str]);
+}
 
 ASMBlock dumpToAsm(ASTree ast){
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_INTEGER || ast.this_node.type == TOK_DOUBLE){
-            return ASMBlock().genCommand("mov").genArg(ast.this_node.str).genArg(to_string(getLastUsingRegId())).push();
+            return ASMBlock().genCommand("mov").genArg(ast.this_node.str).genArg("reg" + to_string(getLastUsingRegId())).push();
         }
         if(ast.this_node.type == TOK_STRING){
             return ASMBlock().genCommand("@constant_pool").genArg(ast.this_node.str)\
-            .genCommand("mov").genArg(/* FIXME: I don't know how to set */).push();
+            .genCommand("mov").genArg(to_string(cp.items[cp.count])).genArg("reg" + to_string(getLastUsingRegId())).push();
+        }
+        if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
+            return ASMBlock().genCommand("mov").genArg("[" + to_string(symbol_table[ast.this_node.str].frame_position) + "]").genArg("reg" + to_string(getLastUsingRegId()));
+        }
+    }
+    if(ast.nodeT == ExpressionStatement){
+        if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV){
+            ASMBlock ab;
+            ab += dumpToAsm(ast.node[0]);
+            if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genCommand("pop").genArg("reg" + to_string(getLastUsingRegId()));
+            RegState[getLastUsingRegId()] = true;
+            ab += dumpToAsm(ast.node[1]);
+            if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genCommand("pop").genArg("reg" + to_string(getLastUsingRegId()));
+            RegState[getLastUsingRegId()] = true;
+            if(ast.this_node.type == TOK_PLUS) ab.genCommand("add");
+            else if(ast.this_node.type == TOK_MINUS) ab.genCommand("sub");
+            else if(ast.this_node.type == TOK_MULT) ab.genCommand("mul");
+            else if(ast.this_node.type == TOK_DIV) ab.genCommand("div");
+            if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER) ab.genArg(to_string(getLastUsingRegId() - 2));
+            else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg(to_string(getLastUsingRegId() - 2));
+            else ab.genArg("[" + to_string(getLastUsingRegId() - 2) + "]");
+            if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg(to_string(getLastUsingRegId() - 1));
+            else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg(to_string(getLastUsingRegId() - 1));
+            else ab.genArg("[" + to_string(getLastUsingRegId() - 1) + "]");
+            RegState[getLastUsingRegId() - 1] = false;
+            RegState[getLastUsingRegId() - 1] = false;
         }
     }
 }
