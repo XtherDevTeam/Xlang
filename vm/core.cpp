@@ -215,6 +215,21 @@ class Runtime_Stack{
         memcpy(ret,allocate_addr - fp - sp + size,size); // WARN: 同上
         return ret;
     }
+    void newFrame(){
+        Content c;
+        c.intc = fp;
+        push(c);
+        c.intc = sp;
+        push(c);
+        fp = sp;sp = 0;
+    }
+    void PopFrame(){
+        //cout << "sp:" << fp << "," << sp << endl;
+        free(pop(sp));
+        sp = pop().intc;
+        fp = pop().intc;
+        //cout << "pop result:" << fp << "," << sp << endl;
+    }
 };
 
 struct Device{
@@ -243,7 +258,7 @@ class VMRuntime{
     Content& getRegRefernce(int rid){
         return regs[rid];
     }
-    int Bind_VMExec(VMExec vme){
+    void Bind_VMExec(VMExec vme){
         this->vme = vme;
     }
     void Run(addr_t _AllocSize = 0){

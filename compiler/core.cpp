@@ -19,6 +19,7 @@ enum TokenValue {
     TOK_ID,
     TOK_IF,
     TOK_INTEGER,
+    TOK_DOUBLE,
     TOK_STRING,
     TOK_MINUS,TOK_2MINUS,
     TOK_MULT,
@@ -43,6 +44,7 @@ string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_ID",
     "TOK_IF",
     "TOK_INTEGER",
+    "TOK_DOUBLE",
     "TOK_STRING",
     "TOK_MINUS","TOK_2MINUS",
     "TOK_MULT",
@@ -131,7 +133,7 @@ class Lexer{
             if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
                 if( (i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')       ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || Text[i] == '.' || Text[i] == ':')
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || ( Text[i] == '.' && Text[i-1] < '0' && Text[i-1] > '9') || Text[i] == ':')
                 {
                     isexpr = 1;
                 }
@@ -208,11 +210,12 @@ class Lexer{
         if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,">=");}else{return Token(TOK_MIN,">");} }
         if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
         if(isdigit(*current)){
+            TokenValue ret = TOK_INTEGER;
             int begin = position;
-            while(isdigit(*current)){Next();}
+            while(isdigit(*current) || *current == '.'){if(*current == '.'){ret = TOK_DOUBLE;}Next();}
             int length = position - begin;
             //Next();
-            return Token(TOK_INTEGER,Text.substr(begin,length));
+            return Token(ret,Text.substr(begin,length));
         }
         if(isalpha(*current)){
             int begin = position;
@@ -289,6 +292,12 @@ class ASMBlock{
     ASMBlock& genArg(string s){
         if(temp.Main == ""){throw ParserError("You must make a command beforce add arg.");}
         temp.args.push_back(s);
+        return *this;
+    }
+    ASMBlock& push(){
+        lists.push_back(temp);
+        temp.Main = "";
+        temp.args.clear();
         return *this;
     }
 };

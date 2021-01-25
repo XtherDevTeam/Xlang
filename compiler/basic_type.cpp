@@ -1,3 +1,4 @@
+#pragma once
 union Content{
     long int intc;
     double dblc;
