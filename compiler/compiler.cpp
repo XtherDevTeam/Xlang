@@ -92,8 +92,19 @@ class Symbol{
     Symbol(){}
 };
 
+typedef class Function{
+    public:
+    string funcname;
+    TypeName type;
+    Function(){}
+    Function(string s,TypeName t){
+        funcname = s;
+        type = t;
+    }
+} function_definition;
+
 map<string,Symbol> symbol_table;
-map<string,ASTree> function_table;
+map<function_definition,ASTree> function_table;
 
 string getFunctionRealName(ASTree a,TypeName& this_scope){
     if(!ASTree_APIs::MemberExpression::hasFunctionCallStatement(a))  return ""; // It's a stupid fix.But,It's work now.
@@ -229,9 +240,9 @@ ASMBlock dumpToAsm(ASTree ast){
             for(int i = 0;i < contents.node.size();i++){
                 if(contents.node[i].this_node.str == "func"){
                     // TODO: add function definition processing core
-                    string real_funcname = "_@" + contents.node[i].node[0].this_node.str + "_" + contents.node[i].node[0].node[0].this_node.str;
+                    string real_funcname = "_@" + struct_name + "_" + contents.node[i].node[0].node[0].this_node.str;
                     if(contents.node[i].node[1].nodeT != BlockStatement) throw CompileError("func definition statement must have a codeblock!");
-                    function_table[real_funcname] = contents.node[i].node[1];
+                    function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str])] = contents.node[i].node[1];
                     continue;
                 }
                 if(type_pool.find(contents.node[i].this_node.str) == type_pool.end()) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
@@ -239,10 +250,23 @@ ASMBlock dumpToAsm(ASTree ast){
                 ASTree& temp_ast = contents.node[i];
                 for(int j = 0;j < temp_ast.node.size();j++){
                     if(temp_ast.node[j].nodeT == Id) t.InsertToObject(temp_ast.node[j].this_node.str,this_type);
-                    else throw CompileError("Xlang doesn't support init value now"); // TODO: Add init value support
+                    else throw CompileError("Compiler doesn't support init value now"); // TODO: Add init value support
                 }
             }
+            return ASMBlock();
         }
-        return ASMBlock();
+        if(ast.this_node.str == "func"){
+            string real_funcname = ast.node[0].node[0].this_node.str;
+            function_definition fdef(real_funcname,type_pool[ast.node[0].this_node.str]);
+            if(ast.node[1].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
+            function_table[fdef] = ast.node[1];
+            return ASMBlock();
+        }
+        throw CompileError("Unknown Command: " + ast.this_node.str);
+    }
+    if(ast.nodeT == BlockStatement){
+        ASMBlock ret;
+        for(int i = 0;i < ast.node.size();i++) ret += dumpToAsm(ast.node[i]);
+        return ret;
     }
 }

@@ -1,9 +1,7 @@
-import headers from "@vmlib-1.0/packages/std.xlang";
+import headers from "vm/packages/vmlib@latest/main.xlang";
 
-// Basic Test Code
-
-func int main(int:argc,ptr:argv){
-	ptr a="hello,world!\n";
+func int main(int:argc,ptr_char:argv){
+	ptr_char a="hello,world!\n";
 	VM_DeviceOutput(0,a); // output to basic i/o device
 	return 0;
 }
