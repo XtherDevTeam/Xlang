@@ -93,6 +93,7 @@ class Symbol{
 };
 
 map<string,Symbol> symbol_table;
+map<string,ASTree> function_table;
 
 string getFunctionRealName(ASTree a,TypeName& this_scope){
     if(!ASTree_APIs::MemberExpression::hasFunctionCallStatement(a))  return ""; // It's a stupid fix.But,It's work now.
@@ -178,6 +179,19 @@ ASMBlock dumpToAsm(ASTree ast){
         if(ast.this_node.str == "true")  return ASMBlock().genCommand("mov").genArg("1").genArg("reg" + to_string(getLastUsingRegId()));
         if(ast.this_node.str == "false")  return ASMBlock().genCommand("mov").genArg("0").genArg("reg" + to_string(getLastUsingRegId()));
     }
+    if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast)){
+        string func_name = getFunctionRealName(ast);
+        ASTree args = getFunctionCallArgs(ast);
+        ASMBlock asb;
+        asb.genCommand("save").push();
+        if(args.nodeT == NormalStatement && args.this_node.type == TOK_ARGSTATEMENT){
+            for(int i = 0;i < args.node.size();i++){
+                asb += dumpToAsm(args.node[i]);
+                asb.genCommand("push").genArg(to_string(getLastUsingRegId())).push();
+            }
+        }
+        return asb.genCommand("call").genArg(func_name);
+    }
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV){
             ASMBlock ab;
@@ -206,18 +220,29 @@ ASMBlock dumpToAsm(ASTree ast){
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
             return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).push();
         }
-        if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast)){
-            string func_name = getFunctionRealName(ast);
-            ASTree args = getFunctionCallArgs(ast);
-            ASMBlock asb;
-            asb.genCommand("save").push();
-            if(args.nodeT == NormalStatement && args.this_node.type == TOK_ARGSTATEMENT){
-                for(int i = 0;i < args.node.size();i++){
-                    asb += dumpToAsm(args.node[i]);
-                    asb.genCommand("push").genArg(to_string(getLastUsingRegId())).push();
+    }
+    if(ast.nodeT == NormalStatement){
+        if(ast.this_node.str == "struct"){
+            string struct_name = ast.node[0].this_node.str;
+            TypeName t(struct_name,__OBJECT);
+            ASTree& contents = ast.node[1];
+            for(int i = 0;i < contents.node.size();i++){
+                if(contents.node[i].this_node.str == "func"){
+                    // TODO: add function definition processing core
+                    string real_funcname = "_@" + contents.node[i].node[0].this_node.str + "_" + contents.node[i].node[0].node[0].this_node.str;
+                    if(contents.node[i].node[1].nodeT != BlockStatement) throw CompileError("func definition statement must have a codeblock!");
+                    function_table[real_funcname] = contents.node[i].node[1];
+                    continue;
+                }
+                if(type_pool.find(contents.node[i].this_node.str) == type_pool.end()) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
+                TypeName this_type = type_pool[contents.node[i].this_node.str];
+                ASTree& temp_ast = contents.node[i];
+                for(int j = 0;j < temp_ast.node.size();j++){
+                    if(temp_ast.node[j].nodeT == Id) t.InsertToObject(temp_ast.node[j].this_node.str,this_type);
+                    else throw CompileError("Xlang doesn't support init value now"); // TODO: Add init value support
                 }
             }
-            return ASMBlock().genCommand("call").genArg(func_name);
         }
+        return ASMBlock();
     }
 }

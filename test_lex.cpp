@@ -1,4 +1,4 @@
-#include "compiler/core.cpp"
+#include "compiler/compiler.cpp"
 using namespace std;
 
 int main(){
@@ -15,6 +15,7 @@ int main(){
             }
             cout << "IsExpression(): " << lexer.IsExpression() << endl;
             ASTree ast(lexer);
+            ast.prettyPrint();
             //cout << "generated asmcode:\n" << ast.dumpToAsm() << endl;
             StartDebuger();
         }catch(ParserError &e){
