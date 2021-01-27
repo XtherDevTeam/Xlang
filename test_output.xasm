@@ -1,2 +1,8 @@
-mov reg0,0;
-mov [0],reg0;
+testfunc:
+popframe;
+push 1;
+ret;
+_vmstart:
+save;
+call testfunc;
+pop reg0;

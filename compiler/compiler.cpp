@@ -59,6 +59,11 @@ class TypeName{
             return operator[](ast.node[0].this_node.str).getOffset(ast.node[1],originoffset + operator[](ast.node[0].this_node.str).size);
         }
     }
+    TypeName& findObject(ASTree ast){
+        if(ast.nodeT == Id) return operator[](ast.this_node.str);
+        if(objects.find(ast.node[0].this_node.str) == objects.end()) throw CompileError("Object doesn't have member names " + ast.node[0].this_node.str);
+        return operator[](ast.node[0].this_node.str).findObject(ast.node[1]);
+    }
 };
 
 map<string,TypeName> type_pool;
@@ -148,6 +153,49 @@ namespace ConstPool_Apis
     }
 } // namespace ConstPool_Apis
 
+string returnFirst(TypeName t){
+    for(auto i = type_pool.begin();i != type_pool.end();i++){
+        if(t.name == i->second.name && t.size == i->second.size && t.type == i->second.type) return i->first;
+    }
+    throw ParserError("Typename not found!");
+}
+
+string guessType(ASTree ast){
+    if(ast.nodeT == Id){
+        if(ast.this_node.type == TOK_ID && symbol_table.find(ast.this_node.str) != symbol_table.end())  return symbol_table[ast.this_node.str]._Typename;
+        switch (ast.this_node.type)
+        {
+        case TOK_STRING:
+            return "string";
+        
+        case TOK_INTEGER:
+            return "int";
+        
+        case TOK_DOUBLE:
+            return "double";
+        
+        case TOK_CHARTER:
+            return "char";
+        
+        default:
+            throw CompileError("Unknown Constant:" + TOKEN_VALUE_DESCRIPTION[ast.this_node.type]);
+            break;
+        }
+    }else if(ast.nodeT == ExpressionStatement){
+        if(ast.nodeT == TOK_DOT){
+            return returnFirst(type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]));
+        }else if(ast.nodeT == TOK_COLON){
+            return ast.node[0].this_node.str; // 送 业 绩
+        }else{
+            if(guessType(ast.node[0]) == "string" || guessType(ast.node[1]) == "string") return "string";
+            return guessType(ast.node[0]);
+        }
+    }
+}
+
+addr_t getMemberSize(ASTree ast){
+    return type_pool[guessType(ast)].size;
+}
 
 void InitCompiler(){
     ConstPool_Apis::Init(cp);
@@ -198,7 +246,7 @@ ASMBlock dumpToAsm(ASTree ast){
         if(args.nodeT == NormalStatement && args.this_node.type == TOK_ARGSTATEMENT){
             for(int i = 0;i < args.node.size();i++){
                 asb += dumpToAsm(args.node[i]);
-                asb.genCommand("push").genArg(to_string(getLastUsingRegId())).push();
+                asb.genCommand("push").genArg("[" + to_string(getLastUsingRegId()) + "]").genArg(to_string(getMemberSize(args.node[i]))).push();
             }
         }
         return asb.genCommand("call").genArg(func_name);
@@ -253,6 +301,7 @@ ASMBlock dumpToAsm(ASTree ast){
                     else throw CompileError("Compiler doesn't support init value now"); // TODO: Add init value support
                 }
             }
+            type_pool["ptr_" + struct_name] = TypeName("ptr_"+struct_name,__BASIC_8BYTE);
             return ASMBlock();
         }
         if(ast.this_node.str == "func"){
@@ -261,6 +310,9 @@ ASMBlock dumpToAsm(ASTree ast){
             if(ast.node[1].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
             function_table[fdef] = ast.node[1];
             return ASMBlock();
+        }
+        if(type_pool.find(ast.this_node.str) != type_pool.end()){
+
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
