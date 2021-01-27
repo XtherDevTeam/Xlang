@@ -97,19 +97,22 @@ class Symbol{
     Symbol(){}
 };
 
-typedef class Function{
+typedef class Function_{
     public:
     string funcname;
     TypeName type;
-    Function(){}
-    Function(string s,TypeName t){
+    Function_(){}
+    Function_(string s,TypeName t){
         funcname = s;
         type = t;
+    }
+    string getRealname(){
+        return "_" + type.name + funcname;
     }
 } function_definition;
 
 map<string,Symbol> symbol_table;
-map<function_definition,ASTree> function_table;
+map<string,ASTree> function_table;
 
 string getFunctionRealName(ASTree a,TypeName& this_scope){
     if(!ASTree_APIs::MemberExpression::hasFunctionCallStatement(a))  return ""; // It's a stupid fix.But,It's work now.
@@ -153,13 +156,6 @@ namespace ConstPool_Apis
     }
 } // namespace ConstPool_Apis
 
-string returnFirst(TypeName t){
-    for(auto i = type_pool.begin();i != type_pool.end();i++){
-        if(t.name == i->second.name && t.size == i->second.size && t.type == i->second.type) return i->first;
-    }
-    throw ParserError("Typename not found!");
-}
-
 string guessType(ASTree ast){
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_ID && symbol_table.find(ast.this_node.str) != symbol_table.end())  return symbol_table[ast.this_node.str]._Typename;
@@ -183,7 +179,7 @@ string guessType(ASTree ast){
         }
     }else if(ast.nodeT == ExpressionStatement){
         if(ast.nodeT == TOK_DOT){
-            return returnFirst(type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]));
+            return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
         }else if(ast.nodeT == TOK_COLON){
             return ast.node[0].this_node.str; // 送 业 绩
         }else{
@@ -290,7 +286,7 @@ ASMBlock dumpToAsm(ASTree ast){
                     // TODO: add function definition processing core
                     string real_funcname = "_@" + struct_name + "_" + contents.node[i].node[0].node[0].this_node.str;
                     if(contents.node[i].node[1].nodeT != BlockStatement) throw CompileError("func definition statement must have a codeblock!");
-                    function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str])] = contents.node[i].node[1];
+                    function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str]).getRealname()] = contents.node[i].node[1];
                     continue;
                 }
                 if(type_pool.find(contents.node[i].this_node.str) == type_pool.end()) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
@@ -308,7 +304,7 @@ ASMBlock dumpToAsm(ASTree ast){
             string real_funcname = ast.node[0].node[0].this_node.str;
             function_definition fdef(real_funcname,type_pool[ast.node[0].this_node.str]);
             if(ast.node[1].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
-            function_table[fdef] = ast.node[1];
+            function_table[fdef.getRealname()] = ast.node[1];
             return ASMBlock();
         }
         if(type_pool.find(ast.this_node.str) != type_pool.end()){
