@@ -79,6 +79,8 @@ map<string,TypeName> type_pool;
  * 那函数在全局符号表内将会显示为:_@test_fuckcpp
  */
 
+addr_t sp;
+
 enum SymbolType{
     Variable,
     Function,
@@ -91,8 +93,10 @@ class Symbol{
     string _Typename;
     size_t frame_position;
     Symbol(string typename_){
+        frame_position = sp;
         _Typename = typename_;
         if(type_pool.find(_Typename) == type_pool.end()) throw CompileError("Undefined Typename as " + _Typename);
+        sp += type_pool[_Typename].size;
     }
     Symbol(){}
 };
@@ -261,19 +265,23 @@ ASMBlock dumpToAsm(ASTree ast){
             else if(ast.this_node.type == TOK_MULT) ab.genCommand("mul");
             else if(ast.this_node.type == TOK_DIV) ab.genCommand("div");
             // Xlang变量的dumpASM会传地址
+            // 加减乘除默认8byte运算
             if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
             else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
-            else ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
+            else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
+            else throw CompileError("TypeError: 加减乘除仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator only support basic types,if you want to let the vm crash then don't do it.");
             if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
             else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
-            else ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
+            else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
+            else throw CompileError("TypeError: 加减乘除仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator only support basic types,if you want to let the vm crash then don't do it.");
             RegState[getLastUsingRegId() - 1] = false;
             RegState[getLastUsingRegId() - 1] = false;
             return ab;
         }
         if(ast.this_node.type == TOK_DOT){
+            // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).push();
+            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).push();
         }
     }
     if(ast.nodeT == NormalStatement){
@@ -308,7 +316,19 @@ ASMBlock dumpToAsm(ASTree ast){
             return ASMBlock();
         }
         if(type_pool.find(ast.this_node.str) != type_pool.end()){
-
+            TypeName& typen = type_pool[ast.this_node.str];
+            ASMBlock asb;
+            for(int i = 0;i < ast.node.size();i++){
+                if(ast.node[i].nodeT == Id){
+                    symbol_table[ast.node[i].this_node.str] = Symbol(typen.name);
+                }
+                if(ast.node[i].nodeT == ExpressionStatement && ast.node[i].this_node.type == TOK_EQUAL){
+                    // has init value
+                    asb += dumpToAsm(ast.node[i].node[1]);
+                    symbol_table[ast.node[i].node[0].this_node.str] = Symbol(typen.name);
+                    asb.genCommand("mov_m").genArg(to_string(symbol_table[ast.node[i].node[0].this_node.str].frame_position)).genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg(to_string(typen.size));
+                }
+            }
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
