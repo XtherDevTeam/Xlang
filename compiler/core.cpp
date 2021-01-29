@@ -272,6 +272,7 @@ struct ASM_Command{
 class ASMBlock{
     ASM_Command temp;
     public:
+    string name;
     vector<ASM_Command> lists;
     ASMBlock(){}
     void operator+=(ASMBlock o){
@@ -330,7 +331,7 @@ class ASTree{
         }
         cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "},\n";
     }
-    ASTree(Lexer &lexer){
+    ASTree(Lexer lexer){
         lexer.Reset(); // reset lexer to first token
         Token current_tok = lexer.getNextToken();
         if(lexer.IsExpression()){
