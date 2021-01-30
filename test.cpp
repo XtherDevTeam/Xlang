@@ -3,6 +3,8 @@ using namespace std;
 
 int main(){
     InitCompiler();
-    function_table[function_definition("_less",type_pool["int"]).getRealname()].block_statement = ASTree();
-    cout << funcnameInTab("_less");
+    string s;
+    getline(cin,s);
+    Lexer lex(s);
+    cout << dumpToAsm(ASTree(s)).toString() << endl;
 }

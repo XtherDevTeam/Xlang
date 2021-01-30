@@ -264,45 +264,6 @@ string emptyStr(int size){
     return s;
 }
 
-struct ASM_Command{
-    string Main;
-    vector<string> args;
-};
-
-class ASMBlock{
-    ASM_Command temp;
-    public:
-    string name;
-    vector<ASM_Command> lists;
-    ASMBlock(){}
-    void operator+=(ASMBlock o){
-        for(int i = 0;i < o.lists.size();i++){
-            lists.push_back(o.lists[i]);
-        }
-    }
-    ASM_Command& operator[](int index){return lists[index];}
-    ASMBlock& genCommand(string s){
-        if(temp.Main != ""){
-            lists.push_back(temp);
-            temp.Main = "";
-            temp.args.clear();
-        }
-        temp.Main = s;
-        return *this;
-    }
-    ASMBlock& genArg(string s){
-        if(temp.Main == ""){throw ParserError("You must make a command beforce add arg.");}
-        temp.args.push_back(s);
-        return *this;
-    }
-    ASMBlock& push(){
-        lists.push_back(temp);
-        temp.Main = "";
-        temp.args.clear();
-        return *this;
-    }
-};
-
 class ASTree{
     public:
     int nodeT;
