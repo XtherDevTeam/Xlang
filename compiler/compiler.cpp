@@ -101,6 +101,8 @@ class TypeName{
     TypeName(string name,VarType type){
         this->name = name;
         this->type = type;
+        if(type == __BASIC_8BYTE) this->size = 8;
+        if(type == __BASIC_1BYTE) this->size = 1;
     }
     void InsertToObject(string s,TypeName t){
         size += t.size;
@@ -361,22 +363,22 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             else if(ast.this_node.type == TOK_MIN) ab.genCommand("min");
             // Xlang变量的dumpASM会传地址
             // 加减乘除默认8byte运算
-            if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
+            if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
             else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
             else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
-            if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
+            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
             else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
             else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
             RegState[getLastUsingRegId() - 1] = false;
             RegState[getLastUsingRegId() - 1] = false;
-            return ab;
+            return ab.push();
         }
         if(ast.this_node.type == TOK_DOT){
             // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp");
+            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp").push();
         }
     }
     if(ast.nodeT == BlockStatement){
@@ -436,18 +438,21 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
                     // has init value
                     asb += dumpToAsm(ast.node[i].node[1]);
                     if(mode){
-                        string realarg0 = "reg" + to_string(cpsp);
-                        if(ast.node[i].node[0].nodeT == TOK_INTEGER || ast.node[i].node[0].nodeT == TOK_DOUBLE || ast.node[i].node[0].nodeT == TOK_CHARTER ) /*do nothing*/;
+                        string realarg0 = "reg" + to_string(getLastUsingRegId());
+                        //cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] << endl;
+                        if(ast.node[i].node[1].this_node.type == TOK_INTEGER || ast.node[i].node[1].this_node.type == TOK_DOUBLE || ast.node[i].node[1].this_node.type == TOK_CHARTER ) /*do nothing*/;
                         else realarg0 = "[" + realarg0 + "]";
                         global_symbol_table[ast.node[i].node[0].this_node.str].frame_position = cp.items[cp.count];
-                        cpsp+=typen.size;
                         global_symbol_table[ast.node[i].node[0].this_node.str]._Typename = typen.name;
+                        //cout << "BUGHERE:" << typen.name << endl;
                         ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size);
-                        asb.genCommand("mov_m").genArg(realarg0).genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg(to_string(typen.size));
+                        asb.genCommand("mov_m").genArg("[" + to_string(cp.items[cp.count - 1]) + "]");
+                        asb.genArg(realarg0);
+                        asb.genArg(to_string(typen.size));
                         continue;
                     }
                     string realarg0 = "reg" + to_string(getLastUsingRegId());
-                    if(ast.node[i].node[0].nodeT == TOK_INTEGER || ast.node[i].node[0].nodeT == TOK_DOUBLE || ast.node[i].node[0].nodeT == TOK_CHARTER ) /* do nothing*/;
+                    if(ast.node[i].node[1].this_node.type  == TOK_INTEGER || ast.node[i].node[1].this_node.type  == TOK_DOUBLE || ast.node[i].node[1].this_node.type  == TOK_CHARTER ) /* do nothing*/;
                     else realarg0 = "[" + realarg0 + "]";
                     symbol_table[ast.node[i].node[0].this_node.str] = Symbol(typen.name);
                     asb.genCommand("push").genArg(realarg0).genArg(to_string(typen.size));

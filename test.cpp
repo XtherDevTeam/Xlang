@@ -7,5 +7,5 @@ int main(){
     string s;
     getline(cin,s);
     Lexer lex(s);
-    cout << dumpToAsm(ASTree(s)).toString() << endl;
+    cout << dumpToAsm(ASTree(s),1).toString() << endl;
 }
