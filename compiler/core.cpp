@@ -336,6 +336,7 @@ class ASTree{
             }
             nodeT=BlockStatement;
             this_node = Token(TOK_BBRACKET ,"{}");
+            if(current_str == "") return;
             Lexer temp_lexer(current_str);
             node.push_back( ASTree(temp_lexer) );
             return;
@@ -390,6 +391,11 @@ class ASTree{
                     sb = lexer.position;
                 }
                 if(tok.type == TOK_BLOCK){
+                    /*cout << "皇帝的新tok.str >>>" << tok.str << (tok.str == "") << endl;
+                    if(tok.str == ""){
+                        sb = lexer.position;
+                        continue;
+                    }*/
                     string s = lexer.Text.substr(sb,lastTokPosition - sb);
                     if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
                     Lexer templex( "{"+tok.str+"}" );
