@@ -7,5 +7,11 @@ int main(){
     string s;
     getline(cin,s);
     Lexer lex(s);
-    cout << dumpToAsm(ASTree(s),1).toString() << endl;
+    try{
+        cout << dumpToAsm(ASTree(s),1).toString() << endl;
+    }catch (CompileError e){
+        e.what();
+    }catch(ParserError e){
+        e.what();
+    }
 }
