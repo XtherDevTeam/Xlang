@@ -25,6 +25,7 @@ class ASMBlock{
     vector<ASM_Command> lists;
     ASMBlock(){}
     void operator+=(ASMBlock o){
+        if(o.lists.empty()) return; 
         for(int i = 0;i < o.lists.size();i++){
             lists.push_back(o.lists[i]);
         }
@@ -471,7 +472,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             return asb;
         }
         if(ast.this_node.str == "for"){
-            
+
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
