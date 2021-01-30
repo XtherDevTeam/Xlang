@@ -13,7 +13,7 @@ struct ASM_Command{
         }
         string ret = ss.str();
         ret.erase(ret.length() - 1);
-        ret += ";";
+        ret += ";\n";
         return ret;
     }
 };
