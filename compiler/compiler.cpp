@@ -282,7 +282,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
         return asb.genCommand("call").genArg(funcnameInTab(func_name));
     }
     if(ast.nodeT == ExpressionStatement){
-        if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV){
+        if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
             ASMBlock ab;
             ab += dumpToAsm(ast.node[0]);
             if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genCommand("pop").genArg("reg" + to_string(getLastUsingRegId()));
@@ -294,16 +294,21 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             else if(ast.this_node.type == TOK_MINUS) ab.genCommand("sub");
             else if(ast.this_node.type == TOK_MULT) ab.genCommand("mul");
             else if(ast.this_node.type == TOK_DIV) ab.genCommand("div");
+            else if(ast.this_node.type == TOK_2EQUAL) ab.genCommand("equ");
+            else if(ast.this_node.type == TOK_MAXEQUAL) ab.genCommand("maxeq");
+            else if(ast.this_node.type == TOK_MINEQUAL) ab.genCommand("mineq");
+            else if(ast.this_node.type == TOK_MAX) ab.genCommand("max");
+            else if(ast.this_node.type == TOK_MIN) ab.genCommand("min");
             // Xlang变量的dumpASM会传地址
             // 加减乘除默认8byte运算
             if(ast.node[0].nodeT == TOK_INTEGER || ast.node[0].nodeT == TOK_DOUBLE || ast.node[0].nodeT == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
             else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
             else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
-            else throw CompileError("TypeError: 加减乘除仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator only support basic types,if you want to let the vm crash then don't do it.");
+            else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
             if(ast.node[1].nodeT == TOK_INTEGER || ast.node[1].nodeT == TOK_DOUBLE || ast.node[1].nodeT == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
             else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
             else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
-            else throw CompileError("TypeError: 加减乘除仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator only support basic types,if you want to let the vm crash then don't do it.");
+            else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
             RegState[getLastUsingRegId() - 1] = false;
             RegState[getLastUsingRegId() - 1] = false;
             return ab;
