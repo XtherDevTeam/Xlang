@@ -209,7 +209,7 @@ string getFunctionRealName(ASTree a,TypeName& this_scope){
 string getFunctionRealName(ASTree a){
     if(a.nodeT == FunctionCallStatement) return "_"+a.this_node.str;
     if(a.nodeT != ExpressionStatement) return "";
-    if(type_pool.find(a.node[0].this_node.str) == type_pool.end()) return "";
+    if(type_pool.count(a.node[0].this_node.str) == 0) return "";
     return getFunctionRealName(a,type_pool[a.node[0].this_node.str]);
 }
 
@@ -248,7 +248,7 @@ namespace ConstPool_Apis
 
 string guessType(ASTree ast){
     if(ast.nodeT == Id){
-        if(ast.this_node.type == TOK_ID && symbol_table.find(ast.this_node.str) != symbol_table.end())  return symbol_table[ast.this_node.str]._Typename;
+        if(ast.this_node.type == TOK_ID && symbol_table.count(ast.this_node.str))  return symbol_table[ast.this_node.str]._Typename;
         switch (ast.this_node.type)
         {
         case TOK_STRING:
@@ -401,7 +401,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
                     function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str]).getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
                     continue;
                 }
-                if(type_pool.find(contents.node[i].this_node.str) == type_pool.end()) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
+                if(type_pool.count(contents.node[i].this_node.str) == 0) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
                 TypeName this_type = type_pool[contents.node[i].this_node.str];
                 ASTree& temp_ast = contents.node[i];
                 for(int j = 0;j < temp_ast.node.size();j++){
@@ -420,7 +420,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             function_table[fdef.getRealname()] = function_block(ast.node[1],ast.node[2]);
             return ASMBlock();
         }
-        if(type_pool.find(ast.this_node.str) != type_pool.end()){
+        if(type_pool.count(ast.this_node.str)){
             TypeName& typen = type_pool[ast.this_node.str];
             ASMBlock asb;
             for(int i = 0;i < ast.node.size();i++){
