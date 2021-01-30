@@ -227,7 +227,7 @@ ConstantPool cp;
 
 namespace ConstPool_Apis
 {
-    void Init(ConstantPool cpool,size_t size = 1024){
+    void Init(ConstantPool& cpool,size_t size = 1024){
         cpool.pool = (char*)realloc(cpool.pool,size);
         cpool.items = (size_t*)malloc(1024);
         memset(cpool.items,0,1024);
@@ -315,8 +315,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             return ASMBlock().genCommand("mov").genArg(ast.this_node.str).genArg("reg" + to_string(getLastUsingRegId())).push();
         }
         if(ast.this_node.type == TOK_STRING){
-            return ASMBlock().genCommand("@constant_pool").genArg(ast.this_node.str)\
-            .genCommand("mov").genArg(to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).genArg("reg" + to_string(getLastUsingRegId())).push();
+            return ASMBlock().genCommand("mov").genArg(to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).genArg("reg" + to_string(getLastUsingRegId())).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
             return ASMBlock().genCommand("mov").genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genArg("reg" + to_string(getLastUsingRegId())).genCommand("sub").genArg("reg"+to_string(getLastUsingRegId())).genArg("regfp").push();

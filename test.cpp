@@ -3,6 +3,7 @@ using namespace std;
 
 int main(){
     InitCompiler();
+    ConstPool_Apis::Init(cp,1024);
     string s;
     getline(cin,s);
     Lexer lex(s);
