@@ -147,6 +147,7 @@ string getFunctionRealName(ASTree a,TypeName& this_scope){
 }
 
 string getFunctionRealName(ASTree a){
+    if(a.nodeT == FunctionCallStatement) return "_"+a.this_node.str;
     if(a.nodeT != ExpressionStatement) return "";
     if(type_pool.find(a.node[0].this_node.str) == type_pool.end()) return "";
     return getFunctionRealName(a,type_pool[a.node[0].this_node.str]);
@@ -159,7 +160,7 @@ ASTree getFunctionCallArgs(ASTree ast){
 
 string funcnameInTab(string realname){
     for(auto i = function_table.begin();i != function_table.end();i++){
-        if(i->first.substr(0,realname.length() - 1) == realname) return i->first;
+        if(i->first.substr(0,realname.length()) == realname) return i->first;
     }
     throw CompileError("Cannot find current overload in function table");
 }
@@ -215,6 +216,8 @@ string guessType(ASTree ast){
             if(guessType(ast.node[0]) == "string" || guessType(ast.node[1]) == "string") return "string";
             return guessType(ast.node[0]);
         }
+    }else if(ast.nodeT == FunctionCallStatement){
+        return funcnameInTab(getFunctionRealName(ast)).substr(getFunctionRealName(ast).length());
     }
 }
 
