@@ -479,6 +479,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
     }
     if(ast.nodeT == BlockStatement){
         ASMBlock ret;
+        if(ast.node.empty()) return ret;
         for(int i = 0;i < ast.node.size();i++) ret += dumpToAsm(ast.node[i]);
         return ret;
     }
