@@ -460,6 +460,19 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             }
             return asb.push();
         }
+        if(ast.this_node.str == "if"){
+            // regflag
+            ASMBlock asb;
+            if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad If Statement");
+            ASMBlock tmpblock = dumpToAsm(ast.node[1]);
+            asb += dumpToAsm(ast.node[0]);
+            asb.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(tmpblock.lists.size()));
+            asb += tmpblock;
+            return asb;
+        }
+        if(ast.this_node.str == "for"){
+            
+        }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
     if(ast.nodeT == BlockStatement){
