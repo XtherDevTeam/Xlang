@@ -541,7 +541,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for_blockstmt = dumpToAsm(ast.node[1]);
 
             endofblock = dumpToAsm(ast.node[0].node[2]);
-            endofblock.genCommand("_$fakecommand_goto_loop_continue").push();
+            endofblock.genCommand("_$fakecommand_loop_continue").push();
 
             boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(for_blockstmt.lists.size() + endofblock.lists.size()));
 
@@ -570,7 +570,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("_$fakecommand_goto_for_end").push();
         }
         if(ast.this_node.str == "continue"){
-            return ASMBlock().genCommand("_$fakecommand_for_continue").push();
+            return ASMBlock().genCommand("_$fakecommand_loop_continue").push();
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
