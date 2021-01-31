@@ -1,7 +1,13 @@
-struct point{
-    int x,y;
+struct pointer{
+    int x1,y1;
     func int main(int:argc){
         int i=0;
         i=1;
     };
 };
+struct point{
+    int x,y;
+    pointer ptr;
+};
+point pubg;
+pubg.ptr.main(1);

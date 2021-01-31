@@ -117,23 +117,21 @@ class Lexer{
         position = 0;
     }
     bool IsExpression(){
-
         int flag1=0,flag2=0,flag3=0,iscontent = 0;
         bool starflag = 0,isexpr = 0;
-        if(Text[0] == '*') starflag = true;
-        for(int i = ( (starflag) ? 1 : 0 );i < Text.length();i++){
+        for(int i = 0;i < Text.length();i++){
                  if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
             else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
             else if(Text[i] == '"') iscontent = !iscontent;
             //cout << "\033[30m" << Text[i] << iscontent << flag1 << flag2 << flag3 << ((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0) << "\033[0m" << endl;
-            if((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0){
+            if(((Text[i] == ' ' && Text[i-1] <= 'z' && Text[i-1] >= 'A' && Text[i+1] <= 'z' && Text[i+1] >= 'A') || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0){
                 return false;
             }
             if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
                 if( (i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')       ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || ( Text[i] == '.' && Text[i-1] < '0' && Text[i-1] > '9') || Text[i] == ':')
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || ( Text[i] == '.' && (Text[i-1] < '0' && Text[i-1] > '9') == false) || Text[i] == ':')
                 {
                     isexpr = 1;
                 }
@@ -430,9 +428,7 @@ namespace ASTree_APIs{
             if(ast.node.empty()) return false;
             if(ast.nodeT == FunctionCallStatement) return true;
             if(ast.nodeT == ExpressionStatement && ast.this_node.type == TOK_DOT){
-                for(int i = 0;i < ast.node.size();i++){
-                    if(hasFunctionCallStatement(ast.node[i])) return true;
-                }
+                if(hasFunctionCallStatement(ast.node[1])) return true;
             }
             return false;
         }

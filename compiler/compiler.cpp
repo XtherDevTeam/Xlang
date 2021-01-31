@@ -61,6 +61,8 @@ class ASMBlock{
     }
 };
 
+string guessType(ASTree ast);
+
 enum dumpToAsmState{
     CaseMode,
     GlobalMode,
@@ -216,11 +218,12 @@ string getFunctionRealName(ASTree a,TypeName& this_scope){
     }
 }
 
+
 string getFunctionRealName(ASTree a){
     if(a.nodeT == FunctionCallStatement) return "_"+a.this_node.str;
     if(a.nodeT != ExpressionStatement) return "";
-    if(type_pool.count(a.node[0].this_node.str) == 0) return "";
-    return getFunctionRealName(a,type_pool[a.node[0].this_node.str]);
+    if(type_pool.count((a.node[0].this_node.str)) == 0) return "";
+    return getFunctionRealName(a,type_pool[guessType(a.node[0])]);
 }
 
 ASTree getFunctionCallArgs(ASTree ast){
@@ -259,6 +262,7 @@ namespace ConstPool_Apis
 string guessType(ASTree ast){
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_ID && symbol_table.count(ast.this_node.str))  return symbol_table[ast.this_node.str]._Typename;
+        else if(global_symbol_table.count(ast.this_node.str)) return global_symbol_table[ast.this_node.str]._Typename;
         switch (ast.this_node.type)
         {
         case TOK_STRING:
@@ -279,7 +283,9 @@ string guessType(ASTree ast){
         }
     }else if(ast.nodeT == ExpressionStatement){
         if(ast.nodeT == TOK_DOT){
-            return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
+            if(symbol_table.count(ast.node[0].this_node.str)) return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
+            else if(global_symbol_table.count(ast.node[0].this_node.str)) return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
+            else throw CompileError(ast.node[0].this_node.str + " doesn't exist");
         }else if(ast.nodeT == TOK_COLON){
             return ast.node[0].this_node.str; // 送 业 绩
         }else{
@@ -346,7 +352,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         ASTree args = getFunctionCallArgs(ast);
         ASMBlock asb;
         asb.genCommand("save").push();
-        if(args.nodeT == NormalStatement && args.this_node.type == TOK_ARGSTATEMENT){
+        if(args.nodeT == Args){
             ASTree type_a_names = function_table[funcnameInTab(func_name)].type_and_args;
             if(args.node.size() != type_a_names.node.size()) throw CompileError("Too few/much args have been gave.");
             for(int i = 0;i < args.node.size();i++){
@@ -354,7 +360,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                 asb.genCommand("push").genArg("[" + to_string(getLastUsingRegId()) + "]").genArg(to_string(getMemberSize(args.node[i]))).push();
             }
         }
-        return asb.genCommand("call").genArg(funcnameInTab(func_name));
+        return asb.genCommand("call").genArg(funcnameInTab(func_name)).push();
     }
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
@@ -438,6 +444,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     else throw CompileError("Compiler doesn't support init value now"); // TODO: Add init value support
                 }
             }
+            type_pool[struct_name] = t;
             return ASMBlock();
         }
         if(ast.this_node.str == "func"){
@@ -454,9 +461,10 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for(int i = 0;i < ast.node.size();i++){
                 if(ast.node[i].nodeT == Id){
                     if(mode){
-                        ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size);
+                        int cp_adr = ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size);
                         global_symbol_table[ast.node[i].this_node.str].frame_position = cp.items[cp.count]; // WARN: 挖坑
                         global_symbol_table[ast.node[i].this_node.str]._Typename = typen.name;
+                        asb.genCommand("mov_m").genArg("[" + to_string(cp.items[cp_adr]) + "]").genArg(to_string(0)).genArg(to_string(cp.items[cp.count] - cp.items[cp_adr]));
                         continue;
                     }
                     symbol_table[ast.node[i].this_node.str] = Symbol(typen.name);
