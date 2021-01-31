@@ -418,7 +418,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             TypeName t(struct_name,__OBJECT);
             ASTree& contents = ast.node[1];
             type_pool["ptr_" + struct_name] = TypeName("ptr_"+struct_name,__BASIC_8BYTE);
-            type_pool["ptr_" + struct_name].size = 0;
+            type_pool["ptr_" + struct_name].size = 8;
             for(int i = 0;i < contents.node.size();i++){
                 if(contents.node[i].this_node.str == "func"){
                     // TODO: add function definition processing core
