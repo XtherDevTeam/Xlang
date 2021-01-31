@@ -407,6 +407,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         ASMBlock asb;
         if(ast.node.empty()) return ASMBlock();
         for(int i = 0;i < ast.node.size();i++){
+            if(ast.node[i].nodeT == Unused) break;
             asb += dumpToAsm(ast.node[i]);
         }
         return asb;
