@@ -623,9 +623,11 @@ vector<ASMBlock> CompileProcess(string code){
         asb = ASMBlock();
         symbol_table = i->second.syminfunc;
         sp = i->second.restore_symboltop;
-        asb = dumpToAsm(i->second.block_statement,true);
+        asb = dumpToAsm(i->second.block_statement);
         asb.name = i->first;
         asblst.push_back( asb );
+        sp = 0;
+        symbol_table.clear();
     }
     return asblst;
 }
