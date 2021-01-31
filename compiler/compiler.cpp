@@ -543,7 +543,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             endofblock = dumpToAsm(ast.node[0].node[2]);
             endofblock.genCommand("_$fakecommand_loop_continue").push();
 
-            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(for_blockstmt.lists.size() + endofblock.lists.size()));
+            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(for_blockstmt.lists.size() + endofblock.lists.size())).push();
 
             asb += inital_val;
             asb += boolean_expression;
