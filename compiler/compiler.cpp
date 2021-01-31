@@ -184,6 +184,7 @@ typedef class Function_{
 
 class function_block{
     public:
+    addr_t restore_symboltop;
     ASTree type_and_args;
     ASTree block_statement;
     map<string,Symbol> syminfunc;
@@ -191,9 +192,11 @@ class function_block{
         addr_t tsp = sp;sp = 0;
         type_and_args = args;
         block_statement = bls;
+        if(type_and_args.node.empty()) return; // no args here
         for(int i = 0;i < type_and_args.node.size();i++){
             syminfunc[type_and_args.node[i].node[1].this_node.str] = Symbol(type_and_args.node[i].node[0].this_node.str);
         }
+        restore_symboltop = sp;
         sp = tsp;
     }
     function_block(){}
@@ -323,19 +326,19 @@ VarType getMemberType(ASTree ast){
 ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in global,it's global mode(1)*/){
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_INTEGER || ast.this_node.type == TOK_DOUBLE){
-            return ASMBlock().genCommand("mov").genArg(ast.this_node.str).genArg("reg" + to_string(getLastUsingRegId())).push();
+            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(ast.this_node.str).push();
         }
         if(ast.this_node.type == TOK_STRING){
-            return ASMBlock().genCommand("mov").genArg(to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).genArg("reg" + to_string(getLastUsingRegId())).push();
+            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genArg("reg" + to_string(getLastUsingRegId())).genCommand("sub").genArg("reg"+to_string(getLastUsingRegId())).genArg("regfp").push();
+            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genCommand("sub").genArg("reg"+to_string(getLastUsingRegId())).genArg("regfp").push();
         }
         if(global_symbol_table.find(ast.this_node.str) != global_symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg(to_string(global_symbol_table[ast.this_node.str].frame_position)).genArg("reg" + to_string(getLastUsingRegId()));
+            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(global_symbol_table[ast.this_node.str].frame_position)).push();
         }
-        if(ast.this_node.str == "true")  return ASMBlock().genCommand("mov").genArg("1").genArg("reg" + to_string(getLastUsingRegId())).push();
-        if(ast.this_node.str == "false")  return ASMBlock().genCommand("mov").genArg("0").genArg("reg" + to_string(getLastUsingRegId())).push();
+        if(ast.this_node.str == "true")  return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg("1").push();
+        if(ast.this_node.str == "false")  return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg("0").push();
     }
     if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast)){
         string func_name = getFunctionRealName(ast);
@@ -395,7 +398,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             RegState[getLastUsingRegId()] = true;
             asb += dumpToAsm(ast.node[1]);
             RegState[getLastUsingRegId() - 1] = false;
-            asb.genCommand("mov_m").genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg(to_string(getMemberSize(ast.node[1]))).push();
+            asb.genCommand("mov_m").genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg("[reg" + to_string(getLastUsingRegId()+1) + "]").genArg(to_string(getMemberSize(ast.node[1]))).push();
             return asb;
         }
     }
@@ -435,7 +438,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             if(mode != true) throw CompileError("Cannot create a function in cast mode.");
             string real_funcname = ast.node[0].node[0].this_node.str;
             function_definition fdef(real_funcname,type_pool[ast.node[0].this_node.str]);
-            if(ast.node[1].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
+            if(ast.node[2].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
             function_table[fdef.getRealname()] = function_block(ast.node[1],ast.node[2]);
             return ASMBlock();
         }
@@ -600,9 +603,9 @@ vector<ASMBlock> CompileProcess(string code){
         else if(code[i] == '[') brack2++; else if(code[i] == ']') brack2--;
         else if(code[i] == '{') brack3++; else if(code[i] == '}') brack3--;
         if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0 && !intext) {
-            cout << "HERE:" << tmp;
+            //cout << "HERE:" << tmp;
             Lexer lex(tmp);
-            asb += dumpToAsm(ASTree(lex));
+            asb += dumpToAsm(ASTree(lex),true);
             tmp = "";
             continue;
         }
@@ -614,9 +617,11 @@ vector<ASMBlock> CompileProcess(string code){
     asblst.push_back(asb);
     for(auto i = function_table.begin();i != function_table.end();i++){
         asb = ASMBlock();
-        asb = dumpToAsm(i->second.block_statement);
+        symbol_table = i->second.syminfunc;
+        sp = i->second.restore_symboltop;
+        asb = dumpToAsm(i->second.block_statement,true);
         asb.name = i->first;
-        asblst .push_back( asb );
+        asblst.push_back( asb );
     }
     return asblst;
 }
