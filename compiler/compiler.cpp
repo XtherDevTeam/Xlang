@@ -66,7 +66,7 @@ class CompileError{
     public:
     CompileError(string msg){this->msg = msg;}
     void what(){
-        cerr << "\033[31m[CompileError] There was an error has been throwed in compile process:\n" << msg << "\033[0m\n";
+        cerr << "\033[31m[CompileError]\033[0m There was an error has been throwed in compile process:\n" << msg << "\033[0m\n";
     }
 };
 
@@ -467,13 +467,34 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             ASMBlock asb;
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad If Statement");
             ASMBlock tmpblock = dumpToAsm(ast.node[1]);
+            tmpblock.genCommand("_$fakecommand_goto_statement_end").push(); // end_pos - now_pos = goto command
             asb += dumpToAsm(ast.node[0].node[0]);
             asb.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(tmpblock.lists.size()+1)).push();
             asb += tmpblock;
+            if(ast.node.size() <= 2) return asb;
+            for(int i = 2;i < ast.node.size();i+=3){
+                if(ast.node[i].this_node.str == "elif"){
+                    ASMBlock tmpblock = dumpToAsm(ast.node[i+2]);
+                    tmpblock.genCommand("_$fakecommand_goto_statement_end").push(); // end_pos - now_pos = goto command
+                    asb += dumpToAsm(ast.node[i+1].node[0]);
+                    asb.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(tmpblock.lists.size()+1)).push();
+                    asb += tmpblock;
+                }else if(ast.node[i].this_node.str == "else"){
+                    asb += dumpToAsm(ast.node[i+1]);
+                }else{
+                    throw CompileError("Unknown Command:" + ast.node[i].this_node.str);
+                }
+            }
+            for(int i = 0;i < asb.lists.size();i++){
+                if(asb.lists[i].Main == "_$fakecommand_goto_statement_end"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back(to_string( asb.lists.size() - 1 - i + 1 ));
+                }
+            }
             return asb;
         }
         if(ast.this_node.str == "for"){
-
+            
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
