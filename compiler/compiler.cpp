@@ -415,12 +415,17 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             string struct_name = ast.node[0].this_node.str;
             TypeName t(struct_name,__OBJECT);
             ASTree& contents = ast.node[1];
+            type_pool["ptr_" + struct_name] = TypeName("ptr_"+struct_name,__BASIC_8BYTE);
+            type_pool["ptr_" + struct_name].size = 0;
             for(int i = 0;i < contents.node.size();i++){
                 if(contents.node[i].this_node.str == "func"){
                     // TODO: add function definition processing core
                     string real_funcname = "_@" + struct_name + "_" + contents.node[i].node[0].node[0].this_node.str;
-                    if(contents.node[i].node[1].nodeT != BlockStatement) throw CompileError("func definition statement must have a codeblock!");
-                    function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str]).getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
+                    //if(contents.node[i].node[2].nodeT != BlockStatement) throw CompileError("func definition statement must have a codeblock!");
+                    //function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str]).getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
+                    function_definition fdef(real_funcname,type_pool[contents.node[i].node[0].this_node.str]);
+                    if(contents.node[i].node[2].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
+                    function_table[fdef.getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
                     continue;
                 }
                 if(type_pool.count(contents.node[i].this_node.str) == 0) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
@@ -431,7 +436,6 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     else throw CompileError("Compiler doesn't support init value now"); // TODO: Add init value support
                 }
             }
-            type_pool["ptr_" + struct_name] = TypeName("ptr_"+struct_name,__BASIC_8BYTE);
             return ASMBlock();
         }
         if(ast.this_node.str == "func"){

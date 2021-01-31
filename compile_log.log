@@ -1,8 +1,11 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...func int main(int:argc){
+Reading Program to buffer...struct point{
+    int x,y;
+};
+func int main(int:argc){
     int i=0;
-    i=i+1;
+    i=1;
 };
 

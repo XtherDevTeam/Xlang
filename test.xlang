@@ -1,4 +1,7 @@
-func int main(int:argc){
-    int i=0;
-    i=i+1;
+struct point{
+    int x,y;
+    func int main(int:argc){
+        int i=0;
+        i=1;
+    };
 };
