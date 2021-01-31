@@ -389,6 +389,15 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
             return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp").push();
         }
+        if(ast.this_node.type == TOK_EQUAL){
+            ASMBlock asb;
+            asb += dumpToAsm(ast.node[0]);
+            RegState[getLastUsingRegId()] = true;
+            asb += dumpToAsm(ast.node[1]);
+            RegState[getLastUsingRegId() - 1] = false;
+            asb.genCommand("mov_m").genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg("[reg" + to_string(getLastUsingRegId()) + "]").genArg(to_string(getMemberSize(ast.node[1]))).push();
+            return asb;
+        }
     }
     if(ast.nodeT == BlockStatement){
         ASMBlock asb;
