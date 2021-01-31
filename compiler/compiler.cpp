@@ -61,6 +61,12 @@ class ASMBlock{
     }
 };
 
+enum dumpToAsmState{
+    CaseMode,
+    GlobalMode,
+    LoopMode,
+};
+
 class CompileError{
     string msg;
     public:
@@ -312,7 +318,7 @@ VarType getMemberType(ASTree ast){
     return getMemberType(ast,type_pool[ast.node[0].this_node.str]);
 }
 
-ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in global,it's global mode(1)*/){
+ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in global,it's global mode(1)*/){
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_INTEGER || ast.this_node.type == TOK_DOUBLE){
             return ASMBlock().genCommand("mov").genArg(ast.this_node.str).genArg("reg" + to_string(getLastUsingRegId())).push();
@@ -415,7 +421,7 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             return ASMBlock();
         }
         if(ast.this_node.str == "func"){
-            if(mode == false) throw CompileError("Cannot create a function in cast mode.");
+            if(mode != true) throw CompileError("Cannot create a function in cast mode.");
             string real_funcname = ast.node[0].node[0].this_node.str;
             function_definition fdef(real_funcname,type_pool[ast.node[0].this_node.str]);
             if(ast.node[1].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
@@ -494,7 +500,65 @@ ASMBlock dumpToAsm(ASTree ast,bool mode = false/*default is cast mode(0),but in 
             return asb;
         }
         if(ast.this_node.str == "for"){
-            
+            /*
+            for(int i=0,0 == 0,i++)
+            */
+            /*
+            mov 0,reg0;
+            mov_m [0],reg0,8;
+
+            mov 0,reg0;
+            mov 0,reg1;
+            equ reg0,reg1;
+            gt 2;
+            gf 6; // 4 = blocksize(2) + endofblocksize(3) + 1
+
+            add [8],1;
+            goto 1; // blocksize - itself, 2 - 1 = 1
+
+            add reg0,1;
+            add reg1,1;
+            goto -7; // i - 1 - inital_val(2)
+            */
+            ASMBlock asb,inital_val,boolean_expression,for_blockstmt,endofblock;
+            if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad For Statement");
+
+            inital_val = dumpToAsm(ast.node[0].node[0]);
+
+            boolean_expression = dumpToAsm(ast.node[0].node[1]);
+
+            for_blockstmt = dumpToAsm(ast.node[1]);
+
+            endofblock = dumpToAsm(ast.node[2]);
+            endofblock.genCommand("_$fakecommand_goto_loop_continue").push();
+
+            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(for_blockstmt.lists.size() + endofblock.lists.size()));
+
+            asb += inital_val;
+            asb += boolean_expression;
+            asb += for_blockstmt;
+            asb += endofblock;
+
+            for(int i = 0;i < asb.lists.size();i++){
+                if(asb.lists[i].Main == "_$fakecommand_goto_loop_start"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back("-" + to_string( i - 1 - inital_val.lists.size() ));
+                }
+                if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back(to_string( asb.lists.size() - endofblock.lists.size() - i + 1));
+                }
+                if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back(to_string( asb.lists.size() - i ));
+                }
+            }
+        }
+        if(ast.this_node.str == "break"){
+            return ASMBlock().genCommand("_$fakecommand_goto_for_end").push();
+        }
+        if(ast.this_node.str == "continue"){
+            return ASMBlock().genCommand("_$fakecommand_for_continue").push();
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
