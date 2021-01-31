@@ -564,6 +564,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     asb.lists[i].args.push_back(to_string( asb.lists.size() - i ));
                 }
             }
+            return asb;
         }
         if(ast.this_node.str == "break"){
             return ASMBlock().genCommand("_$fakecommand_goto_for_end").push();
