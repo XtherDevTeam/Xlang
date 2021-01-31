@@ -1,0 +1,8 @@
+Xlang Compiler Alpha 0.1
+Powered by xiaokang00010
+Filename -> test.xlang
+Reading Program to buffer...for(int i=0,i<=10,i=i+1){
+    int x;
+    x = x+1;
+};
+

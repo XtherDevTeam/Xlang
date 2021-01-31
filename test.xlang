@@ -1,7 +1,4 @@
-import headers from "vm/packages/vmlib@latest/main.xlang";
-
-func int main(int:argc,ptr_char:argv){
-	ptr_char a="hello,world!\n";
-	VM_DeviceOutput(0,a); // output to basic i/o device
-	return 0;
-}
+for(int i=0,i<=10,i=i+1){
+    int x;
+    x = x+1;
+};

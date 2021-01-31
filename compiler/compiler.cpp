@@ -585,7 +585,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 
 vector<ASMBlock> CompileProcess(string code){
     ASMBlock asb;
-    int intext,block,brack1,brack2,brack3;
+    int intext=0,block=0,brack1=0,brack2=0,brack3=0;
     string tmp;
     for(int i = 0;i < code.length();i++){
         if(code[i] == '\\') {
@@ -594,16 +594,19 @@ vector<ASMBlock> CompileProcess(string code){
             else if(code[i+1] == 'n'){tmp+='\n';i+=2;}
             else continue;
         }
-        else if(code[i] == '\n' || code[i] == '\r') code.erase(i);
+        else if(code[i] == '\n' || code[i] == '\r') continue;
         else if(code[i] == '\"') intext = !intext;
         else if(code[i] == '(') brack1++; else if(code[i] == ')') brack1--;
         else if(code[i] == '[') brack2++; else if(code[i] == ']') brack2--;
         else if(code[i] == '{') brack3++; else if(code[i] == '}') brack3--;
-        else if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0) {
-            asb += dumpToAsm(ASTree(Lexer(tmp)));
+        if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0 && !intext) {
+            cout << "HERE:" << tmp;
+            Lexer lex(tmp);
+            asb += dumpToAsm(ASTree(lex));
             tmp = "";
+            continue;
         }
-        else tmp += code[i];
+        tmp += code[i];
     }
     vector<ASMBlock> asblst;
     // 默认起始点为main函数
