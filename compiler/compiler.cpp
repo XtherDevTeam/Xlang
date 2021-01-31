@@ -541,7 +541,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for_blockstmt = dumpToAsm(ast.node[1]);
 
             endofblock = dumpToAsm(ast.node[0].node[2]);
-            endofblock.genCommand("_$fakecommand_loop_continue").push();
+            endofblock.genCommand("_$fakecommand_goto_loop_start").push();
 
             boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(to_string(for_blockstmt.lists.size() + endofblock.lists.size())).push();
 
@@ -553,7 +553,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for(int i = 0;i < asb.lists.size();i++){
                 if(asb.lists[i].Main == "_$fakecommand_goto_loop_start"){
                     asb.lists[i].Main = "goto";
-                    asb.lists[i].args.push_back("-" + to_string( i - 1 - inital_val.lists.size() ));
+                    asb.lists[i].args.push_back("-" + to_string( (int)(i - 1 - inital_val.lists.size()) ));
                 }
                 if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
                     asb.lists[i].Main = "goto";
@@ -561,6 +561,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                 }
                 if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
                     asb.lists[i].Main = "goto";
+                    //cout << "\033[31mwtf>>" << asb.lists.size() - i << endl;
                     asb.lists[i].args.push_back(to_string( asb.lists.size() - i ));
                 }
             }
