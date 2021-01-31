@@ -19,6 +19,7 @@ int main(){
         code += tmpline + "\n";
     }
     output << code << endl;
+    InitCompiler();
     vector<ASMBlock> asms = CompileProcess(code);
     for(int i = 0;i < asms.size();i=i+1){
         cout << asms[i].toString();
