@@ -20,7 +20,15 @@ int main(){
     }
     output << code << endl;
     InitCompiler();
-    vector<ASMBlock> asms = CompileProcess(code);
+    vector<ASMBlock> asms;
+    try{
+        asms = CompileProcess(code);
+    }
+    catch (CompileError e){
+        e.what();
+    }catch(ParserError e){
+        e.what();
+    }
     for(int i = 0;i < asms.size();i=i+1){
         cout << asms[i].toString();
     }
