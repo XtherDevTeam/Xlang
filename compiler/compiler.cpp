@@ -315,6 +315,8 @@ VarType getMemberType(ASTree ast,TypeName& scope){
     return getMemberType(ast.node[1],scope[ast.node[1].node[0].this_node.str]);
 }
 VarType getMemberType(ASTree ast){
+    if(ast.nodeT == Id && global_symbol_table.count(ast.this_node.str)) return type_pool[global_symbol_table[ast.this_node.str]._Typename].type;
+    else if(symbol_table.count(ast.this_node.str)) return type_pool[symbol_table[ast.this_node.str]._Typename].type;
     return getMemberType(ast,type_pool[ast.node[0].this_node.str]);
 }
 
