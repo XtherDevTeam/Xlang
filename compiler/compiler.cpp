@@ -324,6 +324,7 @@ VarType getMemberType(ASTree ast){
 }
 
 ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in global,it's global mode(1)*/){
+    if(ast.nodeT == Unused) return ASMBlock();
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_INTEGER || ast.this_node.type == TOK_DOUBLE){
             return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(ast.this_node.str).push();
