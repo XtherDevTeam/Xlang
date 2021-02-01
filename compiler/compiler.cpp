@@ -601,6 +601,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 }
 
 vector<ASMBlock> CompileProcess(string code){
+    try{
     ASMBlock asb;
     int intext=0,block=0,brack1=0,brack2=0,brack3=0;
     string tmp;
@@ -640,4 +641,11 @@ vector<ASMBlock> CompileProcess(string code){
         symbol_table.clear();
     }
     return asblst;
+    }
+    catch(CompileError e){
+        e.what();
+    }
+    catch(ParserError e){
+        e.what();
+    }
 }

@@ -21,14 +21,7 @@ int main(){
     output << code << endl;
     InitCompiler();
     vector<ASMBlock> asms;
-    try{
-        asms = CompileProcess(code);
-    }
-    catch (CompileError e){
-        e.what();
-    }catch(ParserError e){
-        e.what();
-    }
+    asms = CompileProcess(code);
     for(int i = 0;i < asms.size();i=i+1){
         cout << asms[i].toString();
     }
