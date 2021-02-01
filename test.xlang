@@ -11,4 +11,4 @@ struct point{
     pointer ptr;
 };
 point pubg;
-pubg.ptr.main(1);
+pubg.ptr.main(1,2);
