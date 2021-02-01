@@ -1,1 +1,9 @@
-ptr_int ptr;
+struct n{
+    int x,y;
+    func int main(int:f){
+        return f;
+    };
+};
+n res;
+int ret=0;
+ret = res.main(114514)+1;

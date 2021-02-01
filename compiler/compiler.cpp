@@ -226,6 +226,9 @@ string getFunctionRealName(ASTree a){
     if(a.nodeT == FunctionCallStatement) return "_"+a.this_node.str;
     if(a.nodeT != ExpressionStatement) return "";
     if(type_pool.count(guessType(a.node[0])) == 0) return "";
+    if(a.node[1].nodeT == FunctionCallStatement){
+        return "_@" + guessType(a.node[0]) + "_" + a.node[1].this_node.str;
+    }
     return getFunctionRealName(a.node[1],type_pool[guessType(a.node[0])]);
 }
 
@@ -360,15 +363,20 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             if(args.node.size() != type_a_names.node.size()) throw CompileError("Too few/much args have been gave.");
             for(int i = 0;i < args.node.size();i++){
                 asb += dumpToAsm(args.node[i]);
-                asb.genCommand("push").genArg("[" + to_string(getLastUsingRegId()) + "]").genArg(to_string(getMemberSize(args.node[i]))).push();
+                string realarg0 = "reg" + to_string(getLastUsingRegId());
+                //cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] << endl;
+                if(ast.node[i].this_node.type == TOK_INTEGER || ast.node[i].this_node.type == TOK_DOUBLE || ast.node[i].this_node.type == TOK_CHARTER ) /*do nothing*/;
+                else realarg0 = "[" + realarg0 + "]";
+                asb.genCommand("push").genArg(realarg0).genArg(to_string(getMemberSize(args.node[i]))).push();
             }
         }
-        cout << "\033[32mGuess Result:\033[0m" << guessType(ast) << " " << getFunctionRealName(ast) << endl;
+        //cout << "\033[32mGuess Result:\033[0m" << guessType(ast) << " " << getFunctionRealName(ast) << endl;
         asb.genCommand("call").genArg(funcnameInTab(func_name)).\
         genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg("stackbase").\
         genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp").\
         genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regsp").\
-        genCommand("add").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(getMemberSize(ast))).push();
+        // genCommand("add").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(getMemberSize(ast))).\  低端序，直接从下面读到上面
+        genCommand("add").genArg("regsp").genArg(to_string(getMemberSize(ast))).push();
         sp += getMemberSize(ast);
         return asb;
     }
@@ -609,7 +617,6 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         }
         if(ast.this_node.str == "return"){
             ASMBlock asb;
-            asb.genCommand("pop_frame").push();
             asb += dumpToAsm(ast.node[0]);
             string realarg0 = "reg" + to_string(getLastUsingRegId());
             if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER ) /*do nothing*/;
