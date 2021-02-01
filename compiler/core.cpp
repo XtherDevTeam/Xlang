@@ -215,9 +215,9 @@ class Lexer{
             //Next();
             return Token(ret,Text.substr(begin,length));
         }
-        if(isalpha(*current)){
+        if(isalpha(*current) || *current == '_'){
             int begin = position;
-            while(isalpha(*current)){Next();}
+            while(isalpha(*current)|| *current == '_'){Next();}
             int length = position - begin;
             //Next();
             return Token(TOK_ID,Text.substr(begin,length));

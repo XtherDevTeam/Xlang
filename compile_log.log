@@ -1,18 +1,5 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...struct pointer{
-    int x1,y1;
-    func int main(int:argc){
-        int i=0;
-        i=1;
-        return 0;
-    };
-};
-struct point{
-    int x,y;
-    pointer ptr;
-};
-point pubg;
-pubg.ptr.main(1);
+Reading Program to buffer...ptr_int ptr;
 

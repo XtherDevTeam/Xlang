@@ -250,15 +250,15 @@ namespace ConstPool_Apis
         cpool.items = (size_t*)malloc(1024);
         memset(cpool.items,0,1024);
     }
-    addr_t Insert(ConstantPool cpool,char* _Src,addr_t size){
+    addr_t Insert(ConstantPool& cpool,char* _Src,addr_t size){
         memcpy(cpool.pool + cpool.items[cpool.count],_Src,size);
         if(cpool.count == 0){
-            cpool.items[cpool.count] = size;
-            return cpool.items[cpool.count];
+            cpool.items[cpool.count+1] = size;
+            return cpool.count++;
         }
         cpool.count++;
         cpool.items[cpool.count] = cpool.items[cpool.count-1] + size;
-        return cpool.items[cpool.count-1];
+        return cpool.count-1;
     }
 } // namespace ConstPool_Apis
 
@@ -478,9 +478,9 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                 if(ast.node[i].nodeT == Id){
                     if(mode){
                         int cp_adr = ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size);
-                        global_symbol_table[ast.node[i].this_node.str].frame_position = cp.items[cp.count]; // WARN: 挖坑
+                        global_symbol_table[ast.node[i].this_node.str].frame_position = cp.items[cp_adr]; // WARN: 挖坑
                         global_symbol_table[ast.node[i].this_node.str]._Typename = typen.name;
-                        asb.genCommand("mov_m").genArg("[" + to_string(cp.items[cp_adr]) + "]").genArg(to_string(0)).genArg(to_string(cp.items[cp.count] - cp.items[cp_adr]));
+                        asb.genCommand("mov_m").genArg("[" + to_string(cp.items[cp_adr]) + "]").genArg(to_string(0)).genArg(to_string(typen.size));
                         continue;
                     }
                     symbol_table[ast.node[i].this_node.str] = Symbol(typen.name);
