@@ -3,6 +3,7 @@ struct pointer{
     func int main(int:argc){
         int i=0;
         i=1;
+        return 0;
     };
 };
 struct point{

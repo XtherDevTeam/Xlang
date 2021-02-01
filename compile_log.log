@@ -6,6 +6,7 @@ Reading Program to buffer...struct pointer{
     func int main(int:argc){
         int i=0;
         i=1;
+        return 0;
     };
 };
 struct point{
@@ -13,5 +14,5 @@ struct point{
     pointer ptr;
 };
 point pubg;
-pubg.ptr.main(1,2);
+pubg.ptr.main(1);
 
