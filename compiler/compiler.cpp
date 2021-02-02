@@ -183,7 +183,7 @@ typedef class Function_{
         type = t;
     }
     string getRealname(){
-        return funcname + "_" + type.name;
+        return (funcname[0] == '_' ? funcname : "_") + funcname + "_" + type.name;
     }
 } function_definition;
 
@@ -194,6 +194,7 @@ class function_block{
     ASTree block_statement;
     map<string,Symbol> syminfunc;
     function_block(ASTree args,ASTree bls){
+        restore_symboltop = 0;
         addr_t tsp = sp;sp = 0;
         type_and_args = args;
         block_statement = bls;
@@ -204,7 +205,9 @@ class function_block{
         restore_symboltop = sp;
         sp = tsp;
     }
-    function_block(){}
+    function_block(){
+        restore_symboltop = 0;
+    }
 };
 
 map<string,Symbol> global_symbol_table; // 存放在常量池里的全局符号表
@@ -264,6 +267,11 @@ namespace ConstPool_Apis
         return cpool.count-1;
     }
 } // namespace ConstPool_Apis
+
+bool isNormalExpression(ASTree ast){
+    if(ast.this_node.type != TOK_DOT && ast.this_node.type != Id && ast.this_node.type != TOK_ID && ast.this_node.type != TOK_STRING) return true;
+    return false;
+}
 
 string guessType(ASTree ast){
     if(ast.nodeT == Id){
@@ -327,7 +335,8 @@ int getLastUsingRegId(){
 
 VarType getMemberType(ASTree ast,TypeName& scope){
     if(ast.nodeT == Id) return scope[ast.this_node.str].type;
-    return getMemberType(ast.node[1],scope[ast.node[1].node[0].this_node.str]);
+    else if(ast.this_node.type == TOK_DOT) return getMemberType(ast.node[1],scope[ast.node[1].node[0].this_node.str]);
+    else return type_pool[guessType(ast)].type;
 }
 VarType getMemberType(ASTree ast){
     if(ast.nodeT == Id && global_symbol_table.count(ast.this_node.str)) return type_pool[global_symbol_table[ast.this_node.str]._Typename].type;
@@ -400,15 +409,15 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             else if(ast.this_node.type == TOK_MIN) ab.genCommand("min");
             // Xlang变量的dumpASM会传地址
             // 加减乘除默认8byte运算
-            if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER ) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
-            else if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])){
+            if(isNormalExpression(ast.node[0])) ab.genArg("reg" + to_string(getLastUsingRegId() - 2));
+            else if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])){
                 ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
                 sp -= getMemberSize(ast.node[0]);
             }
             else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 2) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
-            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
-            else if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
+            if(isNormalExpression(ast.node[1])) ab.genArg("reg" + to_string(getLastUsingRegId() - 1));
+            else if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
             else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE) ab.genArg("[reg" + to_string(getLastUsingRegId() - 1) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
             RegState[getLastUsingRegId() - 1] = false;
@@ -682,3 +691,19 @@ vector<ASMBlock> CompileProcess(string code){
         e.what();
     }
 }
+
+namespace Bytecode{
+    vector<ASMBlock> togen;
+    CodeLabel *codelbls;
+    string bytecode;
+    void Init(vector<ASMBlock> &blocks){
+        codelbls = (CodeLabel*)malloc(blocks.size()*sizeof(CodeLabel));
+        togen = blocks;
+    }
+    void Clear(){
+        togen.clear();
+        free(codelbls);
+        bytecode.clear();
+    }
+
+};

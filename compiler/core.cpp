@@ -301,7 +301,7 @@ class ASTree{
             for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
                 //cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
                 if(lock_status){lock_status = 0;lastEvalPosR = sb;}
-                if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){lastEvalToken = tok;lastEvalPosL = sb;lock_status = true;}
+                if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) >= getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){lastEvalToken = tok;lastEvalPosL = sb;lock_status = true;}
                 sb = lexer.position;
             }
             // 遍历完成，获得最高级的左数和右树
@@ -360,8 +360,10 @@ class ASTree{
             }
             nodeT=Args;
             this_node = Token(TOK_MBRACKET,"()");
-            Lexer temp_lexer(current_str);
-            node.push_back( ASTree(temp_lexer) );
+            if(current_str != ""){
+                Lexer temp_lexer(current_str);
+                node.push_back( ASTree(temp_lexer) );
+            }
             return;
         }
         if(current_tok.type == TOK_ID){

@@ -1,9 +1,3 @@
-struct n{
-    int x,y;
-    func int main(int:f){
-        return f;
-    };
+func int main(){
+    int ret = 514*1/2+1;
 };
-n res;
-int ret=0;
-ret = res.main(114514)+1;
