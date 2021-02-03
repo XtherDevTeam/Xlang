@@ -354,7 +354,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genCommand("mov").genArg("reg"+to_string(getLastUsingRegId())).genArg("stackbase").genCommand("sub").genArg("reg"+to_string(getLastUsingRegId())).genArg("regfp").push();
+            return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(symbol_table[ast.this_node.str].frame_position)).genCommand("mov").genArg("reg"+to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+to_string(getLastUsingRegId())).genArg("regfp").push();
         }
         if(global_symbol_table.find(ast.this_node.str) != global_symbol_table.end()){
             return ASMBlock().genCommand("mov").genArg("reg" + to_string(getLastUsingRegId())).genArg(to_string(global_symbol_table[ast.this_node.str].frame_position)).push();
@@ -427,7 +427,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         if(ast.this_node.type == TOK_DOT){
             // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).genCommand("mov").genArg("reg"+to_string(getLastUsingRegId())).genArg("stackbase").genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp").push();
+            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(to_string(fp_offset)).genCommand("mov").genArg("reg"+to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + to_string(getLastUsingRegId())).genArg("regfp").push();
         }
         if(ast.this_node.type == TOK_EQUAL){
             ASMBlock asb;
@@ -693,8 +693,29 @@ vector<ASMBlock> CompileProcess(string code){
 }
 
 namespace Bytecode{
+    enum opid_list{
+        UnusualRegister = 1,
+        NormalRegister  = 2,
+        Command         = 3,
+        Number          = 4,
+        Address         = 5,
+        Address_Register= 6,
+    } opid_kind;
+    string COMMAND_MAP[] = {
+        "mov","mov_m","push","pop","save","pop_frame",
+        "add","sub","mul","div",
+        "equ","maxeq","mineq","max","min",
+        "goto","gt","gf"
+    };
+    int getCommandId(string command){
+        for(int i = 0;i < 18;i=i+1){
+            if(command == COMMAND_MAP[i]) return i;
+        }
+        return INT_MAX;
+    }
     vector<ASMBlock> togen;
     CodeLabel *codelbls;
+    int bytecode_top = 0;
     string bytecode;
     void Init(vector<ASMBlock> &blocks){
         codelbls = (CodeLabel*)malloc(blocks.size()*sizeof(CodeLabel));
@@ -705,5 +726,61 @@ namespace Bytecode{
         free(codelbls);
         bytecode.clear();
     }
-
+    void exportBytecode(){
+        for(int i = 0;i < togen.size();i++){
+            codelbls[i].label_id = i;
+            strcpy(codelbls[i].label_n,togen[i].name.substr(0,togen[i].name.length()-1).c_str());
+            codelbls[i].start = bytecode_top;
+            for(int _each_command = 0;_each_command < togen[i].lists.size();_each_command++){
+                bytecode += Command;
+                Content c;
+                c.intc = getCommandId(togen[i][_each_command].Main);
+                bytecode += string(c.chc,8);
+                bytecode_top += 9;
+                for(int _each_arg = 0;_each_arg < togen[i][_each_command].args.size();_each_arg++){
+                    if(togen[i][_each_command].args[_each_arg].substr(0,3) == "reg"){
+                        if(togen[i][_each_command].args[_each_arg].substr(3) == "fp" || togen[i][_each_command].args[_each_arg].substr(3) == "sp" || togen[i][_each_command].args[_each_arg].substr(3) == "pc" || togen[i][_each_command].args[_each_arg].substr(3) == "sb"){
+                            bytecode += UnusualRegister;
+                            Content argc;
+                            string sregid = togen[i][_each_command].args[_each_arg].substr(3);
+                            if(sregid == "fp") argc.intc = 0;
+                            if(sregid == "sp") argc.intc = 1;
+                            if(sregid == "pc") argc.intc = 2;
+                            if(sregid == "sb") argc.intc = 3;
+                            bytecode += string(argc.chc,8);
+                        }else{
+                            bytecode += NormalRegister;
+                            Content argc;
+                            argc.intc = atoi(togen[i][_each_command].args[_each_arg].substr(3).c_str());
+                            bytecode += string(argc.chc,8);
+                        }
+                    }else if(togen[i][_each_command].args[_each_arg][0] == '['){
+                        //不会有傻逼拿特殊寄存器来放地址吧？不会吧不会吧？
+                        string nstr = togen[i][_each_command].args[_each_arg].substr(1,togen[i][_each_command].args[_each_arg].length() - 1);
+                        bytecode += (nstr.substr(0,3) == "reg") ? Address_Register : Address;
+                        Content argc;
+                        argc.intc = (nstr.substr(0,3) == "reg") ? atoi(nstr.substr(3).c_str()) : atoi(nstr.c_str());
+                        bytecode += string(argc.chc,8);
+                    }else{
+                        bytecode += Number;
+                        Content argc;
+                        argc.intc = atoi(togen[i][_each_command].args[_each_arg].c_str());
+                        bytecode += string(argc.chc,8);
+                    }
+                    bytecode_top += 9;
+                }
+            }
+        }
+    }
+    VMExec packVMExec(){
+        VMExec ret;
+        ret.cpool = cp;
+        ret.label_array = codelbls;
+        ret.code_array = (ByteCode*) bytecode.c_str();
+        ret.head.support_vm_build = 0001;
+        ret.head.hash = 0x114514ff;
+        ret.head.code_label_count = togen.size();
+        ret.head.code_length = bytecode.size() / 9;
+        return ret;
+    }
 };

@@ -25,5 +25,8 @@ int main(){
     for(int i = 0;i < asms.size();i=i+1){
         cout << asms[i].toString();
     }
+    Bytecode::Init(asms);
+    Bytecode::exportBytecode();
+    VMExec_Serialization("test.xvm",Bytecode::packVMExec());
     cout << endl;
 }
