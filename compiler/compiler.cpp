@@ -729,7 +729,7 @@ namespace Bytecode{
     void exportBytecode(){
         for(int i = 0;i < togen.size();i++){
             codelbls[i].label_id = i;
-            strcpy(codelbls[i].label_n,togen[i].name.substr(0,togen[i].name.length()-1).c_str());
+            strcpy(codelbls[i].label_n,togen[i].name.c_str());
             codelbls[i].start = bytecode_top;
             for(int _each_command = 0;_each_command < togen[i].lists.size();_each_command++){
                 bytecode += Command;
