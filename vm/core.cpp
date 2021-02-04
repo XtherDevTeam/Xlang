@@ -53,7 +53,7 @@ struct VMExec{
 };
 
 void VMExec_Serialization(char* filename,VMExec vme){
-    int fd = open(filename,O_RDWR|O_CREAT);
+    int fd = open(filename,O_RDWR|O_CREAT,0777);
     if(fd == -1) perror("File open error!");
     write(fd,&vme.head,sizeof(vme.head));
     write(fd,vme.label_array,vme.head.code_label_count * 48);
