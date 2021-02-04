@@ -12,6 +12,17 @@
 using namespace std;
 typedef unsigned long int addr_t;
 
+class VMError{
+    public:
+    string str;
+    VMError(string msg){
+        str = msg;
+    }
+    void what(){
+        cerr << "\033[31m[VMERR]\033[0m " << str << "\n";
+    }
+};
+
 struct ByteCode{
     char opid;
     Content c;
@@ -180,8 +191,8 @@ class Runtime_Heap{
 
 class Runtime_Stack{
     char* allocate_addr;
-    addr_t fp,sp;
     public:
+    addr_t fp,sp;
     Runtime_Stack(char* aaddr){
         allocate_addr = aaddr;
         fp = 0;
@@ -232,6 +243,52 @@ class Runtime_Stack{
     }
 };
 
+enum opid_list{
+    UnusualRegister = 1,
+    NormalRegister  = 2,
+    Command         = 3,
+    Number          = 4,
+    Address         = 5,
+    Address_Register= 6,
+} opid_kind;
+string COMMAND_MAP[] = {
+    "mov","mov_m","push","pop","save","pop_frame",
+    "add","sub","mul","div",
+    "equ","maxeq","mineq","max","min",
+    "goto","gt","gf"
+};
+
+class PC_Register{
+    vector<size_t> Command_List;
+    public:
+    long current_offset,current_command;
+    PC_Register(){};
+    PC_Register(ByteCode* byc,size_t bytecode_length){
+        for(int i = 0;i < bytecode_length;i=i+1){
+            if((opid_list)byc->opid == Command){
+                Command_List.push_back(i);
+            }
+        }
+        current_offset = Command_List[0];
+        current_command = 0;
+    }
+    void operator+=(int offset){
+        current_command += offset;
+        current_offset = Command_List[current_command];
+    }
+    void operator++(int s){
+        current_command++;
+        current_offset = Command_List[current_command];
+    }
+    void operator=(int current){
+        current_command = current;
+        current_offset = Command_List[current_command];
+    }
+    void UpdateOffset(){
+        current_offset = Command_List[current_command];
+    }
+};
+
 struct Device{
     char device_name[32];
     void* (device_request)(void* linked_vmruntime,char req_motd,addr_t args);
@@ -247,7 +304,8 @@ class VMRuntime{
     VMExec vme;
     char* malloc_place;
     public:
-    addr_t           pc;
+    size_t _Alloc_Size;
+    PC_Register      pc;
     map<string,bool> vm_rules;
     Content          regs[32];
     Runtime_Heap     heap;
@@ -261,10 +319,40 @@ class VMRuntime{
     void Bind_VMExec(VMExec vme){
         this->vme = vme;
     }
+    void StartVMProc(){
+        for(CodeLabel* i = 0;i < vme.label_array+vme.head.code_label_count;i++){
+            if(strcmp(i->label_n,"_vmstart")) pc = i->start;
+            if(strcmp(i->label_n,"_main_int")) pc = i->start;
+        }
+        while(true){
+            if(COMMAND_MAP[program[pc.current_command].c.intc] == "mov"){
+                Content *r = NULL;
+                if(program[pc.current_command+1].opid == NormalRegister) r = &getRegRefernce(program[pc.current_command+1].c.intc);
+                else if(program[pc.current_command+1].opid == UnusualRegister){
+                    if(program[pc.current_command+1].c.intc == 2) r = (Content*)&pc.current_command;
+                    else throw VMError("Write-protected register");
+                }
+                else throw VMError("Invalid move action");
+                if(program[pc.current_command+2].opid == NormalRegister) *r = getRegRefernce(program[pc.current_command+2].c.intc);
+                else if(program[pc.current_command+2].opid == Number) r->intc = program[pc.current_command+2].c.intc;
+                else if(program[pc.current_command+2].opid == UnusualRegister){
+                    if(program[pc.current_command+2].c.intc == 0) /*fp*/ r->intc = stack_a.fp;
+                    else if(program[pc.current_command+2].c.intc == 1) /*sp*/ r->intc = stack_a.sp;
+                    else if(program[pc.current_command+2].c.intc == 2) /*pc*/ r->intc = pc.current_command;
+                    else if(program[pc.current_command+2].c.intc == 3) /*sb*/ r->intc = _Alloc_Size - 1;
+                    else throw VMError("Invalid Unusual Register Id");
+                }
+                else throw VMError("Invalid Right Value");
+                if(program[pc.current_command+1].opid == UnusualRegister && program[pc.current_command+1].c.intc == 2){pc.UpdateOffset();continue;}
+            }
+            pc++;
+        }
+    }
     void Run(addr_t _AllocSize = 0){
         if(_AllocSize == 0){
             // allocate by program
             _AllocSize = vme.head.code_length * 9 * 5;
+            _Alloc_Size = _AllocSize;
         }
         malloc_place = (char*)malloc(_AllocSize);
         char* memtop = malloc_place;
@@ -286,5 +374,6 @@ class VMRuntime{
     VMRuntime(VMExec vme){
         memset(&regs,0,32*sizeof(Content));
         Bind_VMExec(vme);
+        pc = PC_Register(program,vme.head.code_length);
     }
 };
