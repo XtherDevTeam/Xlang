@@ -65,7 +65,7 @@ void VMExec_Serialization(char* filename,VMExec vme){
 }
 
 int LoadVMExec(char* filename,VMExec* vme){
-    int fd = open(filename,O_RDWR|O_CREAT);
+    int fd = open(filename,O_RDWR|O_CREAT,0777);
     if(read(fd,&vme->head,sizeof(VMExecHeader)) == -1)  return VM_FAILED_OPEN;
     if(vme->head.hash != 0x114514ff) return VM_INVALID_HASH;
     vme->label_array = (CodeLabel*)malloc(vme->head.code_label_count * 48);
