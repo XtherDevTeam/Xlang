@@ -3,11 +3,11 @@
 
 int main(){
     std::string code;
-    ofstream output("compile_log.log");
+    std::ofstream output("compile_log.log");
     std::string filename;
     getline( std::cin,filename);
     if(filename == "") return 1;
-    ifstream infile; 
+    std::ifstream infile; 
     infile.open(filename);
     output << "Xlang Compiler Alpha 0.1\n";
     output << "Powered by xiaokang00010\n";
@@ -23,7 +23,7 @@ int main(){
     std::vector<ASMBlock> asms;
     asms = CompileProcess(code);
     for(int i = 0;i < asms.size();i=i+1){
-        std::cout << asms[i].tostd::string();
+        std::cout << asms[i].tostring();
     }
     Bytecode::Init(asms);
     Bytecode::exportBytecode();
