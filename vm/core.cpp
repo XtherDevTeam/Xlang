@@ -68,7 +68,7 @@ void VMExec_Serialization(char* filename,VMExec vme){
     if(fd == -1) perror("File open error!");
     write(fd,&vme.head,sizeof(vme.head));
     write(fd,vme.label_array,vme.head.code_label_count * 48);
-    write(fd,vme.code_array,vme.head.code_length * 9);
+    write(fd,vme.code_array,vme.head.code_length * 16);
     write(fd,&vme.cpool.count,8);
     write(fd,&vme.cpool.size,8);
     write(fd,vme.cpool.items,vme.cpool.count * 8);
@@ -82,9 +82,9 @@ int LoadVMExec(char* filename,VMExec* vme){
     vme->label_array = (CodeLabel*)malloc(vme->head.code_label_count * 48);
     if(vme->label_array == NULL) return VM_FAILED_OPEN;
     else if(read(fd,vme->label_array,vme->head.code_label_count * 48) == -1) return VM_FAILED_OPEN;
-    vme->code_array = (ByteCode*)malloc(vme->head.code_length * 9);
+    vme->code_array = (ByteCode*)malloc(vme->head.code_length * 16);
     if(vme->code_array == NULL) return VM_FAILED_OPEN;
-    else if(read(fd,vme->code_array,vme->head.code_length * 9) == -1) return VM_FAILED_OPEN;
+    else if(read(fd,vme->code_array,vme->head.code_length * 16) == -1) return VM_FAILED_OPEN;
     if(read(fd,&vme->cpool,sizeof(addr_t) * 8) == -1) return VM_FAILED_OPEN;
     vme->cpool.items = (size_t*)malloc(vme->cpool.count * 8);
     vme->cpool.pool = (char*)malloc(vme->cpool.size);
@@ -254,8 +254,9 @@ enum opid_list{
 string COMMAND_MAP[] = {
     "mov","mov_m","push","pop","save","pop_frame",
     "add","sub","mul","div",
-    "equ","maxeq","mineq","max","min", // TODO: ADD OPERATOR SUPPORT
-    "goto","gt","gf" // TODO: SAME AS UP
+    "equ","maxeq","mineq","max","min",
+    "goto","gt","gf",
+    "exit","ret"
 };
 
 class PC_Register{
@@ -265,7 +266,7 @@ class PC_Register{
     PC_Register(){};
     PC_Register(ByteCode* byc,size_t bytecode_length){
         for(int i = 0;i < bytecode_length;i=i+1){
-            if((opid_list)byc->opid == Command){
+            if((opid_list)byc[i].opid == Command){
                 Command_List.push_back(i);
             }
         }
@@ -305,6 +306,7 @@ class VMRuntime{
     char* malloc_place;
     public:
     size_t _Alloc_Size;
+    bool             regflag;
     PC_Register      pc;
     map<string,bool> vm_rules;
     Content          regs[32];
@@ -320,126 +322,192 @@ class VMRuntime{
         this->vme = vme;
     }
     void StartVMProc(){
-        for(CodeLabel* i = 0;i < vme.label_array+vme.head.code_label_count;i++){
+        for(CodeLabel* i = vme.label_array;i < vme.label_array+vme.head.code_label_count;i++){
             if(strcmp(i->label_n,"_vmstart")) pc = i->start;
             if(strcmp(i->label_n,"_main_int")) pc = i->start;
         }
         while(true){
-            if(COMMAND_MAP[program[pc.current_command].c.intc] == "mov"){
+            if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mov"){
                 Content *r = NULL;
-                if(program[pc.current_command+1].opid == NormalRegister) r = &getRegRefernce(program[pc.current_command+1].c.intc);
-                else if(program[pc.current_command+1].opid == UnusualRegister){
-                    if(program[pc.current_command+1].c.intc == 2) r = (Content*)&pc.current_command;
+                if(program[pc.current_offset+1].opid == NormalRegister) r = &getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == UnusualRegister){
+                    if(program[pc.current_offset+1].c.intc == 2) r = (Content*)&pc.current_offset;
                     else throw VMError("Write-protected register");
                 }
                 else throw VMError("Invalid move action");
-                if(program[pc.current_command+2].opid == NormalRegister) *r = getRegRefernce(program[pc.current_command+2].c.intc);
-                else if(program[pc.current_command+2].opid == Number) r->intc = program[pc.current_command+2].c.intc;
-                else if(program[pc.current_command+2].opid == UnusualRegister){
-                    if(program[pc.current_command+2].c.intc == 0) /*fp*/ r->intc = stack_a.fp;
-                    else if(program[pc.current_command+2].c.intc == 1) /*sp*/ r->intc = stack_a.sp;
-                    else if(program[pc.current_command+2].c.intc == 2) /*pc*/ r->intc = pc.current_command;
-                    else if(program[pc.current_command+2].c.intc == 3) /*sb*/ r->intc = _Alloc_Size - 1;
+                if(program[pc.current_offset+2].opid == NormalRegister) *r = getRegRefernce(program[pc.current_offset+2].c.intc);
+                else if(program[pc.current_offset+2].opid == Number) r->intc = program[pc.current_offset+2].c.intc;
+                else if(program[pc.current_offset+2].opid == UnusualRegister){
+                    if(program[pc.current_offset+2].c.intc == 0) /*fp*/ r->intc = stack_a.fp;
+                    else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ r->intc = stack_a.sp;
+                    else if(program[pc.current_offset+2].c.intc == 2) /*pc*/ r->intc = pc.current_offset;
+                    else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ r->intc = _Alloc_Size - 1;
                     else throw VMError("Invalid Unusual Register Id");
                 }
                 else throw VMError("Invalid Right Value");
-                if(program[pc.current_command+1].opid == UnusualRegister && program[pc.current_command+1].c.intc == 2){pc.UpdateOffset();continue;}
+                if(program[pc.current_offset+1].opid == UnusualRegister && program[pc.current_offset+1].c.intc == 2){pc.UpdateOffset();continue;}
             }
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "mov_m"){
-                long size = program[pc.current_command+3].c.intc;
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mov_m"){
+                long size = program[pc.current_offset+3].c.intc;
                 char *toWrite = NULL, *_Src = NULL;
-                if(program[pc.current_command+1].opid == NormalRegister) toWrite = (char*)&getRegRefernce(program[pc.current_command+1].c.intc);
-                else if(program[pc.current_command+1].opid == Address) toWrite = (char*)malloc_place + program[pc.current_command+1].c.intc;
-                else if(program[pc.current_command+1].opid == Address_Register) toWrite = (char*)malloc_place + getRegRefernce(program[pc.current_command+1].c.intc).intc;
+                if(program[pc.current_offset+1].opid == NormalRegister) toWrite = (char*)&getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address) toWrite = (char*)malloc_place + program[pc.current_offset+1].c.intc;
+                else if(program[pc.current_offset+1].opid == Address_Register) toWrite = (char*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
                 else throw VMError("Bad Left Value");
-                if(program[pc.current_command+2].opid == NormalRegister) _Src = (char*)&getRegRefernce(program[pc.current_command+2].c.intc);
-                else if(program[pc.current_command+2].opid == Address) _Src = (char*)malloc_place + program[pc.current_command+2].c.intc;
-                else if(program[pc.current_command+2].opid == Address_Register) _Src = (char*)malloc_place + getRegRefernce(program[pc.current_command+2].c.intc).intc;
-                else if(program[pc.current_command+2].opid == UnusualRegister){
-                    if(program[pc.current_command+2].c.intc == 0) /*fp*/ _Src = (char*)&stack_a.fp;
-                    else if(program[pc.current_command+2].c.intc == 1) /*sp*/ _Src = (char*)&stack_a.sp;
-                    else if(program[pc.current_command+2].c.intc == 2) /*pc*/ _Src = (char*)&pc.current_command;
-                    else if(program[pc.current_command+2].c.intc == 3) /*sb*/ {
+                if(program[pc.current_offset+2].opid == NormalRegister) _Src = (char*)&getRegRefernce(program[pc.current_offset+2].c.intc);
+                else if(program[pc.current_offset+2].opid == Address) _Src = (char*)malloc_place + program[pc.current_offset+2].c.intc;
+                else if(program[pc.current_offset+2].opid == Address_Register) _Src = (char*)malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc;
+                else if(program[pc.current_offset+2].opid == UnusualRegister){
+                    if(program[pc.current_offset+2].c.intc == 0) /*fp*/ _Src = (char*)&stack_a.fp;
+                    else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ _Src = (char*)&stack_a.sp;
+                    else if(program[pc.current_offset+2].c.intc == 2) /*pc*/ _Src = (char*)&pc.current_offset;
+                    else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
                         _Src = (char*)string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
-                else if(program[pc.current_command+2].opid == Number){
+                else if(program[pc.current_offset+2].opid == Number){
                     Content s;
-                    s.intc = program[pc.current_command+2].c.intc;
+                    s.intc = program[pc.current_offset+2].c.intc;
                     _Src = (char*)string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Right Value");
                 memcpy(toWrite,_Src,size);
             }
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "push"){
-                long size = program[pc.current_command+2].c.intc;
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "push"){
+                long size = program[pc.current_offset+2].c.intc;
                 char *_Src = NULL;
-                if(program[pc.current_command+1].opid == NormalRegister) _Src = (char*)&getRegRefernce(program[pc.current_command+1].c.intc);
-                else if(program[pc.current_command+1].opid == Address) _Src = (char*)malloc_place + program[pc.current_command+1].c.intc;
-                else if(program[pc.current_command+1].opid == Address_Register) _Src = (char*)malloc_place + getRegRefernce(program[pc.current_command+1].c.intc).intc;
-                else if(program[pc.current_command+1].opid == UnusualRegister){
-                    if(program[pc.current_command+1].c.intc == 0) /*fp*/ _Src = (char*)&stack_a.fp;
-                    else if(program[pc.current_command+1].c.intc == 1) /*sp*/ _Src = (char*)&stack_a.sp;
-                    else if(program[pc.current_command+1].c.intc == 2) /*pc*/ _Src = (char*)&pc.current_command;
-                    else if(program[pc.current_command+1].c.intc == 3) /*sb*/ {
+                if(program[pc.current_offset+1].opid == NormalRegister) _Src = (char*)&getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address) _Src = (char*)malloc_place + program[pc.current_offset+1].c.intc;
+                else if(program[pc.current_offset+1].opid == Address_Register) _Src = (char*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
+                else if(program[pc.current_offset+1].opid == UnusualRegister){
+                    if(program[pc.current_offset+1].c.intc == 0) /*fp*/ _Src = (char*)&stack_a.fp;
+                    else if(program[pc.current_offset+1].c.intc == 1) /*sp*/ _Src = (char*)&stack_a.sp;
+                    else if(program[pc.current_offset+1].c.intc == 2) /*pc*/ _Src = (char*)&pc.current_offset;
+                    else if(program[pc.current_offset+1].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
                         _Src = (char*)string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
-                else if(program[pc.current_command+1].opid == Number){
+                else if(program[pc.current_offset+1].opid == Number){
                     Content s;
-                    s.intc = program[pc.current_command+1].c.intc;
+                    s.intc = program[pc.current_offset+1].c.intc;
                     _Src = (char*)string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Value");
                 stack_a.push(_Src,size);
             }
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "pop"){
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "pop"){
                 Content* regobj;
-                if(program[pc.current_command+1].opid == NormalRegister) regobj = &getRegRefernce(program[pc.current_command+1].c.intc);
+                if(program[pc.current_offset+1].opid == NormalRegister) regobj = &getRegRefernce(program[pc.current_offset+1].c.intc);
                 else throw VMError("Only support pop to register now.");
                 memcpy(regobj,stack_a.pop(8),8);
             }
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "save")  stack_a.newFrame();
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "pop_frame") stack_a.PopFrame();
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == "add" || COMMAND_MAP[program[pc.current_command].c.intc] == "sub" || COMMAND_MAP[program[pc.current_command].c.intc] == "mul" || COMMAND_MAP[program[pc.current_command].c.intc] == "div"){
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "save"){
+                stack_a.push((char*)&regs,sizeof(regs));
+                stack_a.push((char*)&pc,sizeof(PC_Register));
+                stack_a.push((char*)&regflag,1);
+                stack_a.newFrame();
+            }
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "pop_frame"){
+                stack_a.PopFrame();
+                memcpy(&regflag,stack_a.pop(1),1);
+                memcpy((char*)&pc,stack_a.pop(sizeof(PC_Register)),sizeof(PC_Register));
+                memcpy((char*)&regs,stack_a.pop(sizeof(regs)),sizeof(regs));
+            }
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "add" || COMMAND_MAP[program[pc.current_offset].c.intc] == "sub" || COMMAND_MAP[program[pc.current_offset].c.intc] == "mul" || COMMAND_MAP[program[pc.current_offset].c.intc] == "div"){
                 Content *_lhs,*_rhs;
-                if(program[pc.current_command+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_command+1].c.intc);
-                else if(program[pc.current_command+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_command+1].c.intc;
-                else if(program[pc.current_command+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_command+1].c.intc).intc;
+                if(program[pc.current_offset+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_offset+1].c.intc;
+                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
                 else throw VMError("Bad Left Value");
-                if(program[pc.current_command+2].opid == NormalRegister) _rhs = (Content*)&getRegRefernce(program[pc.current_command+2].c.intc);
-                else if(program[pc.current_command+2].opid == Address) _rhs = (Content*)malloc_place + program[pc.current_command+2].c.intc;
-                else if(program[pc.current_command+2].opid == Address_Register) _rhs = (Content*)malloc_place + getRegRefernce(program[pc.current_command+2].c.intc).intc;
-                else if(program[pc.current_command+2].opid == UnusualRegister){
-                    if(program[pc.current_command+2].c.intc == 0) /*fp*/ _rhs = (Content*)&stack_a.fp;
-                    else if(program[pc.current_command+2].c.intc == 1) /*sp*/ _rhs = (Content*)&stack_a.sp;
-                    else if(program[pc.current_command+2].c.intc == 2) /*pc*/ _rhs = (Content*)&pc.current_command;
-                    else if(program[pc.current_command+2].c.intc == 3) /*sb*/ {
+                if(program[pc.current_offset+2].opid == NormalRegister) _rhs = (Content*)&getRegRefernce(program[pc.current_offset+2].c.intc);
+                else if(program[pc.current_offset+2].opid == Address) _rhs = (Content*)malloc_place + program[pc.current_offset+2].c.intc;
+                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc;
+                else if(program[pc.current_offset+2].opid == UnusualRegister){
+                    if(program[pc.current_offset+2].c.intc == 0) /*fp*/ _rhs = (Content*)&stack_a.fp;
+                    else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ _rhs = (Content*)&stack_a.sp;
+                    else if(program[pc.current_offset+2].c.intc == 2) /*pc*/ _rhs = (Content*)&pc.current_offset;
+                    else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
                         _rhs = (Content*)string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
-                else if(program[pc.current_command+2].opid == Number){
+                else if(program[pc.current_offset+2].opid == Number){
                     Content s;
-                    s.intc = program[pc.current_command+2].c.intc;
+                    s.intc = program[pc.current_offset+2].c.intc;
                     _rhs = (Content*)string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Right Value");
-                if(COMMAND_MAP[program[pc.current_command].c.intc] == "add") _lhs->intc += _rhs->intc;
-                else if(COMMAND_MAP[program[pc.current_command].c.intc] == "sub") _lhs->intc -= _rhs->intc;
-                else if(COMMAND_MAP[program[pc.current_command].c.intc] == "mul") _lhs->intc *= _rhs->intc;
-                else if(COMMAND_MAP[program[pc.current_command].c.intc] == "div") _lhs->intc /= _rhs->intc;
+                if(COMMAND_MAP[program[pc.current_offset].c.intc] == "add") _lhs->intc += _rhs->intc;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "sub") _lhs->intc -= _rhs->intc;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mul") _lhs->intc *= _rhs->intc;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "div") _lhs->intc /= _rhs->intc;
             }
-            else if(COMMAND_MAP[program[pc.current_command].c.intc] == ""){
-
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "equ" || COMMAND_MAP[program[pc.current_offset].c.intc] == "maxeq" || COMMAND_MAP[program[pc.current_offset].c.intc] == "mineq" || COMMAND_MAP[program[pc.current_offset].c.intc] == "max" || COMMAND_MAP[program[pc.current_offset].c.intc] == "min"){
+                Content *_lhs,*_rhs;
+                if(program[pc.current_offset+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_offset+1].c.intc;
+                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
+                else throw VMError("Bad Left Value");
+                if(program[pc.current_offset+2].opid == NormalRegister) _rhs = (Content*)&getRegRefernce(program[pc.current_offset+2].c.intc);
+                else if(program[pc.current_offset+2].opid == Address) _rhs = (Content*)malloc_place + program[pc.current_offset+2].c.intc;
+                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc;
+                else if(program[pc.current_offset+2].opid == UnusualRegister){
+                    if(program[pc.current_offset+2].c.intc == 0) /*fp*/ _rhs = (Content*)&stack_a.fp;
+                    else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ _rhs = (Content*)&stack_a.sp;
+                    else if(program[pc.current_offset+2].c.intc == 2) /*pc*/ _rhs = (Content*)&pc.current_offset;
+                    else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
+                        Content s;
+                        s.intc =_Alloc_Size - 1;
+                        _rhs = (Content*)string(s.chc,8).c_str();
+                    }
+                    else throw VMError("Invalid Unusual Register Id");
+                }
+                else if(program[pc.current_offset+2].opid == Number){
+                    Content s;
+                    s.intc = program[pc.current_offset+2].c.intc;
+                    _rhs = (Content*)string(s.chc,8).c_str();
+                }
+                else throw VMError("Bad Right Value");
+                if(COMMAND_MAP[program[pc.current_offset].c.intc] == "equ" && _lhs->intc == _rhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "maxeq" && _rhs->intc >= _lhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mineq" && _rhs->intc <= _lhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "max" && _rhs->intc > _lhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "min" && _rhs->intc < _lhs->intc) regflag = 1;
+                else regflag = 0;
+            }
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto" || COMMAND_MAP[program[pc.current_offset].c.intc] == "gt" || COMMAND_MAP[program[pc.current_offset].c.intc] == "gf"){
+                Content *_lhs;
+                if(program[pc.current_offset+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_offset+1].c.intc;
+                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
+                else if(program[pc.current_offset+1].opid == Number){
+                    Content s;
+                    s.intc = program[pc.current_offset+2].c.intc;
+                    _lhs = (Content*)string(s.chc,8).c_str();
+                }
+                else throw VMError("Bad Value");
+                if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto") pc+=_lhs->intc;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "gt" && regflag == true)  pc+=_lhs->intc;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "gf" && regflag == false) pc+=_lhs->intc;
+                continue; // 流程控制语句防止pc ++ 执行 
+            }
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "exit") return;
+            else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "ret"){
+                if(program[pc.current_offset+1].opid != NormalRegister) throw VMError("Only support return register value now");
+                Content regval = getRegRefernce(program[pc.current_offset+1].c.intc);
+                stack_a.PopFrame();
+                memcpy(&regflag,stack_a.pop(1),1);
+                memcpy((char*)&pc,stack_a.pop(sizeof(PC_Register)),sizeof(PC_Register));
+                memcpy((char*)&regs,stack_a.pop(sizeof(regs)),sizeof(regs));
+                stack_a.push(regval);
             }
             pc++;
         }
@@ -447,7 +515,7 @@ class VMRuntime{
     void Run(addr_t _AllocSize = 0){
         if(_AllocSize == 0){
             // allocate by program
-            _AllocSize = vme.head.code_length * 9 * 5;
+            _AllocSize = vme.head.code_length * 16 * 5;
             _Alloc_Size = _AllocSize;
         }
         malloc_place = (char*)malloc(_AllocSize);
@@ -458,18 +526,19 @@ class VMRuntime{
         memtop += vme.cpool.size;
 
         program = (ByteCode*)memtop;
-        memcpy(program,vme.code_array,vme.head.code_length * 9);
-        memtop += vme.head.code_length * 9;
+        memcpy(program,vme.code_array,vme.head.code_length * 16);
+        memtop += vme.head.code_length * 16;
 
         heap.allocate_addr = (char*) memtop;
         stack_a = Runtime_Stack(malloc_place + _AllocSize - 1);
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
+        StartVMProc();
     }
     VMRuntime(VMExec vme){
         memset(&regs,0,32*sizeof(Content));
         Bind_VMExec(vme);
-        pc = PC_Register(program,vme.head.code_length);
+        pc = PC_Register(vme.code_array,vme.head.code_length);
     }
 };

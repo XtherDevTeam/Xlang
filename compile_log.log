@@ -1,12 +1,5 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...func int main(int:argc,ptr_char:argv){
-    int ret = 0;
-    ret = ret + argc;
-    for(int i = 0,i <= 10,i=i+1){
-        ret = ret + i;
-    };
-    return ret;
-};
+Reading Program to buffer...int ret;
 

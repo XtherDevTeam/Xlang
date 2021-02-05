@@ -119,7 +119,11 @@ class Lexer{
     bool IsExpression(){
         int flag1=0,flag2=0,flag3=0,iscontent = 0;
         bool starflag = 0,isexpr = 0;
-        for(int i = 0;i < Text.length();i++){
+        int i = 0;
+        if(Text[i] == ' '){
+            while(Text[i] == ' ') i++;
+        }
+        for(;i < Text.length();i++){
                  if(Text[i] == '(')  flag1++ ;else if(Text[i] == ')')  flag1--;
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
             else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
@@ -376,6 +380,10 @@ class ASTree{
             this->nodeT = NormalStatement;
             this_node = current_tok;
             int sb = lexer.position,lastTokPosition = lexer.position;
+            if(Lexer(lexer.Text.substr(sb)).IsExpression()){
+                node.push_back(ASTree(lexer.subLexer(sb)));
+                return;
+            }
             for (auto tok = lexer.getNextToken(); tok.type != TOK_END; tok = lexer.getNextToken()){
                 //cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
                 if(tok.type == TOK_COMMA){

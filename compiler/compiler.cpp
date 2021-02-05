@@ -630,7 +630,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             string realarg0 = "reg" + to_string(getLastUsingRegId());
             if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER ) /*do nothing*/;
             else realarg0 = "[" + realarg0 + "]";
-            return asb.genCommand("push").genArg(realarg0).genArg(to_string(getMemberSize(ast.node[0]))).push();
+            return asb.genCommand("ret").genArg(realarg0)/*.genCommand("push").genArg(realarg0).genArg(to_string(getMemberSize(ast.node[0])))*/.push();
         }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
@@ -670,6 +670,7 @@ vector<ASMBlock> CompileProcess(string code){
     }
     vector<ASMBlock> asblst;
     // 默认起始点为main函数
+    asb.genCommand("exit").push();
     asb.name = "_vmstart";
     asblst.push_back(asb);
     for(auto i = function_table.begin();i != function_table.end();i++){
@@ -705,10 +706,11 @@ namespace Bytecode{
         "mov","mov_m","push","pop","save","pop_frame",
         "add","sub","mul","div",
         "equ","maxeq","mineq","max","min",
-        "goto","gt","gf"
+        "goto","gt","gf",
+        "exit","ret"
     };
     int getCommandId(string command){
-        for(int i = 0;i < 18;i=i+1){
+        for(int i = 0;i < 20;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
         return INT_MAX;
@@ -716,7 +718,7 @@ namespace Bytecode{
     vector<ASMBlock> togen;
     CodeLabel *codelbls;
     int bytecode_top = 0;
-    string bytecode;
+    vector<ByteCode> bytecode;
     void Init(vector<ASMBlock> &blocks){
         codelbls = (CodeLabel*)malloc(blocks.size()*sizeof(CodeLabel));
         togen = blocks;
@@ -729,45 +731,45 @@ namespace Bytecode{
     void exportBytecode(){
         for(int i = 0;i < togen.size();i++){
             codelbls[i].label_id = i;
+            memset(codelbls[i].label_n,0,sizeof(codelbls[i].label_n));
             strcpy(codelbls[i].label_n,togen[i].name.c_str());
             codelbls[i].start = bytecode_top;
             for(int _each_command = 0;_each_command < togen[i].lists.size();_each_command++){
-                bytecode += Command;
-                Content c;
-                c.intc = getCommandId(togen[i][_each_command].Main);
-                bytecode += string(c.chc,8);
-                bytecode_top += 9;
+                ByteCode b;
+                b.opid = Command;
+                b.c.intc = getCommandId(togen[i][_each_command].Main);
+                bytecode.push_back(b);
+                bytecode_top++;
                 for(int _each_arg = 0;_each_arg < togen[i][_each_command].args.size();_each_arg++){
+                    ByteCode arg;
                     if(togen[i][_each_command].args[_each_arg].substr(0,3) == "reg"){
                         if(togen[i][_each_command].args[_each_arg].substr(3) == "fp" || togen[i][_each_command].args[_each_arg].substr(3) == "sp" || togen[i][_each_command].args[_each_arg].substr(3) == "pc" || togen[i][_each_command].args[_each_arg].substr(3) == "sb"){
-                            bytecode += UnusualRegister;
-                            Content argc;
+                            arg.opid = UnusualRegister;
+                            //Content argc;
                             string sregid = togen[i][_each_command].args[_each_arg].substr(3);
-                            if(sregid == "fp") argc.intc = 0;
-                            if(sregid == "sp") argc.intc = 1;
-                            if(sregid == "pc") argc.intc = 2;
-                            if(sregid == "sb") argc.intc = 3;
-                            bytecode += string(argc.chc,8);
+                            if(sregid == "fp") arg.c.intc = 0;
+                            if(sregid == "sp") arg.c.intc = 1;
+                            if(sregid == "pc") arg.c.intc = 2;
+                            if(sregid == "sb") arg.c.intc = 3;
+                            bytecode.push_back(arg);
                         }else{
-                            bytecode += NormalRegister;
-                            Content argc;
-                            argc.intc = atoi(togen[i][_each_command].args[_each_arg].substr(3).c_str());
-                            bytecode += string(argc.chc,8);
+                            arg.opid = NormalRegister;
+                            //Content argc;
+                            arg.c.intc = atoi(togen[i][_each_command].args[_each_arg].substr(3).c_str());
+                            bytecode.push_back(arg);
                         }
                     }else if(togen[i][_each_command].args[_each_arg][0] == '['){
                         //不会有傻逼拿特殊寄存器来放地址吧？不会吧不会吧？
                         string nstr = togen[i][_each_command].args[_each_arg].substr(1,togen[i][_each_command].args[_each_arg].length() - 1);
-                        bytecode += (nstr.substr(0,3) == "reg") ? Address_Register : Address;
-                        Content argc;
-                        argc.intc = (nstr.substr(0,3) == "reg") ? atoi(nstr.substr(3).c_str()) : atoi(nstr.c_str());
-                        bytecode += string(argc.chc,8);
+                        arg.opid = (nstr.substr(0,3) == "reg") ? Address_Register : Address;
+                        arg.c.intc = (nstr.substr(0,3) == "reg") ? atoi(nstr.substr(3).c_str()) : atoi(nstr.c_str());
+                        bytecode.push_back(arg);
                     }else{
-                        bytecode += Number;
-                        Content argc;
-                        argc.intc = atoi(togen[i][_each_command].args[_each_arg].c_str());
-                        bytecode += string(argc.chc,8);
+                        arg.opid = Number;
+                        arg.c.intc = atoi(togen[i][_each_command].args[_each_arg].c_str());
+                        bytecode.push_back(arg);
                     }
-                    bytecode_top += 9;
+                    bytecode_top ++;
                 }
             }
         }
@@ -776,11 +778,11 @@ namespace Bytecode{
         VMExec ret;
         ret.cpool = cp;
         ret.label_array = codelbls;
-        ret.code_array = (ByteCode*) bytecode.c_str();
+        ret.code_array = (ByteCode*) bytecode.data();
         ret.head.support_vm_build = 0001;
         ret.head.hash = 0x114514ff;
         ret.head.code_label_count = togen.size();
-        ret.head.code_length = bytecode.size() / 9;
+        ret.head.code_length = bytecode.size();
         return ret;
     }
 };
