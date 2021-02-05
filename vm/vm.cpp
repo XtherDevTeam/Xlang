@@ -9,5 +9,6 @@ int main(){
     VMRuntime vmr(vme);
     vmr.vm_rules["verbose"] = true;
     vmr.Run();
+    DebugOutput(vmr);
     return 0;
 }

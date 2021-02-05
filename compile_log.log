@@ -1,5 +1,8 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...int ret;
+Reading Program to buffer...int ret=114514;
+if(ret == 114514){
+    ret = 0;
+};
 

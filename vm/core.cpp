@@ -490,7 +490,7 @@ class VMRuntime{
                 else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
                 else if(program[pc.current_offset+1].opid == Number){
                     Content s;
-                    s.intc = program[pc.current_offset+2].c.intc;
+                    s.intc = program[pc.current_offset+1].c.intc;
                     _lhs = (Content*)string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Value");
@@ -537,8 +537,21 @@ class VMRuntime{
         StartVMProc();
     }
     VMRuntime(VMExec vme){
+        regflag = 0;
         memset(&regs,0,32*sizeof(Content));
         Bind_VMExec(vme);
         pc = PC_Register(vme.code_array,vme.head.code_length);
     }
 };
+
+void DebugOutput(VMRuntime rt,ostream &out = cout){
+    out << "==========================[Debug Output]==========================\n";
+    for(int i = 0;i < 32;i=i+1){
+        if(i < 10) out << "reg" << i << " : " << rt.regs[i].intc << " ";
+        else out << "reg" << i << ": " << rt.regs[i].intc << " ";
+        if(i % 7 == 0 && i != 0) out << endl; 
+    }
+    out << "\n";
+    out << "REGFLAG:" << rt.regflag << " PC:" << rt.pc.current_command << endl;
+    out << "==========================[EndOf Output]==========================\n";
+}

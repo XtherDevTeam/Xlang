@@ -1,1 +1,4 @@
-int ret;
+int ret=114514;
+if(ret == 114514){
+    ret = 0;
+};
