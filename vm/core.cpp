@@ -9,17 +9,17 @@
 #include "../compiler/basic_type.cpp"
 #include "const.cpp"
 
-using namespace std;
+// 
 typedef unsigned long int addr_t;
 
 class VMError{
     public:
-    string str;
-    VMError(string msg){
+    std::string str;
+    VMError(std::string msg){
         str = msg;
     }
     void what(){
-        cerr << "\033[31m[VMERR]\033[0m " << str << "\n";
+        std::cerr << "\033[31m[VMERR]\033[0m " << str << "\n";
     }
 };
 
@@ -105,7 +105,7 @@ class Runtime_Heap{
     public:
     char* allocate_addr;
     addr_t top = 0;
-    vector<heap_item_t> heap_item; // {IsUsing, start, end}
+    std::vector<heap_item_t> heap_item; // {IsUsing, start, end}
     Runtime_Heap(size_t alloc){
         top = 0;
         allocate_addr = (char*)malloc(alloc);
@@ -163,7 +163,7 @@ class Runtime_Heap{
         top += 8;
         return heap_item.size() - 1; 
     }
-    // String Insert Function
+    // std::string Insert Function
     int InsertToHeap(char* _Src,addr_t sz){
         int tmp = 0;
         if((tmp = findNonUsing(sz)) != INT_MAX){
@@ -207,7 +207,7 @@ class Runtime_Stack{
         memcpy(allocate_addr - fp - sp - 8,s.chc,8);
         sp+=8;
     }
-    // String push function
+    // std::string push function
     void push(char* s,addr_t length){
         memcpy(allocate_addr-fp-sp-length,s,length);
         sp += length;
@@ -215,7 +215,7 @@ class Runtime_Stack{
     // Normal pop function
     Content pop(){
         Content s;
-        //cout << "sp:" << sp << endl;
+        //std::cout << "sp:" << sp <<  std::endl;
         sp -= 8;
         memcpy(s.chc,allocate_addr - fp - sp - 8,8); // WARN: 虽然我也不知道为什么这里还要减一次sp，但！是！鸽子飞起来就好！
         return s;
@@ -235,11 +235,11 @@ class Runtime_Stack{
         fp = sp;sp = 0;
     }
     void PopFrame(){
-        //cout << "sp:" << fp << "," << sp << endl;
+        //std::cout << "sp:" << fp << "," << sp <<  std::endl;
         free(pop(sp));
         sp = pop().intc;
         fp = pop().intc;
-        //cout << "pop result:" << fp << "," << sp << endl;
+        //std::cout << "pop result:" << fp << "," << sp <<  std::endl;
     }
 };
 
@@ -251,7 +251,7 @@ enum opid_list{
     Address         = 5,
     Address_Register= 6,
 } opid_kind;
-string COMMAND_MAP[] = {
+std::string COMMAND_MAP[] = {
     "mov","mov_m","push","pop","save","pop_frame",
     "add","sub","mul","div",
     "equ","maxeq","mineq","max","min",
@@ -260,7 +260,7 @@ string COMMAND_MAP[] = {
 };
 
 class PC_Register{
-    vector<size_t> Command_List;
+    std::vector<size_t> Command_List;
     public:
     long current_offset,current_command;
     PC_Register(){};
@@ -297,7 +297,7 @@ struct Device{
 };
 
 struct DevicePackage{
-    vector<int> require_int_num;
+    std::vector<int> require_int_num;
     char device_name[32];
 };
 
@@ -308,7 +308,7 @@ class VMRuntime{
     size_t _Alloc_Size;
     bool             regflag;
     PC_Register      pc;
-    map<string,bool> vm_rules;
+    std::map<std::string,bool> vm_rules;
     Content          regs[32];
     Runtime_Heap     heap;
     Runtime_Stack    stack_a;
@@ -364,14 +364,14 @@ class VMRuntime{
                     else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
-                        _Src = (char*)string(s.chc,8).c_str();
+                        _Src = (char*)std::string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
                 else if(program[pc.current_offset+2].opid == Number){
                     Content s;
                     s.intc = program[pc.current_offset+2].c.intc;
-                    _Src = (char*)string(s.chc,8).c_str();
+                    _Src = (char*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Right Value");
                 memcpy(toWrite,_Src,size);
@@ -389,14 +389,14 @@ class VMRuntime{
                     else if(program[pc.current_offset+1].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
-                        _Src = (char*)string(s.chc,8).c_str();
+                        _Src = (char*)std::string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
                 else if(program[pc.current_offset+1].opid == Number){
                     Content s;
                     s.intc = program[pc.current_offset+1].c.intc;
-                    _Src = (char*)string(s.chc,8).c_str();
+                    _Src = (char*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Value");
                 stack_a.push(_Src,size);
@@ -435,14 +435,14 @@ class VMRuntime{
                     else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
-                        _rhs = (Content*)string(s.chc,8).c_str();
+                        _rhs = (Content*)std::string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
                 else if(program[pc.current_offset+2].opid == Number){
                     Content s;
                     s.intc = program[pc.current_offset+2].c.intc;
-                    _rhs = (Content*)string(s.chc,8).c_str();
+                    _rhs = (Content*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Right Value");
                 if(COMMAND_MAP[program[pc.current_offset].c.intc] == "add") _lhs->intc += _rhs->intc;
@@ -466,14 +466,14 @@ class VMRuntime{
                     else if(program[pc.current_offset+2].c.intc == 3) /*sb*/ {
                         Content s;
                         s.intc =_Alloc_Size - 1;
-                        _rhs = (Content*)string(s.chc,8).c_str();
+                        _rhs = (Content*)std::string(s.chc,8).c_str();
                     }
                     else throw VMError("Invalid Unusual Register Id");
                 }
                 else if(program[pc.current_offset+2].opid == Number){
                     Content s;
                     s.intc = program[pc.current_offset+2].c.intc;
-                    _rhs = (Content*)string(s.chc,8).c_str();
+                    _rhs = (Content*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Right Value");
                 if(COMMAND_MAP[program[pc.current_offset].c.intc] == "equ" && _lhs->intc == _rhs->intc) regflag = 1;
@@ -491,7 +491,7 @@ class VMRuntime{
                 else if(program[pc.current_offset+1].opid == Number){
                     Content s;
                     s.intc = program[pc.current_offset+1].c.intc;
-                    _lhs = (Content*)string(s.chc,8).c_str();
+                    _lhs = (Content*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Value");
                 if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto") pc+=_lhs->intc;
@@ -544,14 +544,14 @@ class VMRuntime{
     }
 };
 
-void DebugOutput(VMRuntime rt,ostream &out = cout){
+void DebugOutput(VMRuntime rt, std::ostream &out = std::cout){
     out << "==========================[Debug Output]==========================\n";
     for(int i = 0;i < 32;i=i+1){
         if(i < 10) out << "reg" << i << " : " << rt.regs[i].intc << " ";
         else out << "reg" << i << ": " << rt.regs[i].intc << " ";
-        if(i % 7 == 0 && i != 0) out << endl; 
+        if(i % 7 == 0 && i != 0) out <<  std::endl; 
     }
     out << "\n";
-    out << "REGFLAG:" << rt.regflag << " PC:" << rt.pc.current_command << endl;
+    out << "REGFLAG:" << rt.regflag << " PC:" << rt.pc.current_command <<  std::endl;
     out << "==========================[EndOf Output]==========================\n";
 }

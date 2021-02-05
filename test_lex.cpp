@@ -1,22 +1,22 @@
 #include "compiler/compiler.cpp"
-using namespace std;
+ 
 
 int main(){
     InitCompiler();
-    while(!cin.eof()){
+    while(! std::cin.eof()){
         try{
-            string input;
-            getline(cin,input);
+            std::string input;
+            getline( std::cin,input);
             Lexer lexer(input);
             Token this_tok = lexer.getNextToken();
             while(this_tok.type != TOK_END){
-                cout << "\033[32m[" << TOKEN_VALUE_DESCRIPTION[this_tok.type] << "]\033[0m: " << this_tok.str << "\t";
+                std::cout << "\033[32m[" << TOKEN_VALUE_DESCRIPTION[this_tok.type] << "]\033[0m: " << this_tok.str << "\t";
                 this_tok = lexer.getNextToken();
             }
-            cout << "IsExpression(): " << lexer.IsExpression() << endl;
+            std::cout << "IsExpression(): " << lexer.IsExpression() <<  std::endl;
             ASTree ast(lexer);
             ast.prettyPrint();
-            //cout << "generated asmcode:\n" << ast.dumpToAsm() << endl;
+            //std::cout << "generated asmcode:\n" << ast.dumpToAsm() <<  std::endl;
             StartDebuger();
         }catch(ParserError &e){
             e.what();

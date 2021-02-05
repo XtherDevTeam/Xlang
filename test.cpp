@@ -1,14 +1,14 @@
 #include "compiler/compiler.cpp"
-using namespace std;
+ 
 
 int main(){
     InitCompiler();
     ConstPool_Apis::Init(cp,1024);
-    string s;
-    getline(cin,s);
+    std::string s;
+    getline( std::cin,s);
     Lexer lex(s);
     try{
-        cout << dumpToAsm(ASTree(s),1).toString() << endl;
+        std::cout << dumpToAsm(ASTree(s),1).tostd::string() <<  std::endl;
     }catch (CompileError e){
         e.what();
     }catch(ParserError e){

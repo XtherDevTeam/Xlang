@@ -1,11 +1,11 @@
 #include <bits/stdc++.h>
 #include "error.cpp"
 #include "basic_type.cpp"
-using namespace std;
+// 
 #define NTOKEN 1000
 
 void StartDebuger(){
-    cout << "Press ^C to debug...";
+    std::cout << "Press ^C to debug...";
     getchar();
 }
 
@@ -34,7 +34,7 @@ enum TokenValue {
     TOK_BLOCK, // Block statement
     TOK_CHARTER,
 };
-string TOKEN_VALUE_DESCRIPTION[] =
+std::string TOKEN_VALUE_DESCRIPTION[] =
 {
     "TOK_COMMA",
     "TOK_DIV",
@@ -63,9 +63,9 @@ string TOKEN_VALUE_DESCRIPTION[] =
 typedef class _Token {
     public:
     int  type;
-    string str;
+    std::string str;
     _Token(){type = TOK_END;}
-    _Token(int Type,string Str){type = Type;str=Str;}
+    _Token(int Type,std::string Str){type = Type;str=Str;}
     bool operator==(const _Token &other){
         if(type == other.type && str == other.str)  return true;
         return false;
@@ -83,7 +83,7 @@ int getOperatorLevel(Token tok){
 }
 class Lexer{
     public:
-    string Text; // Put the codes here
+    std::string Text; // Put the codes here
     char *text_begin,*current,*text_end; // current char and text begin pointter,and text end pointer
     int position; // for get substr
     void Next(){
@@ -101,7 +101,7 @@ class Lexer{
         current = text_begin;
         position = 0;
     }
-    Lexer(string t){
+    Lexer(std::string t){
         Text = t;
         int realstart=0;
         if(Text[0] == ' '){
@@ -128,7 +128,7 @@ class Lexer{
             else if(Text[i] == '[')  flag2++ ;else if(Text[i] == ']')  flag2--;
             else if(Text[i] == '{')  flag3++ ;else if(Text[i] == '}')  flag3--;
             else if(Text[i] == '"') iscontent = !iscontent;
-            //cout << "\033[30m" << Text[i] << iscontent << flag1 << flag2 << flag3 << ((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0) << "\033[0m" << endl;
+            //std::cout << "\033[30m" << Text[i] << iscontent << flag1 << flag2 << flag3 << ((Text[i] == ' ' || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0) << "\033[0m" <<  std::endl;
             if(((Text[i] == ' ' && Text[i-1] <= 'z' && Text[i-1] >= 'A' && Text[i+1] <= 'z' && Text[i+1] >= 'A') || Text[i] == ',') && iscontent == 0 && flag3 == 0 && flag1 == 0 && flag2 == 0){
                 return false;
             }
@@ -140,9 +140,9 @@ class Lexer{
                     isexpr = 1;
                 }
             }
-            else if(flag1 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '('\n");
-            else if(flag2 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '['\n");
-            else if(flag3 < 0) throw ParserError("No match bracket find at "+to_string(i)+" : cannot match bracket '{'\n");
+            else if(flag1 < 0) throw ParserError("No match bracket find at "+std::to_string(i)+" : cannot match bracket '('\n");
+            else if(flag2 < 0) throw ParserError("No match bracket find at "+std::to_string(i)+" : cannot match bracket '['\n");
+            else if(flag3 < 0) throw ParserError("No match bracket find at "+std::to_string(i)+" : cannot match bracket '{'\n");
         }
         return isexpr;
     }
@@ -207,7 +207,7 @@ class Lexer{
             Next();
             return Token(TOK_ARGSTATEMENT,Text.substr(start,length));
         }
-        if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + to_string(position));} }
+        if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + std::to_string(position));} }
         if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,"<=");}else{return Token(TOK_MAX,"<");} }
         if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,">=");}else{return Token(TOK_MIN,">");} }
         if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
@@ -226,7 +226,7 @@ class Lexer{
             //Next();
             return Token(TOK_ID,Text.substr(begin,length));
         }
-        throw ParserError("Undefined Token at" + to_string(position));
+        throw ParserError("Undefined Token at" + std::to_string(position));
     }
     bool EndOfText(){
         if(*(current+1) == '\0' || *(current) == '\0'){return true;}
@@ -244,7 +244,7 @@ enum AST_nodeType{
     Unused,
 };
 
-string AST_nodeType[] = {
+std::string AST_nodeType[] = {
     "ExpressionStatement",
     "BlockStatement",
     "FunctionCallStatement",
@@ -259,8 +259,8 @@ struct RegisterStatus{
     bool IsUsed_High;
     bool IsUsed_Low;
 };
-string emptyStr(int size){
-    string s="";
+std::string emptyStr(int size){
+    std::string s="";
     s.resize(size);
     for(int i = 0;i < size;i++){s[i] = ' ';}
     return s;
@@ -270,29 +270,29 @@ class ASTree{
     public:
     int nodeT;
     Token this_node;
-    vector<ASTree> node;
+    std::vector<ASTree> node;
     public:
-    ASTree(){nodeT = Unused;} // For STL Vector
+    ASTree(){nodeT = Unused;} // For STL std::vector
     ASTree(int nodet,Token tok){
         nodeT = nodet;
         this_node = tok;
     };
     void prettyPrint(int swap=1){
-        cout << "{\n" << emptyStr(swap);
+        std::cout << "{\n" << emptyStr(swap);
         printf("Type: \"%s\",\n" , AST_nodeType[nodeT].c_str());
-        cout << emptyStr(swap);
+        std::cout << emptyStr(swap);
         printf(
             "{ Type: \"%s\" , Content: \"%s\" },\n",
             TOKEN_VALUE_DESCRIPTION[this_node.type].c_str(),
             this_node.str.c_str()
         );
-        cout << emptyStr(swap) << "[" << ((node.size() <= 1) ? ' ' : '\n');
+        std::cout << emptyStr(swap) << "[" << ((node.size() <= 1) ? ' ' : '\n');
         for(auto i=0;i<node.size();i++){
-            cout << emptyStr(swap+1);
+            std::cout << emptyStr(swap+1);
             node[i].prettyPrint(swap+2);
-            cout << emptyStr(swap+1);
+            std::cout << emptyStr(swap+1);
         }
-        cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "},\n";
+        std::cout << "\b" << emptyStr(swap-1) << "],\n" << emptyStr(swap-1) << "},\n";
     }
     ASTree(Lexer lexer){
         lexer.Reset(); // reset lexer to first token
@@ -303,7 +303,7 @@ class ASTree{
             int sb = 0; // 哨兵一，记录上一个token的位置
             Token lastEvalToken;int lastEvalPosL = 0,lastEvalPosR = 0;char lock_status;
             for(Token tok = lexer.getNextToken();tok.type != TOK_END;tok = lexer.getNextToken()){
-                //cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) << endl;
+                //std::cout << tok.str << (getOperatorLevel(tok) != INT_MAX ) << ( ( getOperatorLevel(tok) > getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)) <<  std::endl;
                 if(lock_status){lock_status = 0;lastEvalPosR = sb;}
                 if(getOperatorLevel(tok) != INT_MAX && ( getOperatorLevel(tok) >= getOperatorLevel(lastEvalToken) || getOperatorLevel(lastEvalToken) == INT_MAX)){lastEvalToken = tok;lastEvalPosL = sb;lock_status = true;}
                 sb = lexer.position;
@@ -319,7 +319,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_BLOCK){
             int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
-            string temp_str = current_tok.str,current_str = "";
+            std::string temp_str = current_tok.str,current_str = "";
             for (size_t i = 0; i < temp_str.length(); i++){
                 if(temp_str[i] == '(')  count1++;
                 else if(temp_str[i] == '[')  count2++;
@@ -345,7 +345,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_ARGSTATEMENT){
             int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
-            string temp_str = current_tok.str,current_str = "";
+            std::string temp_str = current_tok.str,current_str = "";
             for (size_t i = 0; i < temp_str.length(); i++){
                 if(temp_str[i] == '(')  count1++;
                 else if(temp_str[i] == '[')  count2++;
@@ -372,7 +372,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_ID){
             if(lexer.EndOfText()){
-                //cout << lexer.Text << lexer.position << endl;
+                //std::cout << lexer.Text << lexer.position <<  std::endl;
                 this_node = current_tok;
                 this->nodeT = Id;
                 return;
@@ -385,26 +385,26 @@ class ASTree{
                 return;
             }
             for (auto tok = lexer.getNextToken(); tok.type != TOK_END; tok = lexer.getNextToken()){
-                //cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
+                //std::cout << "\033[30m" << TOKEN_VALUE_DESCRIPTION[tok.type] << "\033[0m";
                 if(tok.type == TOK_COMMA){
                     Lexer templex( lexer.Text.substr(sb,lastTokPosition - sb) );
                     node.push_back( ASTree(templex) );
                     sb = lexer.position;
                 }
                 if(tok.type == TOK_ARGSTATEMENT){
-                    string s = lexer.Text.substr(sb,lastTokPosition - sb);
+                    std::string s = lexer.Text.substr(sb,lastTokPosition - sb);
                     if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
                     Lexer templex( "("+tok.str+")" );
                     node.push_back( ASTree(templex) );
                     sb = lexer.position;
                 }
                 if(tok.type == TOK_BLOCK){
-                    /*cout << "皇帝的新tok.str >>>" << tok.str << (tok.str == "") << endl;
+                    /*std::cout << "皇帝的新tok.str >>>" << tok.str << (tok.str == "") <<  std::endl;
                     if(tok.str == ""){
                         sb = lexer.position;
                         continue;
                     }*/
-                    string s = lexer.Text.substr(sb,lastTokPosition - sb);
+                    std::string s = lexer.Text.substr(sb,lastTokPosition - sb);
                     if(s != ""){Lexer templex( s );node.push_back( ASTree(templex) );}
                     Lexer templex( "{"+tok.str+"}" );
                     node.push_back( ASTree(templex) );
@@ -421,7 +421,7 @@ class ASTree{
         }
         if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
             if(lexer.getNextToken().type != TOK_END){
-                cout << lexer.Text << endl;
+                std::cout << lexer.Text <<  std::endl;
                 throw ParserError("Processing AST: Constant doesn't any sub script!");
             }
             nodeT = Id;

@@ -37,7 +37,7 @@ rt.Run(<memsize default 4096*1024>);
 -  Heap Memory (1/4) *for malloc and static memory*
 -  Program Memory (1/4)
 -  Stack Memory (1/4)
--  Constant Memory (1/4) *for string constant*
+-  Constant Memory (1/4) *for std::string constant*
 -  Registers (32) 
 -  - reg30 **memory offset register**<br> 
      reg31 **function args addres register**<br>
@@ -71,7 +71,7 @@ __________________________
 // A device source code sample
 // By xiaokang00010 at 2021/1/22
 #include "vm/core.cpp"
-using namespace std;
+ 
 
 DevicePackage init_device(){
      // How to know it's an interput device?

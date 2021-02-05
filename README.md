@@ -8,7 +8,7 @@
     // Defined variables: code -> 从文件读取的源代码 , filename -> 输出文件名
     Lexer lexer(code);
     AST root(lexer);
-    string asmcode = root.dumpasm();
+    std::string asmcode = root.dumpasm();
     CompileObj c = Compiler::Compile(asmcode);
     c.dumpToFile(filename);
     ```

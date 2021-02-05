@@ -1,9 +1,9 @@
 #include "core.cpp"
-using namespace std;
+ 
 
 int main(){
-    string path;
-    getline(cin,path);
+    std::string path;
+    getline( std::cin,path);
     VMExec vme;
     LoadVMExec((char*)path.c_str(),&vme);
     VMRuntime vmr(vme);
