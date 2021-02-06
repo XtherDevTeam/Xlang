@@ -392,10 +392,10 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
             ASMBlock ab;
-            ab += dumpToAsm(ast.node[0]);
+            ab += dumpToAsm(ast.node[0],mode);
             //if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genCommand("").genArg("reg" + std::to_string(getLastUsingRegId()));
             RegState[getLastUsingRegId()] = true;
-            ab += dumpToAsm(ast.node[1]);
+            ab += dumpToAsm(ast.node[1],mode);
             if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) sp -= getMemberSize(ast.node[1]);
             RegState[getLastUsingRegId()] = true;
             if(ast.this_node.type == TOK_PLUS) ab.genCommand("add");
@@ -534,21 +534,21 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             // regflag
             ASMBlock asb;
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad If Statement");
-            ASMBlock tmpblock = dumpToAsm(ast.node[1]); // end_pos - now_pos = goto command
-            asb += dumpToAsm(ast.node[0].node[0]);
+            ASMBlock tmpblock = dumpToAsm(ast.node[1],mode); // end_pos - now_pos = goto command
+            asb += dumpToAsm(ast.node[0].node[0],mode);
             asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
             asb += tmpblock;
             asb.genCommand("_$fakecommand_goto_statement_end").push();
             if(ast.node.size() > 2) {
             for(int i = 2;i < ast.node.size();i+=3){
                 if(ast.node[i].this_node.str == "elif"){
-                    ASMBlock tmpblock = dumpToAsm(ast.node[i+2]);
+                    ASMBlock tmpblock = dumpToAsm(ast.node[i+2],mode);
                     tmpblock.genCommand("_$fakecommand_goto_statement_end").push(); // end_pos - now_pos = goto command
-                    asb += dumpToAsm(ast.node[i+1].node[0]);
+                    asb += dumpToAsm(ast.node[i+1].node[0],mode);
                     asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
                     asb += tmpblock;
                 }else if(ast.node[i].this_node.str == "else"){
-                    asb += dumpToAsm(ast.node[i+1]);
+                    asb += dumpToAsm(ast.node[i+1],mode);
                     continue;
                 }else{
                     throw CompileError("Unknown Command:" + ast.node[i].this_node.str);
@@ -587,16 +587,16 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             ASMBlock asb,inital_val,boolean_expression,for_blockstmt,endofblock;
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad For Statement");
 
-            inital_val = dumpToAsm(ast.node[0].node[0]);
+            inital_val = dumpToAsm(ast.node[0].node[0],mode);
 
-            boolean_expression = dumpToAsm(ast.node[0].node[1]);
+            boolean_expression = dumpToAsm(ast.node[0].node[1],mode);
 
-            for_blockstmt = dumpToAsm(ast.node[1]);
+            for_blockstmt = dumpToAsm(ast.node[1],mode);
 
-            endofblock = dumpToAsm(ast.node[0].node[2]);
+            endofblock = dumpToAsm(ast.node[0].node[2],mode);
             endofblock.genCommand("_$fakecommand_goto_loop_start").push();
 
-            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(for_blockstmt.lists.size() + endofblock.lists.size())).push();
+            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(for_blockstmt.lists.size() + endofblock.lists.size() + 1)).push();
 
             asb += inital_val;
             asb += boolean_expression;
@@ -606,7 +606,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for(int i = 0;i < asb.lists.size();i++){
                 if(asb.lists[i].Main == "_$fakecommand_goto_loop_start"){
                     asb.lists[i].Main = "goto";
-                    asb.lists[i].args.push_back("-" + std::to_string( (int)(i - 1 - inital_val.lists.size()) ));
+                    asb.lists[i].args.push_back("-" + std::to_string( (int)(i - inital_val.lists.size()) ));
                 }
                 if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
                     asb.lists[i].Main = "goto";
@@ -615,7 +615,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                 if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
                     asb.lists[i].Main = "goto";
                     //std::cout << "\033[31mwtf>>" << asb.lists.size() - i <<  std::endl;
-                    asb.lists[i].args.push_back(std::to_string( asb.lists.size() - i ));
+                    asb.lists[i].args.push_back(std::to_string( asb.lists.size() - i + 1 ));
                 }
             }
             return asb;

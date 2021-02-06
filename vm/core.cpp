@@ -260,8 +260,8 @@ std::string COMMAND_MAP[] = {
 };
 
 class PC_Register{
-    std::vector<size_t> Command_List;
     public:
+    std::vector<size_t> Command_List;
     long current_offset,current_command;
     PC_Register(){};
     PC_Register(ByteCode* byc,size_t bytecode_length){
@@ -303,8 +303,9 @@ struct DevicePackage{
 
 class VMRuntime{
     VMExec vme;
-    char* malloc_place;
+    std::vector<char> allocated_memory;
     public:
+    char* malloc_place;
     size_t _Alloc_Size;
     bool             regflag;
     PC_Register      pc;
@@ -321,12 +322,27 @@ class VMRuntime{
     void Bind_VMExec(VMExec vme){
         this->vme = vme;
     }
+    void disasm(long cid = LONG_MAX,std::ostream &out = std::cout){
+        if(cid == LONG_MAX) cid = pc.current_command;
+        out << COMMAND_MAP[program[pc.Command_List[cid]].c.intc] << " ";
+        for(long i = pc.Command_List[cid] + 1;i != pc.Command_List[cid+1];i=i+1){
+            if(program[i].opid == Number) out << program[i].c.intc;
+            if(program[i].opid == NormalRegister) out << "reg" << program[i].c.intc;
+            if(program[i].opid == UnusualRegister) out << "ureg" << program[i].c.intc;
+            if(program[i].opid == Address) out << "[" << program[i].c.intc << "]";
+            if(program[i].opid == Address_Register) out << "[reg" << program[i].c.intc << "]";
+            out << ",";
+        }
+        out << "\b;" << std::endl;
+    }
     void StartVMProc(){
         for(CodeLabel* i = vme.label_array;i < vme.label_array+vme.head.code_label_count;i++){
             if(strcmp(i->label_n,"_vmstart")) pc = i->start;
             if(strcmp(i->label_n,"_main_int")) pc = i->start;
         }
         while(true){
+            //disasm();
+            //std::cout << "regflag:" << regflag << std::endl;
             if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mov"){
                 Content *r = NULL;
                 if(program[pc.current_offset+1].opid == NormalRegister) r = &getRegRefernce(program[pc.current_offset+1].c.intc);
@@ -409,25 +425,26 @@ class VMRuntime{
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "save"){
                 stack_a.push((char*)&regs,sizeof(regs));
-                stack_a.push((char*)&pc,sizeof(PC_Register));
+                stack_a.push((char*)&pc.current_command,8);
                 stack_a.push((char*)&regflag,1);
                 stack_a.newFrame();
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "pop_frame"){
                 stack_a.PopFrame();
                 memcpy(&regflag,stack_a.pop(1),1);
-                memcpy((char*)&pc,stack_a.pop(sizeof(PC_Register)),sizeof(PC_Register));
+                pc.current_command = stack_a.pop().intc;
+                pc.UpdateOffset();
                 memcpy((char*)&regs,stack_a.pop(sizeof(regs)),sizeof(regs));
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "add" || COMMAND_MAP[program[pc.current_offset].c.intc] == "sub" || COMMAND_MAP[program[pc.current_offset].c.intc] == "mul" || COMMAND_MAP[program[pc.current_offset].c.intc] == "div"){
                 Content *_lhs,*_rhs;
                 if(program[pc.current_offset+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_offset+1].c.intc);
-                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_offset+1].c.intc;
-                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
+                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)(malloc_place + program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)(malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc);
                 else throw VMError("Bad Left Value");
                 if(program[pc.current_offset+2].opid == NormalRegister) _rhs = (Content*)&getRegRefernce(program[pc.current_offset+2].c.intc);
                 else if(program[pc.current_offset+2].opid == Address) _rhs = (Content*)malloc_place + program[pc.current_offset+2].c.intc;
-                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc;
+                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)(malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc);
                 else if(program[pc.current_offset+2].opid == UnusualRegister){
                     if(program[pc.current_offset+2].c.intc == 0) /*fp*/ _rhs = (Content*)&stack_a.fp;
                     else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ _rhs = (Content*)&stack_a.sp;
@@ -453,12 +470,12 @@ class VMRuntime{
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "equ" || COMMAND_MAP[program[pc.current_offset].c.intc] == "maxeq" || COMMAND_MAP[program[pc.current_offset].c.intc] == "mineq" || COMMAND_MAP[program[pc.current_offset].c.intc] == "max" || COMMAND_MAP[program[pc.current_offset].c.intc] == "min"){
                 Content *_lhs,*_rhs;
                 if(program[pc.current_offset+1].opid == NormalRegister) _lhs = (Content*)&getRegRefernce(program[pc.current_offset+1].c.intc);
-                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)malloc_place + program[pc.current_offset+1].c.intc;
-                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc;
+                else if(program[pc.current_offset+1].opid == Address) _lhs = (Content*)(malloc_place + program[pc.current_offset+1].c.intc);
+                else if(program[pc.current_offset+1].opid == Address_Register) _lhs = (Content*)(malloc_place + getRegRefernce(program[pc.current_offset+1].c.intc).intc);
                 else throw VMError("Bad Left Value");
                 if(program[pc.current_offset+2].opid == NormalRegister) _rhs = (Content*)&getRegRefernce(program[pc.current_offset+2].c.intc);
-                else if(program[pc.current_offset+2].opid == Address) _rhs = (Content*)malloc_place + program[pc.current_offset+2].c.intc;
-                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc;
+                else if(program[pc.current_offset+2].opid == Address) _rhs = (Content*)(malloc_place + program[pc.current_offset+2].c.intc);
+                else if(program[pc.current_offset+2].opid == Address_Register) _rhs = (Content*)(malloc_place + getRegRefernce(program[pc.current_offset+2].c.intc).intc);
                 else if(program[pc.current_offset+2].opid == UnusualRegister){
                     if(program[pc.current_offset+2].c.intc == 0) /*fp*/ _rhs = (Content*)&stack_a.fp;
                     else if(program[pc.current_offset+2].c.intc == 1) /*sp*/ _rhs = (Content*)&stack_a.sp;
@@ -477,10 +494,10 @@ class VMRuntime{
                 }
                 else throw VMError("Bad Right Value");
                 if(COMMAND_MAP[program[pc.current_offset].c.intc] == "equ" && _lhs->intc == _rhs->intc) regflag = 1;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "maxeq" && _rhs->intc >= _lhs->intc) regflag = 1;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mineq" && _rhs->intc <= _lhs->intc) regflag = 1;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "max" && _rhs->intc > _lhs->intc) regflag = 1;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "min" && _rhs->intc < _lhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "maxeq" && _lhs->intc >= _rhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "mineq" && _lhs->intc <= _rhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "max" && _lhs->intc > _rhs->intc) regflag = 1;
+                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "min" && _lhs->intc < _rhs->intc) regflag = 1;
                 else regflag = 0;
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto" || COMMAND_MAP[program[pc.current_offset].c.intc] == "gt" || COMMAND_MAP[program[pc.current_offset].c.intc] == "gf"){
@@ -494,10 +511,12 @@ class VMRuntime{
                     _lhs = (Content*)std::string(s.chc,8).c_str();
                 }
                 else throw VMError("Bad Value");
-                if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto") pc+=_lhs->intc;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "gt" && regflag == true)  pc+=_lhs->intc;
-                else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "gf" && regflag == false) pc+=_lhs->intc;
-                continue; // 流程控制语句防止pc ++ 执行 
+                if(COMMAND_MAP[program[pc.current_offset].c.intc] == "goto" || (COMMAND_MAP[program[pc.current_offset].c.intc] == "gt" && regflag == true) || (COMMAND_MAP[program[pc.current_offset].c.intc] == "gf" && regflag == false)){
+                    pc+=_lhs->intc;
+                    regflag = 0;
+                    continue; // 流程控制语句防止pc ++ 执行 
+                }
+                
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "exit") return;
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "ret"){
@@ -505,7 +524,8 @@ class VMRuntime{
                 Content regval = getRegRefernce(program[pc.current_offset+1].c.intc);
                 stack_a.PopFrame();
                 memcpy(&regflag,stack_a.pop(1),1);
-                memcpy((char*)&pc,stack_a.pop(sizeof(PC_Register)),sizeof(PC_Register));
+                pc.current_command = stack_a.pop().intc;
+                pc.UpdateOffset();
                 memcpy((char*)&regs,stack_a.pop(sizeof(regs)),sizeof(regs));
                 stack_a.push(regval);
             }
@@ -518,7 +538,8 @@ class VMRuntime{
             _AllocSize = vme.head.code_length * 16 * 5;
             _Alloc_Size = _AllocSize;
         }
-        malloc_place = (char*)malloc(_AllocSize);
+        allocated_memory.resize(_Alloc_Size);
+        malloc_place = (char*)allocated_memory.data();
         char* memtop = malloc_place;
 
         constant_pool = (char*)memtop;
@@ -554,4 +575,9 @@ void DebugOutput(VMRuntime rt, std::ostream &out = std::cout){
     out << "\n";
     out << "REGFLAG:" << rt.regflag << " PC:" << rt.pc.current_command <<  std::endl;
     out << "==========================[EndOf Output]==========================\n";
+}
+
+void Memory_Watcher(VMRuntime rt,long v,std::ostream &out = std::cout){
+    Content *c = (Content*)(rt.malloc_place + v);
+    out << "Memory Watcher=>" << v << "\n int val=>" << c->intc << "\n Charter Val=>" << std::string(c->chc,8) << "\n";
 }

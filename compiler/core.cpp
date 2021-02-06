@@ -14,7 +14,7 @@ enum TokenValue {
     TOK_COMMA,          //逗号
     TOK_DIV,
     TOK_END,
-    TOK_EQUAL,TOK_2EQUAL,TOK_NOTEQUAL,TOK_MAXEQUAL,TOK_MINEQUAL,
+    TOK_EQUAL,TOK_2EQUAL,TOK_NOTEQUAL,TOK_MINEQUAL,TOK_MAXEQUAL,
     TOK_MAX,TOK_MIN,
     TOK_ID,
     TOK_IF,
@@ -39,7 +39,7 @@ std::string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_COMMA",
     "TOK_DIV",
     "TOK_END",
-    "TOK_EQUAL","TOK_2EQUAL","TOK_NOTEQUAL","TOK_MAXEQUAL","TOK_MINEQUAL",
+    "TOK_EQUAL","TOK_2EQUAL","TOK_NOTEQUAL","TOK_MINEQUAL","TOK_MAXEQUAL",
     "TOK_MAX","TOK_MIN",
     "TOK_ID",
     "TOK_IF",
@@ -208,8 +208,8 @@ class Lexer{
             return Token(TOK_ARGSTATEMENT,Text.substr(start,length));
         }
         if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + std::to_string(position));} }
-        if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,"<=");}else{return Token(TOK_MAX,"<");} }
-        if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,">=");}else{return Token(TOK_MIN,">");} }
+        if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,"<=");}else{return Token(TOK_MIN,"<");} }
+        if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,">=");}else{return Token(TOK_MAX,">");} }
         if(*current == '['){Next();return Token(TOK_CBRACKETL,"[");}if(*current == ']'){Next();return Token(TOK_CBRACKETR,"]");}
         if(isdigit(*current)){
             TokenValue ret = TOK_INTEGER;

@@ -10,5 +10,6 @@ int main(){
     vmr.vm_rules["verbose"] = true;
     vmr.Run();
     DebugOutput(vmr);
+    Memory_Watcher(vmr,0);
     return 0;
 }
