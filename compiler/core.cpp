@@ -221,7 +221,7 @@ class Lexer{
         }
         if(isalpha(*current) || *current == '_'){
             int begin = position;
-            while(isalpha(*current)|| *current == '_'){Next();}
+            while(isalpha(*current)|| *current == '_' || isdigit(*current)){Next();}
             int length = position - begin;
             //Next();
             return Token(TOK_ID,Text.substr(begin,length));

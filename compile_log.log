@@ -5,5 +5,7 @@ Reading Program to buffer...int ret=0;
 for(int i = 1,i <= 100,i=i+1){
     ret = ret + i;
 };
+asm "mov reg0,0";
+asm "mov_m [reg0],reg1,8";
 ret;
 

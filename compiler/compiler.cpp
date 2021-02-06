@@ -634,6 +634,23 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             else realarg0 = "[" + realarg0 + "]";
             return asb.genCommand("ret").genArg(realarg0)/*.genCommand("push").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))*/.push();
         }
+        if(ast.this_node.str == "asm"){
+            if(ast.node.size() != 1 || ast.node[0].this_node.type != TOK_STRING) throw CompileError("ASM Statement must be a asm string");
+            Lexer lex(ast.node[0].this_node.str);
+            ASMBlock asb;
+            asb.genCommand(lex.getNextToken().str);
+            for(auto tok = lex.getNextToken();tok.type != TOK_END;tok = lex.getNextToken()){
+                if(tok.type == TOK_COMMA) continue;
+                if(tok.type == TOK_CBRACKETL){
+                    std::string tmp = tok.str;
+                    while((tok = lex.getNextToken()).type != TOK_CBRACKETR && tok.type != TOK_END) tmp += tok.str;
+                    asb.genArg(tmp += tok.str);
+                    continue;
+                }
+                asb.genArg(tok.str);
+            }
+            return asb.push();
+        }
         throw CompileError("Unknown Command: " + ast.this_node.str);
     }
     if(ast.nodeT == BlockStatement){

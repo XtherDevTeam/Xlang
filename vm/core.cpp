@@ -325,6 +325,7 @@ class VMRuntime{
     void disasm(long cid = LONG_MAX,std::ostream &out = std::cout){
         if(cid == LONG_MAX) cid = pc.current_command;
         out << COMMAND_MAP[program[pc.Command_List[cid]].c.intc] << " ";
+        if(COMMAND_MAP[program[pc.Command_List[cid]].c.intc] == "exit") {std::cout << ";\n";return;}
         for(long i = pc.Command_List[cid] + 1;i != pc.Command_List[cid+1];i=i+1){
             if(program[i].opid == Number) out << program[i].c.intc;
             if(program[i].opid == NormalRegister) out << "reg" << program[i].c.intc;
