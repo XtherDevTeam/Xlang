@@ -1,7 +1,6 @@
-int ret=0;
-for(int i = 1,i <= 100,i=i+1){
-    ret = ret + i;
+func int main(){
+    int ret = 114514;
+    return ret;
 };
-asm "mov reg0,0";
-asm "mov_m [reg0],reg1,8";
-ret;
+
+int ret = main();

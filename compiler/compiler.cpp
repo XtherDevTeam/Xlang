@@ -354,7 +354,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position)).genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").push();
+            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position + getMemberSize(ast) - 1)).push();
         }
         if(global_symbol_table.find(ast.this_node.str) != global_symbol_table.end()){
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(global_symbol_table[ast.this_node.str].frame_position)).push();
@@ -381,11 +381,10 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         }
         //std::cout << "\033[32mGuess Result:\033[0m" << guessType(ast) << " " << getFunctionRealName(ast) <<  std::endl;
         asb.genCommand("call").genArg(funcnameInTab(func_name)).\
-        genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("stackbase").\
+        genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regsb").\
         genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").\
-        genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regsp").\
-        // genCommand("add").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(getMemberSize(ast))).\  低端序，直接从下面读到上面
-        genCommand("add").genArg("regsp").genArg(std::to_string(getMemberSize(ast))).push();
+        genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regsp");
+        //genCommand("add").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(getMemberSize(ast)));  //低端序，直接从下面读到上面
         sp += getMemberSize(ast);
         return asb;
     }
@@ -427,7 +426,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         if(ast.this_node.type == TOK_DOT){
             // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset)).genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").push();
+            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push();
         }
         if(ast.this_node.type == TOK_EQUAL){
             ASMBlock asb;
@@ -632,7 +631,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
             if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER ) /*do nothing*/;
             else realarg0 = "[" + realarg0 + "]";
-            return asb.genCommand("ret").genArg(realarg0)/*.genCommand("push").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))*/.push();
+            return asb.genCommand("ret").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))/*.genCommand("push").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))*/.push();
         }
         if(ast.this_node.str == "asm"){
             if(ast.node.size() != 1 || ast.node[0].this_node.type != TOK_STRING) throw CompileError("ASM Statement must be a asm string");

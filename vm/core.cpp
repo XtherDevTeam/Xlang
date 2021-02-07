@@ -521,14 +521,15 @@ class VMRuntime{
             }
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "exit") return;
             else if(COMMAND_MAP[program[pc.current_offset].c.intc] == "ret"){
-                if(program[pc.current_offset+1].opid != NormalRegister) throw VMError("Only support return register value now");
-                Content regval = getRegRefernce(program[pc.current_offset+1].c.intc);
+                long _Size = program[pc.current_offset + 2].c.intc;
+                if(program[pc.current_offset+1].opid != NormalRegister && program[pc.current_offset + 1].opid != Address_Register) throw VMError("Only support return register value now");
+                char* _Src = (program[pc.current_offset + 1].opid == NormalRegister) ? (char*)&getRegRefernce(program[pc.current_offset + 1].c.intc) : (char*)(malloc_place + program[pc.current_offset + 1].c.intc);
                 stack_a.PopFrame();
                 memcpy(&regflag,stack_a.pop(1),1);
                 pc.current_command = stack_a.pop().intc;
                 pc.UpdateOffset();
                 memcpy((char*)&regs,stack_a.pop(sizeof(regs)),sizeof(regs));
-                stack_a.push(regval);
+                stack_a.push(_Src,_Size);
             }
             pc++;
         }

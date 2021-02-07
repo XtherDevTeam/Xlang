@@ -1,11 +1,10 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...int ret=0;
-for(int i = 1,i <= 100,i=i+1){
-    ret = ret + i;
+Reading Program to buffer...func int main(){
+    int ret = 114514;
+    return ret;
 };
-asm "mov reg0,0";
-asm "mov_m [reg0],reg1,8";
-ret;
+
+int ret = main();
 
