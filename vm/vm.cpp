@@ -16,10 +16,6 @@ int main(){
         e.what();
         std::cout << "ERRCOMMAND: ";
         vmr.disasm();
-        std::cout << "Full of program:" << std::endl;
-        for(int i = 0;i < vmr.pc.Command_List.size();i=i+1){
-            vmr.disasm(i);
-        }
     }
     return 0;
 }

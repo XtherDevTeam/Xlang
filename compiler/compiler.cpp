@@ -426,7 +426,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         if(ast.this_node.type == TOK_DOT){
             // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push();
+            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push(); // 低端序
         }
         if(ast.this_node.type == TOK_EQUAL){
             ASMBlock asb;
@@ -724,11 +724,11 @@ namespace Bytecode{
         "mov","mov_m","push","pop","save","pop_frame",
         "add","sub","mul","div",
         "equ","maxeq","mineq","max","min",
-        "goto","gt","gf",
+        "goto","gt","gf","call"
         "exit","ret"
     };
     int getCommandId(std::string command){
-        for(int i = 0;i < 20;i=i+1){
+        for(int i = 0;i < 21;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
         return INT_MAX;

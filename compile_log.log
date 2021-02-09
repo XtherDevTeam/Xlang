@@ -1,10 +1,5 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...func int main(){
-    int ret = 114514;
-    return ret;
-};
-
-int ret = main();
+Reading Program to buffer...asm "save";
 
