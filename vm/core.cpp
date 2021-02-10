@@ -138,6 +138,19 @@ class Runtime_Stack{
         sp -= size;
         return ret;
     }
+    void save(){
+        Content s;
+        s.intc = fp;
+        push(s);
+        fp = sp;
+        sp = 0;
+    }
+    void pop_frame(){
+        pop(sp);
+        sp = fp;
+        fp = pop().intc;
+        std::cout << "result:" << fp << " , " << sp << std::endl;
+    }
     void output(std::ostream& out){
         for(int i = 1023;i >= 1023 - 16;i--){
             out << (int)(*base_memory)[i] << std::setw(1) << " ";
@@ -240,7 +253,7 @@ std::string COMMAND_MAP[] = {
     "mov","mov_m","push","pop","save","pop_frame",
     "add","sub","mul","div",
     "equ","maxeq","mineq","max","min",
-    "goto","gt","gf","call"
+    "goto","gt","gf","call",
     "exit","ret"
 };
 std::map<std::string,long> realmap;
@@ -255,12 +268,24 @@ class PC_Register{
         offset = (ByteCode*)start;
     }
     void operator++(int x){
-        while((++offset)->opid != Command);
+        while(true){
+            offset++;
+            if(offset->opid == Command) break;
+        }
+    }
+    void operator--(int x){
+        while(true){
+            offset--;
+            if(offset->opid == Command) break;
+        }
     }
     void operator+=(long c){
-        long i = 0;
-        if(c < 0) while(--offset->opid != Command && (i++) < c);
-        if(c > 0) while(++offset->opid != Command && (i++) < c);
+        //long  = 0;
+        if(c > 0) for(int i = 0;i < c;i++) (*this)++;
+        if(c < 0) for(int i = 0;i < 0-c;i++) (*this)--;
+    }
+    void operator=(ByteCode* pos){
+        offset = pos;
     }
 };
 
@@ -275,6 +300,7 @@ struct DevicePackage{
     char device_name[32];
 };
 
+Content public_temp_place;
 class VMRuntime{
     VMExec vme;
     std::string allocated_memory;
@@ -323,10 +349,11 @@ class VMRuntime{
     }
     void StartVMProc(){
         for(CodeLabel* i = vme.label_array;i < vme.label_array+vme.head.code_label_count;i++){
-            if(strcmp(i->label_n,"_vmstart")) pc.offset = program + i->start;
-            if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
+            if(std::string(i->label_n) == "_vmstart") pc.offset = program + i->start;
+            //if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
         }
         while(pc.offset->c.intc != realmap["exit"]){
+            //disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
                 char* _dest;
@@ -334,6 +361,7 @@ class VMRuntime{
                 if(GetMemberAddress(*(pc.offset + 2)) == nullptr){
                     // 实数
                     if((pc.offset+2)->opid == Number) for(int i = 0;i < 8;i=i+1) *(_dest + i) = (pc.offset+2)->c.chc[i];
+                    else if((pc.offset+2)->c.intc == 3) ((Content*)_dest)->intc = allocated_memory.size() - 1;
                     else throw VMError("Invalid Move Command");
                 }else{
                     char* _Src = GetMemberAddress(*(pc.offset + 2));
@@ -345,6 +373,7 @@ class VMRuntime{
                 if(GetMemberAddress(*(pc.offset + 2)) == nullptr){
                     // 实数
                     if((pc.offset+2)->opid == Number) for(int i = 0;i < 8;i=i+1) *(_dest + i) = (pc.offset+2)->c.chc[i];
+                    else if((pc.offset+2)->c.intc == 3) ((Content*)_dest)->intc = allocated_memory.size() - 1;
                     else throw VMError("Invalid Move Command");
                 }else{
                     char* _Src = GetMemberAddress(*(pc.offset + 2));
@@ -359,7 +388,79 @@ class VMRuntime{
                 if(dest == nullptr) throw VMError("pop:Unknown data address");
                 char* _Src = stack_a.pop(size);
                 for(long int i = 0;i < size;i++) *(dest + i) = *(_Src + i);
-            }
+            }else if(pc.offset->c.intc == realmap["save"]){
+                Content s;
+                s.ptrc = pc.offset;
+                stack_a.push(s);
+                for(int i = 0;i < 32;i++){
+                    stack_a.push(regs[i]);
+                }
+                stack_a.push((char*)&regflag,1);
+                stack_a.save();
+            }else if(pc.offset->c.intc == realmap["pop_frame"]){
+                stack_a.pop_frame();
+                regflag = *(stack_a.pop(1));
+                for(int i = 31;i >= 0;i--){
+                    regs[i] = stack_a.pop();
+                }
+                public_temp_place = stack_a.pop();
+            }else if(pc.offset->c.intc == realmap["add"] || pc.offset->c.intc == realmap["sub"] || pc.offset->c.intc == realmap["mul"] || pc.offset->c.intc == realmap["div"]){
+                char *_dest = GetMemberAddress(*(pc.offset+1)),*_Src = GetMemberAddress(*(pc.offset+2));
+                if(_dest == nullptr) throw VMError("add:_dest doesn't a place");
+                if(_Src != nullptr){
+                    if(pc.offset->c.intc == realmap["add"]) ((Content*)_dest)->intc += ((Content*)_Src)->intc;
+                    if(pc.offset->c.intc == realmap["sub"]) ((Content*)_dest)->intc -= ((Content*)_Src)->intc;
+                    if(pc.offset->c.intc == realmap["mul"]) ((Content*)_dest)->intc *= ((Content*)_Src)->intc;
+                    if(pc.offset->c.intc == realmap["div"]) ((Content*)_dest)->intc /= ((Content*)_Src)->intc;
+                }else{
+                    Content s = (pc.offset + 2)->c;
+                    if((pc.offset+2)->c.intc == 3 && (pc.offset+2)->opid == UnusualRegister) s.intc = allocated_memory.size() - 1;
+                    if(pc.offset->c.intc == realmap["add"]) ((Content*)_dest)->intc += s.intc;
+                    if(pc.offset->c.intc == realmap["sub"]) ((Content*)_dest)->intc -= s.intc;
+                    if(pc.offset->c.intc == realmap["mul"]) ((Content*)_dest)->intc *= s.intc;
+                    if(pc.offset->c.intc == realmap["div"]) ((Content*)_dest)->intc /= s.intc;
+                }
+            }else if(pc.offset->c.intc == realmap["equ"] || pc.offset->c.intc == realmap["maxeq"] || pc.offset->c.intc == realmap["mineq"] ||
+                     pc.offset->c.intc == realmap["max"] || pc.offset->c.intc == realmap["min"]
+                    ){
+                Content _dest,_src;
+                Content* tmp = (Content*)GetMemberAddress(*(pc.offset+1));
+                if(tmp != nullptr) _dest = *tmp;
+                else _dest.intc = (pc.offset+1)->c.intc;
+                tmp = (Content*)GetMemberAddress(*(pc.offset+2));
+                if(tmp != nullptr) _src = *tmp;
+                else _src.intc = (pc.offset+2)->c.intc;
+                if(pc.offset->c.intc == realmap["equ"])   regflag = (_dest.intc == _src.intc);
+                if(pc.offset->c.intc == realmap["maxeq"]) regflag = (_dest.intc >= _src.intc);
+                if(pc.offset->c.intc == realmap["mineq"]) regflag = (_dest.intc <= _src.intc);
+                if(pc.offset->c.intc == realmap["max"])   regflag = (_dest.intc > _src.intc);
+                if(pc.offset->c.intc == realmap["min"])   regflag = (_dest.intc < _src.intc);
+            }else if(pc.offset->c.intc == realmap["goto"] || pc.offset->c.intc == realmap["gt"] || pc.offset->c.intc == realmap["gf"]){
+                Content s;
+                if(GetMemberAddress(*(pc.offset + 1)) != nullptr) s = *(Content*)GetMemberAddress(*(pc.offset+1));
+                else s = (pc.offset+1)->c;
+                if(pc.offset->c.intc == realmap["goto"]) {pc += s.intc;continue;}
+                else if(pc.offset->c.intc == realmap["gt"] && regflag == 1) {pc += s.intc;continue;}
+                else if(pc.offset->c.intc == realmap["gf"] && regflag == 0) {pc += s.intc;continue;}
+            }else if(pc.offset->c.intc == realmap["call"]){
+                //long i=;
+                pc = program + vme.label_array[(pc.offset+1)->c.intc].start;
+                continue;
+            }else if(pc.offset->c.intc == realmap["ret"]){
+                char* _Src = GetMemberAddress(*(pc.offset+1));
+                stack_a.pop_frame();
+                regflag = stack_a.pop(1);
+                for(int i = 31;i >= 0;i--){
+                    regs[i] = stack_a.pop();
+                }
+                public_temp_place = stack_a.pop();
+                long size = (pc.offset+2)->c.intc;
+                stack_a.push(_Src,size);
+                pc.offset = (ByteCode*)public_temp_place.ptrc;
+                //continue;
+                stack_a.output(std::cout);
+                pc++;
+            }else if(pc.offset->c.intc == realmap["exit"]) return;
             pc++;
         }
     }
@@ -371,6 +472,7 @@ class VMRuntime{
         }
         allocated_memory.resize(_Alloc_Size);
         malloc_place = (char*)allocated_memory.data();
+        memset(malloc_place,0,_Alloc_Size);
         char& memtop = malloc_place[0];
 
         constant_pool = (char*)&memtop;
@@ -386,7 +488,8 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 20;i++){
+        for(int i = 0;i < 21;i++){
+            //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
             realmap[COMMAND_MAP[i]] = i;
         }
         StartVMProc();
@@ -399,6 +502,17 @@ class VMRuntime{
         pc = PC_Register(allocated_memory,(void*)program);
     }
 };
+
+void disasm(ByteCode* program,size_t length){
+    for(int i = 0;i < length;i++){
+        if((program+i)->opid == Command) std::cout << std::endl << COMMAND_MAP[(program+i)->c.intc] << " ";
+        if((program+i)->opid == Number)  std::cout << (program + i)->c.intc << ",";
+        if((program+i)->opid == NormalRegister) std::cout << "reg" << (program + i)->c.intc << ",";
+        if((program+i)->opid == Address_Register) std::cout << "[" << "reg" << (program + i)->c.intc << "],";
+        if((program+i)->opid == UnusualRegister) std::cout << "ureg" << (program + i)->c.intc << ",";
+        if((program+i)->opid == Address) std::cout << "[" << (program + i)->c.intc << "],";
+    }
+}
 
 void DebugOutput(VMRuntime rt, std::ostream &out = std::cout){
     out << "==========================[Debug Output]==========================\n";

@@ -12,6 +12,11 @@ int main(){
     rs.push(ContentMake(114514));
     rs.push(ContentMake(233));
     //rs.output(std::cout);
+    rs.save();
+    rs.push(ContentMake(1145141919));
+    rs.push(ContentMake(810));
+    //rs.output(std::cout);
+    rs.pop_frame();
     std::cout << rs.pop().intc << std::endl;
     std::cout << rs.pop().intc << std::endl;
 }

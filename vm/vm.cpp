@@ -7,15 +7,16 @@ int main(){
     VMExec vme;
     LoadVMExec((char*)path.c_str(),&vme);
     VMRuntime vmr(vme);
-    try{
+    //try{
     vmr.vm_rules["verbose"] = true;
+    disasm(vme.code_array,vme.head.code_length);
     vmr.Run();
-    DebugOutput(vmr);
+    // /DebugOutput(vmr);
     Memory_Watcher(vmr,0);
-    }catch(VMError e){
+    /*}catch(VMError e){
         e.what();
         std::cout << "ERRCOMMAND: ";
         vmr.disasm();
-    }
+    }*/
     return 0;
 }

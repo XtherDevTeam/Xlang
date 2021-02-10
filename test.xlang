@@ -1,1 +1,5 @@
-asm "save";
+func int main(){
+    int ret = 114514;
+    return ret;
+};
+int res = main();
