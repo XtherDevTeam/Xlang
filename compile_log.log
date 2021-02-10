@@ -2,7 +2,10 @@ Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
 Reading Program to buffer...func int main(){
-    int ret = 114514;
+    int ret = 0;
+    for(int i = 1,i <= 100,i=i+1){
+        ret = ret + i;
+    };
     return ret;
 };
 int res = main();

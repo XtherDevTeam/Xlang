@@ -9,7 +9,7 @@ int main(){
     VMRuntime vmr(vme);
     //try{
     vmr.vm_rules["verbose"] = true;
-    disasm(vme.code_array,vme.head.code_length);
+    //disasm(vme.code_array,vme.head.code_length);
     vmr.Run();
     // /DebugOutput(vmr);
     Memory_Watcher(vmr,0);
