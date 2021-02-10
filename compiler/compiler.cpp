@@ -354,7 +354,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
-            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position + getMemberSize(ast) + 1)).push();
+            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position + getMemberSize(ast) - 1)).push();
         }
         if(global_symbol_table.find(ast.this_node.str) != global_symbol_table.end()){
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(global_symbol_table[ast.this_node.str].frame_position)).push();
@@ -384,7 +384,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regsb").\
         genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").\
         genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regsp").\
-        genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("1").push();
+        genCommand("add").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("1").push();
         //genCommand("add").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(getMemberSize(ast)));  //低端序，直接从下面读到上面
         sp += getMemberSize(ast);
         return asb;
@@ -427,7 +427,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         if(ast.this_node.type == TOK_DOT){
             // address only
             int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) + 1)).push(); // 低端序
+            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push(); // 低端序
         }
         if(ast.this_node.type == TOK_EQUAL){
             ASMBlock asb;
@@ -774,14 +774,14 @@ namespace Bytecode{
                         }else{
                             arg.opid = NormalRegister;
                             //Content argc;
-                            arg.c.intc = atoi(togen[i][_each_command].args[_each_arg].substr(3).c_str());
+                            arg.c.intc = atol(togen[i][_each_command].args[_each_arg].substr(3).c_str());
                             bytecode.push_back(arg);
                         }
                     }else if(togen[i][_each_command].args[_each_arg][0] == '['){
                         //不会有傻逼拿特殊寄存器来放地址吧？不会吧不会吧？
                         std::string nstr = togen[i][_each_command].args[_each_arg].substr(1,togen[i][_each_command].args[_each_arg].length() - 1);
                         arg.opid = (nstr.substr(0,3) == "reg") ? Address_Register : Address;
-                        arg.c.intc = (nstr.substr(0,3) == "reg") ? atoi(nstr.substr(3).c_str()) : atoi(nstr.c_str());
+                        arg.c.intc = (nstr.substr(0,3) == "reg") ? atol(nstr.substr(3).c_str()) : atol(nstr.c_str());
                         bytecode.push_back(arg);
                     }else if(function_table.count(togen[i][_each_command].args[_each_arg])){
                         long s = 0;
@@ -791,7 +791,7 @@ namespace Bytecode{
                         bytecode.push_back(arg);
                     }else{
                         arg.opid = Number;
-                        arg.c.intc = atoi(togen[i][_each_command].args[_each_arg].c_str());
+                        arg.c.intc = atol(togen[i][_each_command].args[_each_arg].c_str());
                         bytecode.push_back(arg);
                     }
                     bytecode_top ++;

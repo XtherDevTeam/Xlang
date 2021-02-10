@@ -115,26 +115,26 @@ class Runtime_Stack{
         base_memory = nullptr;
     }
     void push(Content c){
-        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - 8 - 1];
+        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - 8 + 1];
         for(int i = 0;i < 8;i=i+1,ref++){
             (*ref) = c.chc[i];
         }
         sp += 8;
     }
     void push(char* chs,size_t size){
-        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - size - 1];
+        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - size + 1];
         for(int i = 0;i < size;i=i+1,ref++){
             (*ref) = chs[i];
         }
         sp += size;
     }
     Content& pop(){
-        Content* ref = (Content*)&(*base_memory)[base_memory->size() - 1 - fp - sp - 1];
+        Content* ref = (Content*)&(*base_memory)[base_memory->size() - 1 - fp - sp + 1];
         sp -= 8;
         return *ref;
     }
     char* pop(size_t size){
-        char* ret = (char*)base_memory->data() + base_memory->size() - 1 - fp - sp - 1;
+        char* ret = (char*)base_memory->data() + base_memory->size() - 1 - fp - sp + 1;
         sp -= size;
         return ret;
     }

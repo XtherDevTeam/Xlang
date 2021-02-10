@@ -1,8 +1,5 @@
 func int main(){
-    int ret = 0;
-    for(int i = 1,i <= 100,i=i+1){
-        ret = ret + i;
-    };
+    int ret = 5572738824501224776;
     return ret;
 };
 int res = main();
