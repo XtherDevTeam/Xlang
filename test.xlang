@@ -1,5 +1,5 @@
 func int main(){
-    int ret = 5572738824501224776;
+    int ret = 114*514;
     return ret;
 };
 int res = main();

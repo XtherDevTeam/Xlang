@@ -405,20 +405,20 @@ class VMRuntime{
                 }
                 public_temp_place = stack_a.pop();
             }else if(pc.offset->c.intc == realmap["add"] || pc.offset->c.intc == realmap["sub"] || pc.offset->c.intc == realmap["mul"] || pc.offset->c.intc == realmap["div"]){
-                char *_dest = GetMemberAddress(*(pc.offset+1)),*_Src = GetMemberAddress(*(pc.offset+2));
+                Content* _dest = (Content*)GetMemberAddress(*(pc.offset+1)),*_Src = (Content*)GetMemberAddress(*(pc.offset+2));
                 if(_dest == nullptr) throw VMError("add:_dest doesn't a place");
                 if(_Src != nullptr){
-                    if(pc.offset->c.intc == realmap["add"]) ((Content*)_dest)->intc += ((Content*)_Src)->intc;
-                    if(pc.offset->c.intc == realmap["sub"]) ((Content*)_dest)->intc -= ((Content*)_Src)->intc;
-                    if(pc.offset->c.intc == realmap["mul"]) ((Content*)_dest)->intc *= ((Content*)_Src)->intc;
-                    if(pc.offset->c.intc == realmap["div"]) ((Content*)_dest)->intc /= ((Content*)_Src)->intc;
+                    if(pc.offset->c.intc == realmap["add"])      _dest->intc = _dest->intc + _Src->intc;
+                    else if(pc.offset->c.intc == realmap["sub"]) _dest->intc = _dest->intc - _Src->intc;
+                    else if(pc.offset->c.intc == realmap["mul"]) _dest->intc = _dest->intc * _Src->intc;
+                    else if(pc.offset->c.intc == realmap["div"]) _dest->intc = _dest->intc / _Src->intc;
                 }else{
                     Content s = (pc.offset + 2)->c;
                     if((pc.offset+2)->c.intc == 3 && (pc.offset+2)->opid == UnusualRegister) s.intc = allocated_memory.size() - 1;
-                    if(pc.offset->c.intc == realmap["add"]) ((Content*)_dest)->intc += s.intc;
-                    if(pc.offset->c.intc == realmap["sub"]) ((Content*)_dest)->intc -= s.intc;
-                    if(pc.offset->c.intc == realmap["mul"]) ((Content*)_dest)->intc *= s.intc;
-                    if(pc.offset->c.intc == realmap["div"]) ((Content*)_dest)->intc /= s.intc;
+                    if(pc.offset->c.intc == realmap["add"]) _dest->intc += s.intc;
+                    if(pc.offset->c.intc == realmap["sub"]) _dest->intc -= s.intc;
+                    if(pc.offset->c.intc == realmap["mul"]) _dest->intc *= s.intc;
+                    if(pc.offset->c.intc == realmap["div"]) _dest->intc /= s.intc;
                 }
             }else if(pc.offset->c.intc == realmap["equ"] || pc.offset->c.intc == realmap["maxeq"] || pc.offset->c.intc == realmap["mineq"] ||
                      pc.offset->c.intc == realmap["max"] || pc.offset->c.intc == realmap["min"]
