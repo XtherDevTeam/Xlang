@@ -1,15 +1,27 @@
-# Chinese Doc
--   # 这是个什么
-    A:这是个编译性的语言，有配套的VM（还没写），目前进度：Lexer到AST的生成
+# Get Started
+## DOWNLOAD AND COMPILE IT
+first,download this repository to your computer.and chdir to it.
+if you don't have g++ compiler?please setting up beforce you compile it
+if you finish this step.then execute it:
+`g++ ./xlang.cpp -o xlang -g`
+`g++ ./vm/vm.cpp -o ./vm/vm -g`
+you alse can don't append `-g` this arg , that is for debug
+## Basic Syntax
+Function declaration
+```go
+func [return type] [function name](arg0_type:arg0_name,...){
+  code here
+};
 
-    # 运行过程
+sample here:
+func int main(int:argc,ptr_char:argv){
+  return 0;
+};
+```
+Variable declaration
+```go
+[typename] varname<=[any]>,...;
 
-    ```c++
-    // Defined variables: code -> 从文件读取的源代码 , filename -> 输出文件名
-    Lexer lexer(code);
-    AST root(lexer);
-    std::string asmcode = root.dumpasm();
-    CompileObj c = Compiler::Compile(asmcode);
-    c.dumpToFile(filename);
-    ```
-
+sample here:
+int i=0;
+```
