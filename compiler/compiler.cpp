@@ -161,7 +161,7 @@ enum SymbolType{
 
 class Symbol{
     public:
-    SymbolType type;
+    //SymbolType type;
     std::string _Typename;
     size_t frame_position;
     Symbol(std::string typename_){
@@ -525,7 +525,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     else realarg0 = "[" + realarg0 + "]";
                     symbol_table[ast.node[i].node[0].this_node.str] = Symbol(typen.name);
                     asb.genCommand("push").genArg(realarg0).genArg(std::to_string(typen.size));
-                    sp += typen.size;
+                    //sp += typen.size;
                 }
             }
             return asb.push();
