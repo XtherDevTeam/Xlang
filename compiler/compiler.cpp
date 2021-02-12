@@ -680,30 +680,39 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 }
 
 std::vector<ASMBlock> CompileProcess(std::string code){
-    try{
+    //try{
     ASMBlock asb;
-    int intext=0,block=0,brack1=0,brack2=0,brack3=0;
+    int intext=0,block=0,brack1=0,brack2=0,brack3=0,descriptor = 0,bdescriptor = 0;
     std::string tmp;
     for(int i = 0;i < code.length();i++){
+        if(code[i] == '/' && code[i+1] == '*' && !intext) bdescriptor = 1;
+        if(code[i] == '*' && code[i+1] == '/' && !intext){
+            bdescriptor = 0;i++;continue;
+        }
+        else if((code[i] == '\n' || code[i] == '\r') && !intext){
+            descriptor = 0;
+            if(code[i+1] == '/' && code[i+2] == '/' && bdescriptor == false) descriptor = 1;
+            continue;
+        }
         if(code[i] == '\\') {
             if(code[i+1] == '\n') i+=2;
             else if(code[i+1] == '\r') i+=3;
             else if(code[i+1] == 'n'){tmp+='\n';i+=2;}
             else continue;
         }
-        else if(code[i] == '\n' || code[i] == '\r') continue;
         else if(code[i] == '\"') intext = !intext;
         else if(code[i] == '(') brack1++; else if(code[i] == ')') brack1--;
         else if(code[i] == '[') brack2++; else if(code[i] == ']') brack2--;
         else if(code[i] == '{') brack3++; else if(code[i] == '}') brack3--;
-        if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0 && !intext) {
-            //std::cout << "HERE:" << tmp;
+        std::cout << (descriptor == 0) << (bdescriptor == 0) << std::endl;
+        if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0 && !intext && descriptor == 0 && bdescriptor == 0) {
+            //std::cout << "HERE:" << tmp[0];
             Lexer lex(tmp);
             asb += dumpToAsm(ASTree(lex),true);
             tmp = "";
             continue;
         }
-        tmp += code[i];
+        if(descriptor == false && bdescriptor == false) tmp += code[i];
     }
     std::vector<ASMBlock> asblst;
     // 默认起始点为main函数
@@ -721,13 +730,13 @@ std::vector<ASMBlock> CompileProcess(std::string code){
         symbol_table.clear();
     }
     return asblst;
-    }
+    /*}
     catch(CompileError e){
         e.what();
     }
     catch(ParserError e){
         e.what();
-    }
+    }*/
 }
 
 namespace Bytecode{

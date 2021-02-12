@@ -1,6 +1,12 @@
 Xlang Compiler Alpha 0.1
 Powered by xiaokang00010
 Filename -> test.xlang
-Reading Program to buffer...while(1==1){
+Reading Program to buffer.../*
+This is a test file for Xlang compiler
+Writed by xiaokang00010 at feb,12th,2021
+*/
+// for testing
+func int main(int:argc){
+	return 0;
 };
 

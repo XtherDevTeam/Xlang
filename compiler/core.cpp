@@ -153,8 +153,8 @@ class Lexer{
         if(*current == '\0'){
             return Token(TOK_END,"\0");
         }
-        if(*current == ' '){
-            while(*current == ' '){Next();}
+        if(*current == ' ' || *current == '\t'){
+            while(*current == ' ' || *current == '\t'){Next();}
         }
         if(*current == '"'){
             Next();
