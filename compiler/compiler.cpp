@@ -620,6 +620,24 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             }
             return asb;
         }
+        if(ast.this_node.str == "while"){
+            if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement) throw CompileError("Bad While Statement");
+            ASMBlock asb;
+            asb += dumpToAsm(ast.node[0].node[0]);
+            asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(dumpToAsm(ast.node[1]).lists.size() + 1 + 1)).push(); // command here
+            asb += dumpToAsm(ast.node[1]).genCommand("_$fakecommand_loop_continue").push();
+            for(long i = 0;i < asb.lists.size();i++){
+                if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back(std::to_string(asb.lists.size() - i));
+                }
+                if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
+                    asb.lists[i].Main = "goto";
+                    asb.lists[i].args.push_back(std::to_string(0 - i));
+                }
+            }
+            return asb;
+        }
         if(ast.this_node.str == "break"){
             return ASMBlock().genCommand("_$fakecommand_goto_for_end").push();
         }
