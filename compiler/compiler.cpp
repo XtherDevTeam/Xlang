@@ -681,6 +681,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 
 std::vector<ASMBlock> CompileProcess(std::string code){
     //try{
+    std::vector<ASMBlock> asblst;
     ASMBlock asb;
     int intext=0,block=0,brack1=0,brack2=0,brack3=0,descriptor = 0,bdescriptor = 0;
     std::string tmp;
@@ -704,17 +705,38 @@ std::vector<ASMBlock> CompileProcess(std::string code){
         else if(code[i] == '(') brack1++; else if(code[i] == ')') brack1--;
         else if(code[i] == '[') brack2++; else if(code[i] == ']') brack2--;
         else if(code[i] == '{') brack3++; else if(code[i] == '}') brack3--;
-        std::cout << (descriptor == 0) << (bdescriptor == 0) << std::endl;
+        //std::cout << (descriptor == 0) << (bdescriptor == 0) << std::endl;
         if(code[i] == ';' && brack1 == 0 && brack2 == 0 && brack3 == 0 && !intext && descriptor == 0 && bdescriptor == 0) {
             //std::cout << "HERE:" << tmp[0];
             Lexer lex(tmp);
-            asb += dumpToAsm(ASTree(lex),true);
+            ASTree ast = ASTree(lex);
+            if(ast.nodeT == FunctionCallStatement && ast.this_node.str == "import"){
+                for(int i=0;i < ast.node[0].node.size();i++){
+                    if(ast.node[0].node[i].node[0].this_node.str == "headers"){
+                        std::string code;
+                        if(ast.node[0].node[i].node[1].this_node.type != TOK_STRING) throw CompileError("SyntaxError: import(type:filepath,...)");
+                        std::ifstream infile(ast.node[0].node[i].node[1].this_node.str);
+                        while(!infile.eof()){
+                            std::string tmpline;
+                            getline(infile,tmpline);
+                            code += tmpline + "\n";
+                        }
+                        std::vector<ASMBlock> list = CompileProcess(code);
+                        for(int i = 0;i < list.size();i++){
+                            if(list[i].name == "_vmstart"){asb += list[i];asb.lists.erase(--asb.lists.end());}
+                            //else asblst.push_back(list[i]);
+                        }
+                    }else throw CompileError("SyntaxError: Unknown Import Kind:" + ast.node[0].node[i].node[0].this_node.str);
+                }
+                tmp = "";
+                continue;
+            }
+            asb += dumpToAsm(ast,true);
             tmp = "";
             continue;
         }
         if(descriptor == false && bdescriptor == false) tmp += code[i];
     }
-    std::vector<ASMBlock> asblst;
     // 默认起始点为main函数
     asb.genCommand("exit").push();
     asb.name = "_vmstart";

@@ -1,0 +1,3 @@
+func int test(){
+	return 114514;
+};
