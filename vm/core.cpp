@@ -66,32 +66,29 @@ struct VMExec{
 void VMExec_Serialization(char* filename,VMExec vme){
     int fd = open(filename,O_RDWR|O_CREAT,0777);
     if(fd == -1) perror("File open error!");
-    write(fd,&vme.head,sizeof(vme.head));
-    write(fd,vme.label_array,vme.head.code_label_count * 48);
-    write(fd,vme.code_array,vme.head.code_length * 16);
-    write(fd,&vme.cpool.count,8);
+    write(fd,&vme.head,sizeof(VMExecHeader));
+
+    write(fd,vme.label_array,sizeof(CodeLabel) * vme.head.code_label_count);
+    write(fd,vme.code_array,sizeof(ByteCode) * vme.head.code_length);
+
     write(fd,&vme.cpool.size,8);
-    write(fd,vme.cpool.items,vme.cpool.count * 8);
     write(fd,vme.cpool.pool,vme.cpool.size);
+    close(fd);
 }
 
-int LoadVMExec(char* filename,VMExec* vme){
+// return an not closed file handle for constant pool init
+int LoadVMExec(char* filename,VMExec& vme){
     int fd = open(filename,O_RDWR|O_CREAT,0777);
-    if(read(fd,&vme->head,sizeof(VMExecHeader)) == -1)  return VM_FAILED_OPEN;
-    if(vme->head.hash != 0x114514ff) return VM_INVALID_HASH;
-    vme->label_array = (CodeLabel*)malloc(vme->head.code_label_count * 48);
-    if(vme->label_array == NULL) return VM_FAILED_OPEN;
-    else if(read(fd,vme->label_array,vme->head.code_label_count * 48) == -1) return VM_FAILED_OPEN;
-    vme->code_array = (ByteCode*)malloc(vme->head.code_length * 16);
-    if(vme->code_array == NULL) return VM_FAILED_OPEN;
-    else if(read(fd,vme->code_array,vme->head.code_length * 16) == -1) return VM_FAILED_OPEN;
-    if(read(fd,&vme->cpool,sizeof(addr_t) * 8) == -1) return VM_FAILED_OPEN;
-    vme->cpool.items = (size_t*)malloc(vme->cpool.count * 8);
-    vme->cpool.pool = (char*)malloc(vme->cpool.size);
-    read(fd,&vme->cpool.items,vme->cpool.count * 8);
-    read(fd,&vme->cpool.pool,vme->cpool.size);
+    //vme->cpool = (ConstantPool*)malloc(sizeof(ConstantPool));
+    read(fd,&vme.head,sizeof(VMExecHeader));
 
-    return VM_SUCCES_LOADED;
+    vme.label_array = (CodeLabel*)malloc(sizeof(CodeLabel) * vme.head.code_label_count);
+    vme.code_array = (ByteCode*)malloc(sizeof(ByteCode) * vme.head.code_length);
+    read(fd,vme.label_array,sizeof(CodeLabel) * vme.head.code_label_count);
+    read(fd,vme.code_array,sizeof(ByteCode) * vme.head.code_length);
+
+    read(fd,&vme.cpool.size,8);
+    return fd;
 }
 
 struct heap_item_t{
@@ -305,6 +302,7 @@ class VMRuntime{
     VMExec vme;
     std::string allocated_memory;
     public:
+    int              vme_fd;
     char*            malloc_place;
     size_t           _Alloc_Size;
     bool             regflag;
@@ -319,8 +317,9 @@ class VMRuntime{
     Content& getRegRefernce(int rid){
         return regs[rid];
     }
-    void Bind_VMExec(VMExec vme){
+    void Bind_VMExec(VMExec vme,int unread_rid){
         this->vme = vme;
+        this->vme_fd = unread_rid;
     }
     void disasm(std::ostream &out = std::cout){
         out << COMMAND_MAP[pc.offset->c.intc] << " ";
@@ -473,18 +472,18 @@ class VMRuntime{
         allocated_memory.resize(_Alloc_Size);
         malloc_place = (char*)allocated_memory.data();
         memset(malloc_place,0,_Alloc_Size);
-        char& memtop = malloc_place[0];
+        char* memtop = malloc_place;
 
         constant_pool = (char*)&memtop;
-        memcpy(&memtop,vme.cpool.pool,vme.cpool.size);
-        memtop += malloc_place[vme.cpool.size];
+        read(vme_fd,malloc_place,vme.cpool.size);
+        memtop += vme.cpool.size;
 
-        program = (ByteCode*)&memtop;
+        program = (ByteCode*)memtop;
         memcpy(program,vme.code_array,vme.head.code_length * 16);
         memtop += vme.head.code_length * 16;
 
         stack_a = Runtime_Stack(allocated_memory);
-        heap = Runtime_Heap(allocated_memory,malloc_place[vme.cpool.size]+1);
+        heap = Runtime_Heap(allocated_memory,vme.cpool.size+1);
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
@@ -494,11 +493,11 @@ class VMRuntime{
         }
         StartVMProc();
     }
-    VMRuntime(VMExec vme){
+    VMRuntime(VMExec vme,int unread_rid){
         heap = Runtime_Heap();
         regflag = 0;
         memset(&regs,0,32*sizeof(Content));
-        Bind_VMExec(vme);
+        Bind_VMExec(vme,unread_rid);
         pc = PC_Register(allocated_memory,(void*)program);
     }
 };

@@ -5,8 +5,7 @@ int main(){
     std::string path = "test.xvm";
     //getline( std::cin,path);
     VMExec vme;
-    LoadVMExec((char*)path.c_str(),&vme);
-    VMRuntime vmr(vme);
+    VMRuntime vmr(vme,LoadVMExec((char*)path.c_str(),vme));
     //try{
     vmr.vm_rules["verbose"] = true;
     //disasm(vme.code_array,vme.head.code_length);

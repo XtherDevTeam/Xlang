@@ -260,10 +260,12 @@ namespace ConstPool_Apis
         memcpy(cpool.pool + cpool.items[cpool.count],_Src,size);
         if(cpool.count == 0){
             cpool.items[cpool.count+1] = size;
+            cpool.size = size;
             return cpool.count++;
         }
         cpool.count++;
         cpool.items[cpool.count] = cpool.items[cpool.count-1] + size;
+        cpool.size += size;
         return cpool.count-1;
     }
 } // namespace ConstPool_Apis
@@ -280,7 +282,7 @@ std::string guessType(ASTree ast){
         switch (ast.this_node.type)
         {
         case TOK_STRING:
-            return "std::string";
+            return "ptr_char";
         
         case TOK_INTEGER:
             return "int";
@@ -351,7 +353,8 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(ast.this_node.str).push();
         }
         if(ast.this_node.type == TOK_STRING){
-            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.size()))).push();
+            //std::cout << "???" << ast.this_node.str.size() << std::endl;
+            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.length()))).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
             return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position + getMemberSize(ast) - 1)).push();
@@ -494,7 +497,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             for(int i = 0;i < ast.node.size();i++){
                 if(ast.node[i].nodeT == Id){
                     if(mode){
-                        int cp_adr = ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size);
+                        int cp_adr = ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size); // 解释，这里是把全局变量放进常量池，初始化
                         global_symbol_table[ast.node[i].this_node.str].frame_position = cp.items[cp_adr]; // WARN: 挖坑
                         global_symbol_table[ast.node[i].this_node.str]._Typename = typen.name;
                         asb.genCommand("mov_m").genArg("[" + std::to_string(cp.items[cp_adr]) + "]").genArg(std::to_string(0)).genArg(std::to_string(typen.size));
