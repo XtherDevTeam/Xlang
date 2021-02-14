@@ -307,7 +307,7 @@ std::string guessType(ASTree ast){
         }else if(ast.this_node.type == TOK_COLON){
             return ast.node[0].this_node.str; // 送 业 绩
         }else{
-            if(guessType(ast.node[0]) == "std::string" || guessType(ast.node[1]) == "std::string") return "std::string";
+            if(guessType(ast.node[0]) == "string" || guessType(ast.node[1]) == "string") return "string";
             return guessType(ast.node[0]);
         }
     }
@@ -350,7 +350,12 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
     if(ast.nodeT == Unused) return ASMBlock();
     if(ast.nodeT == Id){
         if(ast.this_node.type == TOK_INTEGER || ast.this_node.type == TOK_DOUBLE){
-            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(ast.this_node.str).push();
+            if(ast.this_node.type == TOK_INTEGER) return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(ast.this_node.str).push();
+            else{
+                Content s;
+                s.dblc = atof(ast.this_node.str.c_str());
+                return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(s.intc)).push();
+            }
         }
         if(ast.this_node.type == TOK_STRING){
             //std::cout << "???" << ast.this_node.str.size() << std::endl;
@@ -838,7 +843,7 @@ namespace Bytecode{
                     }else if(function_table.count(togen[i][_each_command].args[_each_arg])){
                         long s = 0;
                         while(togen[s++].name != togen[i][_each_command].args[_each_arg]);
-                        arg.opid = Number;
+                        arg.opid = Number; //函数表编号，Number
                         arg.c.intc = --s;
                         bytecode.push_back(arg);
                     }else{

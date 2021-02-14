@@ -16,7 +16,7 @@ enum TokenValue {
     TOK_END,
     TOK_EQUAL,TOK_2EQUAL,TOK_NOTEQUAL,TOK_MINEQUAL,TOK_MAXEQUAL,
     TOK_MAX,TOK_MIN,
-    TOK_ID,
+    TOK_ID,TOK_PTRID,
     TOK_IF,
     TOK_INTEGER,
     TOK_DOUBLE,
@@ -41,7 +41,7 @@ std::string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_END",
     "TOK_EQUAL","TOK_2EQUAL","TOK_NOTEQUAL","TOK_MINEQUAL","TOK_MAXEQUAL",
     "TOK_MAX","TOK_MIN",
-    "TOK_ID",
+    "TOK_ID","TOK_PTRID",
     "TOK_IF",
     "TOK_INTEGER",
     "TOK_DOUBLE",
@@ -135,7 +135,7 @@ class Lexer{
             if(flag1 == 0 && flag2 == 0 && flag3 == 0 && !iscontent){
                 if( (i != Text.length() - 1 && Text[i] == '=' && Text[i+1] == '=')       ||
                     Text[i] == '+' || Text[i] == '-' || Text[i] == '*' || Text[i] == '/' ||
-                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || ( Text[i] == '.' && (Text[i-1] < '0' && Text[i-1] > '9') == false) || Text[i] == ':')
+                    Text[i] == '%' || Text[i] == '<' || Text[i] == '>' || Text[i] == '!' || Text[i] == '=' || ( Text[i] == '.' && (Text[i-1] >= '0' && Text[i-1] <= '9') == false) || Text[i] == ':')
                 {
                     isexpr = 1;
                 }
@@ -206,6 +206,16 @@ class Lexer{
             int length = position - start;
             Next();
             return Token(TOK_ARGSTATEMENT,Text.substr(start,length));
+        }
+        if(*current == '^'){
+            Next();
+            if(isalpha(*current) || *current == '_'){
+                int begin = position;
+                while(isalpha(*current)|| *current == '_' || isdigit(*current)){Next();}
+                int length = position - begin;
+                //Next();
+                return Token(TOK_PTRID,Text.substr(begin,length));
+            }
         }
         if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + std::to_string(position));} }
         if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,"<=");}else{return Token(TOK_MIN,"<");} }
@@ -370,7 +380,7 @@ class ASTree{
             }
             return;
         }
-        if(current_tok.type == TOK_ID){
+        if(current_tok.type == TOK_ID || current_tok.type == TOK_PTRID){
             if(lexer.EndOfText()){
                 //std::cout << lexer.Text << lexer.position <<  std::endl;
                 this_node = current_tok;
@@ -419,7 +429,7 @@ class ASTree{
             }
             return;
         }
-        if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING){
+        if(current_tok.type == TOK_INTEGER || current_tok.type == TOK_CHARTER || current_tok.type == TOK_STRING || current_tok.type == TOK_DOUBLE){
             if(lexer.getNextToken().type != TOK_END){
                 std::cout << lexer.Text <<  std::endl;
                 throw ParserError("Processing AST: Constant doesn't any sub script!");
