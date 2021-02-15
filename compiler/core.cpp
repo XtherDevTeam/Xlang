@@ -16,7 +16,7 @@ enum TokenValue {
     TOK_END,
     TOK_EQUAL,TOK_2EQUAL,TOK_NOTEQUAL,TOK_MINEQUAL,TOK_MAXEQUAL,
     TOK_MAX,TOK_MIN,
-    TOK_ID,TOK_PTRID,
+    TOK_ID,TOK_PTRID,TOK_PTRB,
     TOK_IF,
     TOK_INTEGER,
     TOK_DOUBLE,
@@ -41,7 +41,7 @@ std::string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_END",
     "TOK_EQUAL","TOK_2EQUAL","TOK_NOTEQUAL","TOK_MINEQUAL","TOK_MAXEQUAL",
     "TOK_MAX","TOK_MIN",
-    "TOK_ID","TOK_PTRID",
+    "TOK_ID","TOK_PTRID","TOK_PTRB",
     "TOK_IF",
     "TOK_INTEGER",
     "TOK_DOUBLE",
@@ -215,6 +215,8 @@ class Lexer{
                 int length = position - begin;
                 //Next();
                 return Token(TOK_PTRID,Text.substr(begin,length));
+            }else{
+                return Token(TOK_PTRB,getNextToken().str);
             }
         }
         if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + std::to_string(position));} }
@@ -353,7 +355,7 @@ class ASTree{
             node.push_back( ASTree(temp_lexer) );
             return;
         }
-        if(current_tok.type == TOK_ARGSTATEMENT){
+        if(current_tok.type == TOK_ARGSTATEMENT || current_tok.type == TOK_PTRB){
             int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
             std::string temp_str = current_tok.str,current_str = "";
             for (size_t i = 0; i < temp_str.length(); i++){
@@ -374,6 +376,7 @@ class ASTree{
             }
             nodeT=Args;
             this_node = Token(TOK_MBRACKET,"()");
+            if(current_tok.type == TOK_PTRB) this_node = current_tok;
             if(current_str != ""){
                 Lexer temp_lexer(current_str);
                 node.push_back( ASTree(temp_lexer) );

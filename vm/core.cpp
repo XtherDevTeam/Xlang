@@ -324,7 +324,7 @@ class VMRuntime{
     void disasm(std::ostream &out = std::cout){
         out << COMMAND_MAP[pc.offset->c.intc] << " ";
         if((pc.offset+1)->opid == Command) {std::cout << ";\n";return;}
-        for(auto i = pc.offset + 1;(i+1)->opid != Command;i=i+1){
+        for(auto i = pc.offset + 1;(i)->opid != Command;i=i+1){
             if(i->opid == Number) out << i->c.intc;
             if(i->opid == NormalRegister) out << "reg" << i->c.intc;
             if(i->opid == UnusualRegister) out << "ureg" << i->c.intc;
@@ -352,7 +352,7 @@ class VMRuntime{
             //if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
         }
         while(pc.offset->c.intc != realmap["exit"]){
-            //disasm();
+            disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
                 char* _dest;
@@ -376,7 +376,7 @@ class VMRuntime{
                     else throw VMError("Invalid Move Command");
                 }else{
                     char* _Src = GetMemberAddress(*(pc.offset + 2));
-                    for(int i = 0;i < size;i++) *(_dest + i) = *(_Src + i);
+                    for(long int i = 0;i < size;i++) *(_dest + size - 1 - i) = *(_Src + size - 1 - i);
                 }
             }else if(pc.offset->c.intc == realmap["push"]){
                 char* dest = GetMemberAddress(*(pc.offset+1));long size = (pc.offset+2)->c.intc;
@@ -386,7 +386,7 @@ class VMRuntime{
                 char* dest = GetMemberAddress(*(pc.offset+1));long size = (pc.offset+2)->c.intc;
                 if(dest == nullptr) throw VMError("pop:Unknown data address");
                 char* _Src = stack_a.pop(size);
-                for(long int i = 0;i < size;i++) *(dest + i) = *(_Src + i);
+                for(long int i = 0;i < size;i++) *(dest + size - 1 - i) = *(_Src + size - 1 - i);
             }else if(pc.offset->c.intc == realmap["save"]){
                 Content s;
                 s.ptrc = pc.offset;
