@@ -3,18 +3,18 @@
 <plist version="1.0">
 	<dict>
 		<key>CFBundleDevelopmentRegion</key>
-		<std::string>English</std::string>
+		<string>English</string>
 		<key>CFBundleIdentifier</key>
-		<std::string>com.apple.xcode.dsym.xlang</std::string>
+		<string>com.apple.xcode.dsym.xlang</string>
 		<key>CFBundleInfoDictionaryVersion</key>
-		<std::string>6.0</std::string>
+		<string>6.0</string>
 		<key>CFBundlePackageType</key>
-		<std::string>dSYM</std::string>
+		<string>dSYM</string>
 		<key>CFBundleSignature</key>
-		<std::string>????</std::string>
-		<key>CFBundleShortVersionstd::string</key>
-		<std::string>1.0</std::string>
+		<string>????</string>
+		<key>CFBundleShortVersionString</key>
+		<string>1.0</string>
 		<key>CFBundleVersion</key>
-		<std::string>1</std::string>
+		<string>1</string>
 	</dict>
 </plist>

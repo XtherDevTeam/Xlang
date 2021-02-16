@@ -352,7 +352,7 @@ class VMRuntime{
             //if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
         }
         while(pc.offset->c.intc != realmap["exit"]){
-            disasm();
+            //disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
                 char* _dest;

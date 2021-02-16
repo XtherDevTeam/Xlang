@@ -6,6 +6,8 @@ if you finish this step.then execute it:
 `g++ ./xlang.cpp -o xlang -g`
 `g++ ./vm/vm.cpp -o ./vm/vm -g`
 you also can don't append `-g` this arg , that is for debug
+
+**If you're using macOS,bits/stdc++.h is missing.you can install brew and use g++-10 to compile it.**
 ## Basic Syntax
 ### Function declaration
 ```go
@@ -71,9 +73,18 @@ import(headers:"hahaha.xlang",...);
 **Basic Compiler doesn't have crt we'll fix it later(or never fix it : -)**<br>
 open an new file and type something in this file:
 ```go
-func int main(){
-  return 140734682135840;
-};
-int printing = main();
+ptr_char p="Hello,World";
 ```
-If no bugs here,it will print
+If no bugs here,it will print:
+```bash
+ubuntu@VM-0-16-ubuntu:~/Xlang$ ./vm/vm
+Xtime VM Core[1.0.01]
+Starting...
+mov reg0,0;
+mov_m [11],reg0,8;
+Memory Watcher=>0
+ int val=>8022930118255863112
+ Charter Val=>Hello,Wo
+ubuntu@VM-0-16-ubuntu:~/Xlang$ 
+```
+That's cool,the string has been wrote in constant pool.
