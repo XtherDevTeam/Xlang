@@ -6,6 +6,9 @@ This is a test file for Xlang compiler
 Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
-ptr_char s="Hello,World";
-^(s+1)='F';
+func int main(int:reg){
+	int s=reg;
+	return s;
+};
+int f=main(114514);
 

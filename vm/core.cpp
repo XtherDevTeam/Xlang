@@ -251,7 +251,7 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","maxeq","mineq","max","min",
     "goto","gt","gf","call",
-    "exit","ret"
+    "exit","ret","in","out"
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -456,9 +456,11 @@ class VMRuntime{
                 long size = (pc.offset+2)->c.intc;
                 stack_a.push(_Src,size);
                 pc.offset = (ByteCode*)public_temp_place.ptrc;
-                //continue;
-                stack_a.output(std::cout);
+                while(pc.offset->c.intc != realmap["call"]) pc++;
                 pc++;
+                stack_a.output(std::cout);
+                continue;
+                //pc++;
             }else if(pc.offset->c.intc == realmap["exit"]) return;
             pc++;
         }

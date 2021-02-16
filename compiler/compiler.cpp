@@ -389,7 +389,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                 asb += dumpToAsm(args.node[i]);
                 std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
                 //std::cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] <<  std::endl;
-                if(ast.node[i].this_node.type == TOK_INTEGER || ast.node[i].this_node.type == TOK_DOUBLE || ast.node[i].this_node.type == TOK_CHARTER || ast.node[i].this_node.type == TOK_STRING || (ast.node[i].nodeT == ExpressionStatement && ast.node[i].this_node.type != TOK_DOT)) /*do nothing*/;
+                if(args.node[i].this_node.type == TOK_INTEGER || args.node[i].this_node.type == TOK_DOUBLE || args.node[i].this_node.type == TOK_CHARTER || args.node[i].this_node.type == TOK_STRING || (args.node[i].nodeT == ExpressionStatement && args.node[i].this_node.type != TOK_DOT)) /*do nothing*/;
                 else realarg0 = "[" + realarg0 + "]";
                 asb.genCommand("push").genArg(realarg0).genArg(std::to_string(getMemberSize(args.node[i]))).push();
             }
@@ -799,7 +799,7 @@ namespace Bytecode{
         "add","sub","mul","div",
         "equ","maxeq","mineq","max","min",
         "goto","gt","gf","call",
-        "exit","ret"
+        "exit","ret","in","out"
     };
     int getCommandId(std::string command){
         for(int i = 0;i < 21;i=i+1){
