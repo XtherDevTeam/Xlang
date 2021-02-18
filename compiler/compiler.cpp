@@ -183,19 +183,22 @@ typedef class Function_{
         type = t;
     }
     std::string getRealname(){
-        return (funcname[0] == '_' ? funcname : "_") + funcname + "_" + type.name;
+        return (funcname[0] == '_' ? funcname : "_" + funcname) + "_" + type.name;
     }
 } function_definition;
 
 class function_block{
     public:
+    std::string from_struct; // WARN:警告，默认from_struct为空
     addr_t restore_symboltop;
     ASTree type_and_args;
     ASTree block_statement;
     std::map<std::string,Symbol> syminfunc;
-    function_block(ASTree args,ASTree bls){
+    function_block(ASTree args,ASTree bls,std::string from_str){
+        this->from_struct = from_str;
         restore_symboltop = 0;
         addr_t tsp = sp;sp = 0;
+        if(from_str != "") sp += 8; // 如果是从结构体创建的函数，则保留一个this指针
         type_and_args = args;
         block_statement = bls;
         if(type_and_args.node.empty()) return; // no args here
@@ -301,11 +304,22 @@ std::string guessType(ASTree ast){
         return funcnameInTab(getFunctionRealName(ast)).substr(getFunctionRealName(ast).length()+1);
     }else if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_DOT){
-            if(symbol_table.count(ast.node[0].this_node.str)) return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
-            else if(global_symbol_table.count(ast.node[0].this_node.str)) return type_pool[global_symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
-            else if(symbol_table.count(ast.node[0].this_node.str.substr(4)) && ast.node[0].this_node.str.substr(0,4) == "ptr_") return type_pool[symbol_table[ast.node[0].this_node.str.substr(4)]._Typename].findObject(ast.node[1]).name;
-            else if(global_symbol_table.count(ast.node[0].this_node.str.substr(4)) && ast.node[0].this_node.str.substr(0,4) == "ptr_") return type_pool[global_symbol_table[ast.node[0].this_node.str.substr(4)]._Typename].findObject(ast.node[1]).name;
-            else throw CompileError(ast.node[0].this_node.str + " doesn't exist");
+            if(ast.node[0].this_node.type == TOK_ID){
+                if(symbol_table.count(ast.node[0].this_node.str)) return type_pool[symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
+                else if(global_symbol_table.count(ast.node[0].this_node.str)) return type_pool[global_symbol_table[ast.node[0].this_node.str]._Typename].findObject(ast.node[1]).name;
+                else throw CompileError(ast.node[0].this_node.str + " doesn't exist");   
+            }else if(ast.node[0].this_node.type == TOK_PTRID){
+                std::string result = (global_symbol_table.count(ast.node[0].this_node.str)) ? \
+                                    type_pool[global_symbol_table[ast.node[0].this_node.str]._Typename.substr(4)].findObject(ast.node[1]).name : \
+                                    type_pool[symbol_table[ast.node[0].this_node.str]._Typename.substr(4)].findObject(ast.node[1]).name;
+                return result;
+            }else if(ast.node[0].this_node.type == TOK_PTRB){
+                std::string fullname = guessType(ASTree(Lexer(ast.node[0].this_node.str))); // 猜这个指针是什么类型的
+                std::string result = (global_symbol_table.count(fullname)) ? \
+                                    type_pool[global_symbol_table[fullname]._Typename.substr(4)].findObject(ast.node[1]).name : \
+                                    type_pool[symbol_table[fullname]._Typename.substr(4)].findObject(ast.node[1]).name;
+                return result;
+            }
         }else if(ast.this_node.type == TOK_COLON){
             return ast.node[0].this_node.str; // 送 业 绩
         }else{
@@ -382,9 +396,14 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         ASTree args = getFunctionCallArgs(ast);
         ASMBlock asb;
         asb.genCommand("save").push();
+        if(ast.this_node.type == TOK_DOT){
+            ASTree fullname(Lexer(ASTree_APIs::MemberExpression::getFunctionPath(ast)));
+            asb += dumpToAsm(fullname); // 结构体传址
+            asb.genCommand("push").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("8");
+        }
         if(args.nodeT == Args){
             ASTree type_a_names = function_table[funcnameInTab(func_name)].type_and_args;
-            if(args.node.size() != type_a_names.node.size() || (ast.this_node.type == TOK_DOT && args.node.size() + 1 != type_a_names.node.size())) throw CompileError("Too few/much args have been gave.");
+            if((ast.this_node.type != TOK_DOT && args.node.size() != type_a_names.node.size()) || (ast.this_node.type == TOK_DOT && args.node.size()+1 != type_a_names.node.size())) throw CompileError("Too few/much args have been gave.");
             for(int i = 0;i < args.node.size();i++){ 
                 asb += dumpToAsm(args.node[i]);
                 std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
@@ -446,8 +465,12 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         }
         if(ast.this_node.type == TOK_DOT){
             // address only
-            int fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
-            return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push(); // 低端序
+            int fp_offset;
+            if(symbol_table.count(ast.node[0].this_node.str)) fp_offset = type_pool[symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],symbol_table[ast.node[0].this_node.str].frame_position);
+            else if(global_symbol_table.count(ast.node[0].this_node.str)) fp_offset = type_pool[global_symbol_table[ast.node[0].this_node.str]._Typename].getOffset(ast.node[1],global_symbol_table[ast.node[0].this_node.str].frame_position);
+            if(symbol_table.count(ast.node[0].this_node.str)) return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + getLastUsingRegId()).genArg(std::to_string(fp_offset + getMemberSize(ast) - 1)).push(); // 低端序
+            else if(global_symbol_table.count(ast.node[0].this_node.str)) return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(fp_offset)).push();
+            else throw CompileError("Variable " + ast.node[0].this_node.str + "doesn't exist");
         }
         if(ast.this_node.type == TOK_EQUAL){
             ASMBlock asb;
@@ -487,7 +510,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     //function_table[function_definition(real_funcname,type_pool[contents.node[i].node[0].this_node.str]).getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
                     function_definition fdef(real_funcname,type_pool[contents.node[i].node[0].this_node.str]);
                     if(contents.node[i].node[2].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
-                    function_table[fdef.getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2]);
+                    function_table[fdef.getRealname()] = function_block(contents.node[i].node[1],contents.node[i].node[2],struct_name);
                     continue;
                 }
                 if(type_pool.count(contents.node[i].this_node.str) == 0) throw CompileError(contents.node[i].this_node.str + " doesn't an exist typename.");
@@ -509,7 +532,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             std::string real_funcname = ast.node[0].node[0].this_node.str;
             function_definition fdef(real_funcname,type_pool[ast.node[0].this_node.str]);
             if(ast.node[2].nodeT != BlockStatement) throw CompileError("Function Definition Statemet must have an block statement");
-            function_table[fdef.getRealname()] = function_block(ast.node[1],ast.node[2]);
+            function_table[fdef.getRealname()] = function_block(ast.node[1],ast.node[2],"");
             return ASMBlock();
         }
         if(type_pool.count(ast.this_node.str)){

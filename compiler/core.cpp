@@ -455,5 +455,14 @@ namespace ASTree_APIs{
             }
             return false;
         }
+        std::string getFunctionPath(ASTree ast){
+            if(ast.nodeT == FunctionCallStatement) return "";
+            if(ast.nodeT == Id) return ast.this_node.str;
+            if(ast.nodeT == ExpressionStatement && ast.this_node.type == TOK_DOT){
+                std::string str = getFunctionPath(ast.node[0]);
+                if(ast.node[1].nodeT != FunctionCallStatement) str += "." + getFunctionPath(ast.node[1]);
+                else return str;
+            }
+        }
     };
 };

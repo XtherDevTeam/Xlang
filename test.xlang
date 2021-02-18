@@ -4,8 +4,11 @@ Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
 struct info{
-	func int main(ptr_info:this){
-		return 1145141919810;
-	};
+    int ref;
+    func int main(ptr_info:this){
+        return ^this.ref;
+    };
 };
-info.main();
+info inf;
+inf.ref = 1145;
+inf.main();
