@@ -194,6 +194,7 @@ class Runtime_Heap{
     Runtime_Heap(std::string& base ,size_t start){
         this->base_memory = &base;
         this->start = start;
+        this->top = start;
     }
     Runtime_Heap(){}
     // return Id
@@ -215,18 +216,22 @@ class Runtime_Heap{
         }
         return ret;
     }
-    size_t InsertToHeap(std::string& s){
+    size_t alloc(size_t s){
         size_t ret;
-        if((ret = FindFreeBlock(s.size())) != LONG_MAX);
+        if((ret = FindFreeBlock(s)) != LONG_MAX);
         else{
             heap_item_t h;
             h[0] = true;
-            h[1] = s.size();
+            h[1] = s;
             h[2] = top;
-            top += s.size();
+            top += s;
             list.push_back(h);
             ret = list.size() - 1;
         }
+        return ret;
+    }
+    size_t InsertToHeap(std::string& s){
+        size_t ret = alloc(s.size());
         char* ref = (char*)base_memory->data() + list[ret][2];
         for(int i = 0;i < s.size();i++,ref++){
             (*ref) = s[i];
@@ -235,6 +240,14 @@ class Runtime_Heap{
     }
     void unlink(size_t id){
         list[id][0] = false;
+    }
+    void free(size_t addr){
+        for(int i = 0;i < list.size();i++){
+            if(list[i][2] == addr) list[i][0] = false;
+        }
+    }
+    heap_item_t getInfo(size_t item){
+        return list[item];
     }
 };
 
@@ -485,7 +498,7 @@ class VMRuntime{
         memtop += vme.head.code_length * 16;
 
         stack_a = Runtime_Stack(allocated_memory);
-        heap = Runtime_Heap(allocated_memory,vme.cpool.size+1);
+        heap = Runtime_Heap(allocated_memory,vme.cpool.size+vme.head.code_length * 16+1);
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }

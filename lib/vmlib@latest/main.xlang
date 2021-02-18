@@ -3,8 +3,3 @@ Basic VM Library for Xlang
 By player00010 at Febuary,16,2021
 */
 
-func int checkDeviceLink(int:devid){
-	devid;
-	asm "in reg0,0";
-	asm "ret reg0,8";
-};

@@ -384,7 +384,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         asb.genCommand("save").push();
         if(args.nodeT == Args){
             ASTree type_a_names = function_table[funcnameInTab(func_name)].type_and_args;
-            if(args.node.size() != type_a_names.node.size()) throw CompileError("Too few/much args have been gave.");
+            if(args.node.size() != type_a_names.node.size() || (ast.this_node.type == TOK_DOT && args.node.size() + 1 != type_a_names.node.size())) throw CompileError("Too few/much args have been gave.");
             for(int i = 0;i < args.node.size();i++){
                 asb += dumpToAsm(args.node[i]);
                 std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
@@ -870,6 +870,11 @@ namespace Bytecode{
                     bytecode_top ++;
                 }
             }
+            ByteCode a;
+            a.c.intc = INT_MAX;
+            a.opid = Command;
+            bytecode.push_back(a);
+            bytecode_top++;
         }
     }
     VMExec packVMExec(){

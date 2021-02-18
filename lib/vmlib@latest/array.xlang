@@ -1,0 +1,22 @@
+/*
+ - Xlang Array Support
+*/
+import(headers:"__LIB_ROOT__/main.xlang")
+struct Array{
+	int allocsize;
+	ptr_char base;
+	func int init(ptr_Array:ptr,int:base,int:count){
+		^ptr.allocsize = base * count;
+		^ptr.base = malloc(^ptr.size);
+	};
+	func ptr_int gets(int index){
+		return ^ptr.base + index * 8;
+	};
+	func ptr_char getc(int index){
+		return ^ptr.base + index * 1;
+	};
+	func int free(){
+		hfree(allocsize);
+		return 0;
+	};
+};
