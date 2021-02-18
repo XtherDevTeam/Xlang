@@ -247,7 +247,7 @@ class Runtime_Heap{
         }
     }
     heap_item_t getInfo(size_t item){
-        return list[item];
+        return list[item]; 
     }
 };
 
