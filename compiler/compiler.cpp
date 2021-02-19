@@ -454,7 +454,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         return asb.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push(); // 由于先算出_dest和_Src的地址，所以这种语法是完全允许的
     }
     if(ast.nodeT == ExpressionStatement){
-        if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
+        if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_NOTEQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
             ASMBlock ab;
             ab += dumpToAsm(ast.node[0],mode);
             //if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genCommand("").genArg("reg" + std::to_string(getLastUsingRegId()));
@@ -471,6 +471,8 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             else if(ast.this_node.type == TOK_MINEQUAL) ab.genCommand("mineq");
             else if(ast.this_node.type == TOK_MAX) ab.genCommand("max");
             else if(ast.this_node.type == TOK_MIN) ab.genCommand("min");
+            else if(ast.this_node.type == TOK_NOTEQUAL) ab.genCommand("neq");
+            else if(ast.this_node.type == TOK_2EQUAL) ab.genCommand("equ");
             // Xlang变量的dumpASM会传地址
             // 加减乘除默认8byte运算
             if(isNormalExpression(ast.node[0])) ab.genArg("reg" + std::to_string(getLastUsingRegId() - 2));
@@ -845,14 +847,15 @@ namespace Bytecode{
     std::string COMMAND_MAP[] = {
         "mov","mov_m","push","pop","save","pop_frame",
         "add","sub","mul","div",
-        "equ","maxeq","mineq","max","min",
+        "equ","neq","maxeq","mineq","max","min",
         "goto","gt","gf","call",
         "exit","ret","in","out"
     };
     int getCommandId(std::string command){
-        for(int i = 0;i < 21;i=i+1){
+        for(int i = 0;i < 24;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
+        std::cout << "Unknown Command Id:" << command << std::endl;
         return INT_MAX;
     }
     std::vector<ASMBlock> togen;
@@ -918,12 +921,12 @@ namespace Bytecode{
                     bytecode_top ++;
                 }
             }
-            ByteCode a;
-            a.c.intc = INT_MAX;
-            a.opid = Command;
-            bytecode.push_back(a);
-            bytecode_top++;
         }
+        ByteCode a;
+        a.c.intc = INT_MAX;
+        a.opid = Command;
+        bytecode.push_back(a);
+        bytecode_top++;
     }
     VMExec packVMExec(){
         VMExec ret;

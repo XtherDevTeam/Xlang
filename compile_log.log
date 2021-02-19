@@ -6,14 +6,9 @@ This is a test file for Xlang compiler
 Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
-/*struct info{
-    int ref;
-    func int main(ptr_info:this){
-        return ^this.ref;
-    };
-};
-info inf;
-inf.ref = 1145;
-inf.main();*/
-ptr_char ref="Hello\n,World";
+import(headers:"lib/vmlib@latest/heap.xlang");
+import(headers:"lib/vmlib@latest/io.xlang");
+
+ptr_char s=malloc(256);
+s;
 

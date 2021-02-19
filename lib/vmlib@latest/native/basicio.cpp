@@ -13,10 +13,10 @@ export_dll char* on_device_load(VMRuntime* env){
 }
 
 export_dll void io_request(VMRuntime* env,char motd,char* dest){
-    if(motd = 0){
-        dest[0] = read(0,dest,1);
+    if(motd == 0){
+        dest[0] = std::cin.get();
     }else{
-        write(1,dest,1);
+        std::cout << dest[0];
     }
 }
 

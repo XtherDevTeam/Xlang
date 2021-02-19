@@ -14,5 +14,8 @@ debug_release:
 
 all: compiler vm
 
+lib: lib/vmlib@latest/native
+	cd lib/vmlib@latest/native && make all
+
 run: all
 	./xlang && ./vm/vm

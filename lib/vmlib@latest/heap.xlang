@@ -1,0 +1,15 @@
+func int malloc(int:need){
+    need;
+    asm "in 1,reg0";
+    asm "push reg0,8";
+    asm "mov reg0,regsb";
+    asm "sub reg0,regfp";
+    asm "sub reg0,regsp";
+    asm "add reg0,1";
+    asm "ret [reg0],8";
+};
+func int free(int:id){
+    id;
+    asm "out 1,reg0";
+    return 0;
+}

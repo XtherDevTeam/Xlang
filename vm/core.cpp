@@ -263,7 +263,7 @@ enum opid_list{
 std::string COMMAND_MAP[] = {
     "mov","mov_m","push","pop","save","pop_frame",
     "add","sub","mul","div",
-    "equ","maxeq","mineq","max","min",
+    "equ","neq","maxeq","mineq","max","min",
     "goto","gt","gf","call",
     "exit","ret","in","out"
 };
@@ -321,8 +321,8 @@ struct device_host{
         devhandle.push_back(dlopen(path.c_str(),RTLD_LAZY));
         if(devhandle[devhandle.size() - 1] == nullptr) throw VMError("Load Device Failed:" + path);
         Device dev;
-        memcpy(&dev.io_request,dlsym(devhandle[devhandle.size() - 1],"io_request"),sizeof(void*));
-        memcpy(&dev.normal_request,dlsym(devhandle[devhandle.size() - 1],"normal_request"),sizeof(void*));
+        dev.io_request = dlsym(devhandle[devhandle.size() - 1],"io_request"),sizeof(void*);
+        dev.normal_request = dlsym(devhandle[devhandle.size() - 1],"normal_request"),sizeof(void*);
         char* (*f_device_load)(void*) = (char* (*)(void*))dlsym(devhandle[devhandle.size() - 1],"on_device_load");
         char* result = f_device_load(env);
         memcpy(dev.device_name,result,32);
@@ -398,7 +398,7 @@ class VMRuntime{
             //if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
         }
         while(pc.offset->c.intc != realmap["exit"]){
-            //disasm();
+            if(pc.offset->c.intc != realmap["ret"]) disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
                 char* _dest;
@@ -466,7 +466,7 @@ class VMRuntime{
                     if(pc.offset->c.intc == realmap["div"]) _dest->intc /= s.intc;
                 }
             }else if(pc.offset->c.intc == realmap["equ"] || pc.offset->c.intc == realmap["maxeq"] || pc.offset->c.intc == realmap["mineq"] ||
-                     pc.offset->c.intc == realmap["max"] || pc.offset->c.intc == realmap["min"]
+                     pc.offset->c.intc == realmap["max"] || pc.offset->c.intc == realmap["min"]   || pc.offset->c.intc == realmap["neq"]
                     ){
                 Content _dest,_src;
                 Content* tmp = (Content*)GetMemberAddress(*(pc.offset+1));
@@ -476,6 +476,7 @@ class VMRuntime{
                 if(tmp != nullptr) _src = *tmp;
                 else _src.intc = (pc.offset+2)->c.intc;
                 if(pc.offset->c.intc == realmap["equ"])   regflag = (_dest.intc == _src.intc);
+                if(pc.offset->c.intc == realmap["neq"])   regflag = (_dest.intc != _src.intc);
                 if(pc.offset->c.intc == realmap["maxeq"]) regflag = (_dest.intc >= _src.intc);
                 if(pc.offset->c.intc == realmap["mineq"]) regflag = (_dest.intc <= _src.intc);
                 if(pc.offset->c.intc == realmap["max"])   regflag = (_dest.intc > _src.intc);
@@ -509,6 +510,7 @@ class VMRuntime{
                 //pc++;
             }else if(pc.offset->c.intc == realmap["in"] || pc.offset->c.intc == realmap["out"]){
                 char* dest = GetMemberAddress(*(pc.offset + 2));
+                std::cout << (pc.offset+1)->c.intc << std::endl;
                 if(pc.offset->c.intc == realmap["in"]) devhost.device_in((pc.offset+1)->c.intc,this,dest);
                 else devhost.device_out((pc.offset+1)->c.intc,this,dest);
             }
@@ -539,7 +541,7 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 21;i++){
+        for(int i = 0;i < 24;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
             realmap[COMMAND_MAP[i]] = i;
         }
