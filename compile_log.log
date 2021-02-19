@@ -6,7 +6,7 @@ This is a test file for Xlang compiler
 Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
-struct info{
+/*struct info{
     int ref;
     func int main(ptr_info:this){
         return ^this.ref;
@@ -14,5 +14,6 @@ struct info{
 };
 info inf;
 inf.ref = 1145;
-inf.main();
+inf.main();*/
+ptr_char ref="Hello\n,World";
 

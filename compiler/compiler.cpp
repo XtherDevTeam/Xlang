@@ -2,6 +2,29 @@
 #include "../vm/core.cpp"
 // 
 
+std::string& replace_all(std::string& str,const std::string& old_value,const std::string& new_value)     
+{     
+    while(true){     
+        std::string::size_type   pos(0);     
+        if((pos=str.find(old_value))!=std::string::npos){
+            str.replace(pos,old_value.length(),new_value);     
+        }
+        else break;     
+    }     
+    return str;     
+} 
+
+std::string processEscape(std::string& origin){
+    replace_all(origin,"\\\\","__qwertyuiopasdfghjklzxcvbnm_asdfghjkl_");
+    replace_all(origin,"\\n","\n");
+    replace_all(origin,"\\r","\r");
+    replace_all(origin,"\\t","\t");
+    replace_all(origin,"\\033","\033");
+    replace_all(origin,"\\b","\b");
+    replace_all(origin,"__qwertyuiopasdfghjklzxcvbnm_asdfghjkl_","\\\\");
+    return origin;
+}
+
 struct ASM_Command{
     std::string Main;
     std::vector<std::string> args;
@@ -375,9 +398,11 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         }
         if(ast.this_node.type == TOK_STRING){
             //std::cout << "???" << ast.this_node.str.size() << std::endl;
+            processEscape(ast.this_node.str);
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.length()))).push();
         }
         if(ast.this_node.type == TOK_CHARTER){
+            processEscape(ast.this_node.str);
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string((int)ast.this_node.str[0])).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){

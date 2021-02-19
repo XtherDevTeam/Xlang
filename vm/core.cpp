@@ -2,14 +2,15 @@
   git config --global user.email "3134714226@qq.com"
   git config --global user.name "Xlang_Xiaokang00010"
 */
+#pragma once
 #include <iostream>
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "../compiler/basic_type.cpp"
+#include "../lib/XVMDK/dlfcn.h"
 #include "const.cpp"
 
-// 
 typedef unsigned long int addr_t;
 
 class VMError{
@@ -301,14 +302,46 @@ class PC_Register{
 
 struct Device{
     char device_name[32];
-    void* (device_request)(void* linked_vmruntime,char req_motd,addr_t args);
-    void* (different_request)(void* linked_vmruntime,addr_t args);
+    void* io_request;
+    void* normal_request;
 };
-
 struct DevicePackage{
     std::vector<int> require_int_num;
     char device_name[32];
 };
+
+#define __XVMDK_HOST
+#include "../lib/XVMDK/framework.cpp"
+
+struct device_host{
+    std::vector<Device> devlist;
+    std::vector<void*>  devhandle;
+    
+    int LoadVMDevice(void* env,std::string path){
+        devhandle.push_back(dlopen(path.c_str(),RTLD_LAZY));
+        if(devhandle[devhandle.size() - 1] == nullptr) throw VMError("Load Device Failed:" + path);
+        Device dev;
+        memcpy(&dev.io_request,dlsym(devhandle[devhandle.size() - 1],"io_request"),sizeof(void*));
+        memcpy(&dev.normal_request,dlsym(devhandle[devhandle.size() - 1],"normal_request"),sizeof(void*));
+        char* (*f_device_load)(void*) = (char* (*)(void*))dlsym(devhandle[devhandle.size() - 1],"on_device_load");
+        char* result = f_device_load(env);
+        memcpy(dev.device_name,result,32);
+        devlist.push_back(dev);
+        return devhandle.size() - 1;
+    }
+
+    void device_in(long target,void* env,char* dest){
+        void (*io_func)(void* env,char motd,char* dest) = (void (*)(void*,char,char*)) devlist[target].io_request;
+        io_func(env,0/*in*/,dest);
+    }
+    void device_out(long target,void* env,char* dest){
+        void (*io_func)(void* env,char motd,char* dest) = (void (*)(void*,char,char*)) devlist[target].io_request;
+        io_func(env,1/*out*/,dest);
+    }
+};
+
+
+device_host devhost;
 
 Content public_temp_place;
 class VMRuntime{
@@ -474,7 +507,11 @@ class VMRuntime{
                 stack_a.output(std::cout);
                 continue;
                 //pc++;
-            }else if(pc.offset->c.intc == realmap["exit"]) return;
+            }else if(pc.offset->c.intc == realmap["in"] || pc.offset->c.intc == realmap["out"]){
+                char* dest = GetMemberAddress(*(pc.offset + 2));
+                if(pc.offset->c.intc == realmap["in"]) devhost.device_in((pc.offset+1)->c.intc,this,dest);
+                else devhost.device_out((pc.offset+1)->c.intc,this,dest);
+            }
             pc++;
         }
     }
