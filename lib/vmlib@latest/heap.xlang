@@ -13,3 +13,26 @@ func int free(int:id){
     asm "req 1,1,reg0";
     return 0;
 };
+func int memcpy(ptr_char:dest,ptr_char:src,int:count){
+    for(int i = 0,i < count,i=i+1){
+        ^(dest+i) = ^(src+i);
+    };
+    return 0;
+};
+func int strlen(ptr_char:src){
+    int ret = 0;
+    src;
+    asm "mov reg0,[reg0]";
+    asm "out 0,[reg0]";
+    for(ptr_char p=src,^p != '\0',p=p+1){
+        ret = ret + 1;
+    };
+    return ret;
+};
+func ptr_char strcpy(ptr_char:dest,ptr_char:src){
+    int len = strlen(src);
+    for(int i = 0,i < len,i=i+1){
+        ^(dest+i) = ^(src+i);
+    };
+    return dest;
+};

@@ -1,4 +1,5 @@
 #include "core.cpp"
+#include "../compiler/core.cpp"
 
 int main(int argc,char** argv){
     std::string path = "test.xvm";
@@ -14,7 +15,16 @@ int main(int argc,char** argv){
     //disasm(vme.code_array,vme.head.code_length);
     vmr.Run();
     // /DebugOutput(vmr);
-    Memory_Watcher(vmr,0);
+    while(!std::cin.eof()){
+        std::cout << "(debugger) > ";
+        std::string s;
+        std::getline(std::cin,s);
+        Lexer lex(s);
+        std::string main = lex.getNextToken().str;
+        if(main == "debug_output") DebugOutput(vmr,std::cout);
+        else if(main == "mem") Memory_Watcher(vmr,atol(lex.getNextToken().str.data()),std::cout);
+        else if(main == "exit") break;
+    }
     /*}catch(VMError e){
         e.what();
         std::cout << "ERRCOMMAND: ";

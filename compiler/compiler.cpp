@@ -1,6 +1,5 @@
 #include "core.cpp"
 #include "../vm/core.cpp"
-// 
 
 std::string& replace_all(std::string& str,const std::string& old_value,const std::string& new_value)     
 {     
@@ -15,6 +14,7 @@ std::string& replace_all(std::string& str,const std::string& old_value,const std
 } 
 
 std::string processEscape(std::string& origin){
+    replace_all(origin,"\\0","\0");
     replace_all(origin,"\\\\","__qwertyuiopasdfghjklzxcvbnm_asdfghjkl_");
     replace_all(origin,"\\n","\n");
     replace_all(origin,"\\r","\r");
@@ -303,8 +303,8 @@ bool isNormalExpression(ASTree ast){
 
 std::string guessType(ASTree ast){
     if(ast.nodeT == Id){
-        if(ast.this_node.type == TOK_ID && symbol_table.count(ast.this_node.str))  return symbol_table[ast.this_node.str]._Typename;
-        else if(global_symbol_table.count(ast.this_node.str)) return global_symbol_table[ast.this_node.str]._Typename;
+        if((ast.this_node.type == TOK_ID || ast.this_node.type == TOK_PTRID) && symbol_table.count(ast.this_node.str))  return symbol_table[ast.this_node.str]._Typename;
+        else if((ast.this_node.type == TOK_ID || ast.this_node.type == TOK_PTRID) && global_symbol_table.count(ast.this_node.str)) return global_symbol_table[ast.this_node.str]._Typename;
         switch (ast.this_node.type)
         {
         case TOK_STRING:
@@ -346,9 +346,11 @@ std::string guessType(ASTree ast){
         }else if(ast.this_node.type == TOK_COLON){
             return ast.node[0].this_node.str; // 送 业 绩
         }else{
-            if(guessType(ast.node[0]) == "string" || guessType(ast.node[1]) == "string") return "string";
+            if(guessType(ast.node[0]) == "ptr_char" || guessType(ast.node[1]) == "ptr_char") return "ptr_char";
             return guessType(ast.node[0]);
         }
+    }else if(ast.this_node.type == TOK_PTRB){
+        return guessType(ast.node[0].node[0]);
     }
 }
 
@@ -402,8 +404,10 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(ConstPool_Apis::Insert(cp,(char*)ast.this_node.str.c_str(),ast.this_node.str.length()))).push();
         }
         if(ast.this_node.type == TOK_CHARTER){
+            std::cout << "beforce:   "  << ast.this_node.str << std::endl;
             processEscape(ast.this_node.str);
-            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string((int)ast.this_node.str[0])).push();
+            std::cout << "processed: " << ast.this_node.str << std::endl;
+            return ASMBlock().genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string((int)ast.this_node.str[0])).genCommand("push1b").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("reg" + std::to_string(getLastUsingRegId())).push();
         }
         if(symbol_table.find(ast.this_node.str) != symbol_table.end()){
             if(ast.this_node.type != TOK_PTRID || (ast.this_node.type == TOK_DOT && ast.node[0].this_node.type != TOK_PTRID)) return ASMBlock().genCommand("mov").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regsb").genCommand("sub").genArg("reg"+std::to_string(getLastUsingRegId())).genArg("regfp").genCommand("sub").genArg("reg" + std::to_string(getLastUsingRegId())).genArg(std::to_string(symbol_table[ast.this_node.str].frame_position + getMemberSize(ast) - 1)).push();
@@ -455,11 +459,14 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
     }
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_NOTEQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
+            //HIGHLIGHT: if(ast.this_node.type == TOK_NOTEQUAL){std::cout << "eof";sleep(5);}
             ASMBlock ab;
             ab += dumpToAsm(ast.node[0],mode);
+            if(ast.node[0].this_node.type == TOK_PTRID || ast.node[0].this_node.type == TOK_PTRB) ab.genCommand("push1b").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push();
             //if(ast.node[0].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])) ab.genCommand("").genArg("reg" + std::to_string(getLastUsingRegId()));
             RegState[getLastUsingRegId()] = true;
             ab += dumpToAsm(ast.node[1],mode);
+            if(ast.node[1].this_node.type == TOK_PTRID || ast.node[1].this_node.type == TOK_PTRB) ab.genCommand("push1b").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push();
             if(ast.node[1].nodeT == FunctionCallStatement || ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) sp -= getMemberSize(ast.node[1]);
             RegState[getLastUsingRegId()] = true;
             if(ast.this_node.type == TOK_PLUS) ab.genCommand("add");
@@ -475,16 +482,18 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             else if(ast.this_node.type == TOK_2EQUAL) ab.genCommand("equ");
             // Xlang变量的dumpASM会传地址
             // 加减乘除默认8byte运算
+            //if(ast.node[0].this_node.type == TOK_PTRID || ast.node[0].this_node.type == TOK_PTRB) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
             if(isNormalExpression(ast.node[0])) ab.genArg("reg" + std::to_string(getLastUsingRegId() - 2));
             else if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[0])){
                 ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
                 sp -= getMemberSize(ast.node[0]);
             }
-            else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
+            else if(getMemberType(ast.node[0]) == __BASIC_8BYTE || getMemberType(ast.node[0]) == __BASIC_1BYTE ) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
+            //if(ast.node[1].this_node.type == TOK_PTRID || ast.node[1].this_node.type == TOK_PTRB) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
             if(isNormalExpression(ast.node[1])) ab.genArg("reg" + std::to_string(getLastUsingRegId() - 1));
             else if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]");
-            else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]");
+            else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || getMemberType(ast.node[1]) == __BASIC_1BYTE || ast.node[1].this_node.type == TOK_PTRID || ast.node[1].this_node.type == TOK_PTRB) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]");
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
             RegState[getLastUsingRegId() - 1] = false;
             RegState[getLastUsingRegId() - 1] = false;
@@ -507,7 +516,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             RegState[getLastUsingRegId() - 1] = false;
             std::string realarg0 = "reg" + std::to_string(getLastUsingRegId()+1);
             //std::cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] <<  std::endl;
-            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER || ast.node[1].this_node.type == TOK_STRING || (ast.node[1].nodeT == ExpressionStatement && ast.node[1].this_node.type != TOK_DOT)) /*do nothing*/;
+            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER || ast.node[1].this_node.type == TOK_STRING || (isNormalExpression(ast.node[1]) == false && ast.node[1].this_node.type != TOK_PTRID && ast.node[1].this_node.type != TOK_PTRB)) /*do nothing*/;
             else realarg0 = "[" + realarg0 + "]";
             asb.genCommand("mov_m").genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[1]))).push();
             return asb;
@@ -769,12 +778,6 @@ std::vector<ASMBlock> CompileProcess(std::string code){
             if(code[i+1] == '/' && code[i+2] == '/' && bdescriptor == false) descriptor = 1;
             continue;
         }
-        if(code[i] == '\\') {
-            if(code[i+1] == '\n') i+=2;
-            else if(code[i+1] == '\r') i+=3;
-            else if(code[i+1] == 'n'){tmp+='\n';i+=2;}
-            else continue;
-        }
         else if(code[i] == '\"') intext = !intext;
         else if(code[i] == '(') brack1++; else if(code[i] == ')') brack1--;
         else if(code[i] == '[') brack2++; else if(code[i] == ']') brack2--;
@@ -849,10 +852,10 @@ namespace Bytecode{
         "add","sub","mul","div",
         "equ","neq","maxeq","mineq","max","min",
         "goto","gt","gf","call",
-        "exit","ret","in","out","req"
+        "exit","ret","in","out","req","push1b"
     };
     int getCommandId(std::string command){
-        for(int i = 0;i < 25;i=i+1){
+        for(int i = 0;i < 26;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
         std::cout << "Unknown Command Id:" << command << std::endl;

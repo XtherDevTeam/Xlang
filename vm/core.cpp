@@ -265,7 +265,7 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "goto","gt","gf","call",
-    "exit","ret","in","out","req"
+    "exit","ret","in","out","req","push1b"
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -428,6 +428,12 @@ class VMRuntime{
                     char* _Src = GetMemberAddress(*(pc.offset + 2));
                     for(long int i = 0;i < size;i++) *(_dest + size - 1 - i) = *(_Src + size - 1 - i);
                 }
+            }else if(pc.offset->c.intc == realmap["push1b"]){
+                Content _src;
+                if(GetMemberAddress(*(pc.offset + 2)) != nullptr) _src = *(Content*)GetMemberAddress(*(pc.offset+2));
+                else _src = (pc.offset+2)->c;
+                for(int i = 1;i < 8;i++) _src.chc[i] = 0;
+                *((Content*)GetMemberAddress(*(pc.offset+1))) = _src;
             }else if(pc.offset->c.intc == realmap["push"]){
                 char* dest = GetMemberAddress(*(pc.offset+1));long size = (pc.offset+2)->c.intc;
                 if(dest == nullptr) throw VMError("push:Unknown data address");
@@ -556,7 +562,7 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 25;i++){
+        for(int i = 0;i < 26;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
             sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
