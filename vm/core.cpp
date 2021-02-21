@@ -265,7 +265,7 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "goto","gt","gf","call",
-    "exit","ret","in","out"
+    "exit","ret","in","out","req"
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -337,6 +337,10 @@ struct device_host{
     void device_out(long target,void* env,char* dest){
         void (*io_func)(void* env,char motd,char* dest) = (void (*)(void*,char,char*)) devlist[target].io_request;
         io_func(env,1/*out*/,dest);
+    }
+    void device_request(long target,void* env,char reqid,char* dest){
+        void (*normalreq)(void* env,char reqid,char* dest) = (void (*)(void*,char,char*)) devlist[target].normal_request;
+        normalreq(env,reqid,dest);
     }
 };
 
@@ -509,10 +513,21 @@ class VMRuntime{
                 continue;
                 //pc++;
             }else if(pc.offset->c.intc == realmap["in"] || pc.offset->c.intc == realmap["out"]){
+                Content devid;
+                if(GetMemberAddress(*(pc.offset + 1)) != nullptr) devid = *(Content*)GetMemberAddress(*(pc.offset+1));
+                else devid = (pc.offset+1)->c;
                 char* dest = GetMemberAddress(*(pc.offset + 2));
                 std::cout << (pc.offset+1)->c.intc << std::endl;
-                if(pc.offset->c.intc == realmap["in"]) devhost.device_in((pc.offset+1)->c.intc,this,dest);
-                else devhost.device_out((pc.offset+1)->c.intc,this,dest);
+                if(pc.offset->c.intc == realmap["in"]) devhost.device_in(devid.intc,this,dest);
+                else devhost.device_out(devid.intc,this,dest);
+            }else if(pc.offset->c.intc == realmap["req"]){
+                Content devid,reqid;
+                if(GetMemberAddress(*(pc.offset + 1)) != nullptr) devid = *(Content*)GetMemberAddress(*(pc.offset+1));
+                else devid = (pc.offset+1)->c;
+                if(GetMemberAddress(*(pc.offset + 2)) != nullptr) reqid = *(Content*)GetMemberAddress(*(pc.offset+2));
+                else reqid = (pc.offset+2)->c;
+                char* dest = GetMemberAddress(*(pc.offset + 3));
+                devhost.device_request(devid.intc,this,reqid.intc,dest);
             }
             pc++;
         }
@@ -541,8 +556,9 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 24;i++){
+        for(int i = 0;i < 25;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
+            sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
         }
         StartVMProc();

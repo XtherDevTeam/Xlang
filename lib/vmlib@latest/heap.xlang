@@ -1,6 +1,6 @@
 func int malloc(int:need){
     need;
-    asm "in 1,reg0";
+    asm "req 1,0,reg0";
     asm "push reg0,8";
     asm "mov reg0,regsb";
     asm "sub reg0,regfp";
@@ -10,6 +10,6 @@ func int malloc(int:need){
 };
 func int free(int:id){
     id;
-    asm "out 1,reg0";
+    asm "req 1,1,reg0";
     return 0;
-}
+};

@@ -20,6 +20,6 @@ export_dll void io_request(VMRuntime* env,char motd,char* dest){
     }
 }
 
-export_dll void normal_request(){
+export_dll void normal_request(void* env,char reqid,char* dest){
     perror("Unsupport this action");
 }

@@ -1,6 +1,6 @@
 CXX := g++
 CXXFLAGS := -shared -fPIC -std=c++2a
 
-all: heap basicio
+all: basicio vmlib
 clean:
-	rm heap basicio
+	rm basicio vmlib

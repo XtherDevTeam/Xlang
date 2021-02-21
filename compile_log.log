@@ -10,5 +10,4 @@ import(headers:"lib/vmlib@latest/heap.xlang");
 import(headers:"lib/vmlib@latest/io.xlang");
 
 ptr_char s=malloc(256);
-s;
 

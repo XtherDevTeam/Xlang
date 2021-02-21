@@ -849,10 +849,10 @@ namespace Bytecode{
         "add","sub","mul","div",
         "equ","neq","maxeq","mineq","max","min",
         "goto","gt","gf","call",
-        "exit","ret","in","out"
+        "exit","ret","in","out","req"
     };
     int getCommandId(std::string command){
-        for(int i = 0;i < 24;i=i+1){
+        for(int i = 0;i < 25;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
         std::cout << "Unknown Command Id:" << command << std::endl;
