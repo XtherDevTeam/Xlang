@@ -1,3 +1,5 @@
+### Language [README.md](README.md) | [README_zh-cn.md](README_zh-cn.md)
+### Update logs [updates.log](updates.log)
 # Get Started
 ## DOWNLOAD AND COMPILE IT
 first,download this repository to your computer.and chdir to it.
