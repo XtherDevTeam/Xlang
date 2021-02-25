@@ -2,14 +2,14 @@
 ### Update logs [updates.log](updates.log)
 # Get Started
 ## DOWNLOAD AND COMPILE IT
-first,download this repository to your computer.and chdir to it.
-if you don't have g++ compiler?please setting up beforce you compile it
-if you finish this step.then execute it:
+- first,download this repository to your computer.and chdir to it.
+- if you don't have g++ compiler?please setting up beforce you compile it
+- if you finish this step.then execute it:
 `g++ ./xlang.cpp -o xlang -g`
 `g++ ./vm/vm.cpp -o ./vm/vm -g`
 you also can don't append `-g` this arg , that is for debug
 
-**If you're using macOS,bits/stdc++.h is missing.you can install brew and use g++-10 to compile it.**
+- If you're using macOS,bits/stdc++.h is missing.you can install brew and use g++-10 to compile it.
 ## Basic Syntax
 ### Function declaration
 ```go
