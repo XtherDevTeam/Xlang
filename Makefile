@@ -19,3 +19,6 @@ lib: lib/vmlib@latest/native
 
 run: all
 	./xlang && ./vm/vm
+
+clean:
+	rm -rf test_lex.dSYM test_lex xlang.dSYM test.dSYM xlang test_lex

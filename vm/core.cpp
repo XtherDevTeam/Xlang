@@ -252,6 +252,14 @@ class Runtime_Heap{
     }
 };
 
+struct TSS{
+    Content fp,sp;
+    Content pc;
+    Content regs[32];
+    char* basememory;
+    Content _AllocSize;
+};
+
 enum opid_list{
     UnusualRegister = 1,
     NormalRegister  = 2,
@@ -265,7 +273,7 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "goto","gt","gf","call",
-    "exit","ret","in","out","req","push1b"
+    "exit","ret","in","out","req","push1b","restore","fork"
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -352,6 +360,8 @@ class VMRuntime{
     VMExec vme;
     std::string allocated_memory;
     public:
+    TSS              mainTSS;
+    TSS              thisTSS;
     int              vme_fd;
     char*            malloc_place;
     size_t           _Alloc_Size;
@@ -562,7 +572,7 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 26;i++){
+        for(int i = 0;i < 28;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
             sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
