@@ -89,4 +89,3 @@ Memory Watcher=>0
  Charter Val=>Hello,Wo
 ubuntu@VM-0-16-ubuntu:~/Xlang$ 
 ```
-That's cool,the string has been wrote in constant pool.

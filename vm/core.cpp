@@ -31,7 +31,7 @@ struct ByteCode{
 
 struct CodeLabel{
     char label_n[32]; // Label name
-    int label_id;   // for goto command
+    int label_id;   // for jmp command
     long int start; // start position
 };
 
@@ -100,12 +100,14 @@ struct heap_item_t{
 };
 
 class Runtime_Stack{
-    std::string* base_memory = nullptr;
     public:
+    int AllocSize;
+    char* base_memory = nullptr;
     long int fp,sp;
 
     Runtime_Stack(std::string& str){
-        base_memory = &str;
+        base_memory = (char*)str.data();
+        AllocSize = str.size();
         fp = 0,sp = 0;
     }
     Runtime_Stack(){
@@ -113,26 +115,26 @@ class Runtime_Stack{
         base_memory = nullptr;
     }
     void push(Content c){
-        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - 8 + 1];
+        char* ref = base_memory + AllocSize - 1 - fp - sp - 8 + 1;
         for(int i = 0;i < 8;i=i+1,ref++){
             (*ref) = c.chc[i];
         }
         sp += 8;
     }
     void push(char* chs,size_t size){
-        char* ref = &(*base_memory)[base_memory->size() - 1 - fp - sp - size + 1];
+        char* ref = base_memory + AllocSize - 1 - fp - sp - size + 1;
         for(int i = 0;i < size;i=i+1,ref++){
             (*ref) = chs[i];
         }
         sp += size;
     }
-    Content& pop(){
-        Content* ref = (Content*)&(*base_memory)[base_memory->size() - 1 - fp - sp + 1];
+    Content* pop(){
+        Content* ref = (Content*)(base_memory + AllocSize - 1 - fp - sp + 1);
         sp -= 8;
-        return *ref;
+        return ref;
     }
     char* pop(size_t size){
-        char* ret = (char*)base_memory->data() + base_memory->size() - 1 - fp - sp + 1;
+        char* ret = base_memory + AllocSize - 1 - fp - sp + 1;
         sp -= size;
         return ret;
     }
@@ -146,20 +148,17 @@ class Runtime_Stack{
     void pop_frame(){
         pop(sp);
         sp = fp;
-        fp = pop().intc;
+        fp = pop()->intc;
         std::cout << "result:" << fp << " , " << sp << std::endl;
-    }
-    void output(std::ostream& out){
-        for(int i = 1023;i >= 1023 - 16;i--){
-            out << (int)(*base_memory)[i] << std::setw(1) << " ";
-        }
     }
 };
 
 // 暂时不需要实现这玩意
 class Runtime_Heap{
+    public:
     std::vector<heap_item_t> list;
-    std::string* base_memory;
+    char* base_memory;
+    long AllocSize;
     size_t start,top;
     size_t FindFreeBlock(size_t need){
         size_t bt = 0;
@@ -191,9 +190,8 @@ class Runtime_Heap{
             return LONG_MAX;
         }
     }
-    public:
     Runtime_Heap(std::string& base ,size_t start){
-        this->base_memory = &base;
+        this->base_memory = (char*)base.data();
         this->start = start;
         this->top = start;
     }
@@ -211,7 +209,7 @@ class Runtime_Heap{
             list.push_back(h);
             ret = list.size() - 1;
         }
-        char* ref = (char*)base_memory->data() + list[ret][2];
+        char* ref = (char*)base_memory + list[ret][2];
         for(int i = 0;i < 8;i++,ref++){
             (*ref) = s.chc[i];
         }
@@ -233,7 +231,7 @@ class Runtime_Heap{
     }
     size_t InsertToHeap(std::string& s){
         size_t ret = alloc(s.size());
-        char* ref = (char*)base_memory->data() + list[ret][2];
+        char* ref = (char*)base_memory + list[ret][2];
         for(int i = 0;i < s.size();i++,ref++){
             (*ref) = s[i];
         }
@@ -256,7 +254,7 @@ struct TSS{
     Content fp,sp;
     Content pc;
     Content regs[32];
-    char* basememory;
+    Content basememory;
     Content _AllocSize;
 };
 
@@ -272,7 +270,7 @@ std::string COMMAND_MAP[] = {
     "mov","mov_m","push","pop","save","pop_frame",
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
-    "goto","gt","gf","call",
+    "jmp","jt","jf","call",
     "exit","ret","in","out","req","push1b","restore","fork"
 };
 std::map<std::string,long> realmap;
@@ -361,9 +359,10 @@ class VMRuntime{
     std::string allocated_memory;
     public:
     TSS              mainTSS;
-    TSS              thisTSS;
+    TSS*             thisTSS;
     int              vme_fd;
     char*            malloc_place;
+    char*            tss_alloc;
     size_t           _Alloc_Size;
     bool             regflag;
     PC_Register      pc;
@@ -380,6 +379,31 @@ class VMRuntime{
     void Bind_VMExec(VMExec vme,int unread_rid){
         this->vme = vme;
         this->vme_fd = unread_rid;
+    }
+    void initTss(){
+        mainTSS.fp.intc = stack_a.fp;
+        mainTSS.sp.intc = stack_a.sp;
+        mainTSS.basememory.intc = 0;
+        tss_alloc = malloc_place + mainTSS.basememory.intc;
+        mainTSS.pc.intc = (long)((long)pc.offset - (long)tss_alloc);
+        for(int i = 0;i < 32;i++) mainTSS.regs[i] = regs[i];
+        mainTSS._AllocSize.intc = _Alloc_Size;
+        thisTSS = &mainTSS;
+    }
+    void LoadTSS(){
+        stack_a.fp = thisTSS->fp.intc;
+        stack_a.sp = thisTSS->sp.intc;
+        stack_a.base_memory = malloc_place + thisTSS->basememory.intc;
+        stack_a.AllocSize = thisTSS->_AllocSize.intc;
+        heap.base_memory = malloc_place + thisTSS->basememory.intc;
+        for(int i = 0;i < 32;i++) regs[i] = thisTSS->regs[i];
+        pc.offset = (ByteCode*)malloc_place + thisTSS->pc.intc;
+    }
+    void UnLoadTSS(){
+        thisTSS->fp.intc = stack_a.fp;
+        thisTSS->sp.intc = stack_a.sp;
+        thisTSS->basememory.intc = (long)((long)stack_a.base_memory - (long)malloc_place);
+        for(int i = 0;i < 32;i++) thisTSS->regs[i] = regs[i];
     }
     void disasm(std::ostream &out = std::cout){
         out << COMMAND_MAP[pc.offset->c.intc] << " ";
@@ -402,8 +426,8 @@ class VMRuntime{
             if(a.c.intc == 3) return nullptr;
         }
         else if(a.opid == NormalRegister)  return (char*)&getRegRefernce(a.c.intc);
-        else if(a.opid == Address) return malloc_place + a.c.intc;
-        else if(a.opid == Address_Register) return malloc_place + getRegRefernce(a.c.intc).intc;
+        else if(a.opid == Address) return tss_alloc + a.c.intc;
+        else if(a.opid == Address_Register) return tss_alloc + getRegRefernce(a.c.intc).intc;
         else return nullptr;
     }
     void StartVMProc(){
@@ -411,6 +435,7 @@ class VMRuntime{
             if(std::string(i->label_n) == "_vmstart") pc.offset = program + i->start;
             //if(strcmp(i->label_n,"_main_int")) pc.offset = program + i->start;
         }
+        initTss();
         while(pc.offset->c.intc != realmap["exit"]){
             if(pc.offset->c.intc != realmap["ret"]) disasm();
             if(pc.offset->c.intc == realmap["mov"]){
@@ -466,9 +491,9 @@ class VMRuntime{
                 stack_a.pop_frame();
                 regflag = *(stack_a.pop(1));
                 for(int i = 31;i >= 0;i--){
-                    regs[i] = stack_a.pop();
+                    regs[i] = *stack_a.pop();
                 }
-                public_temp_place = stack_a.pop();
+                public_temp_place = *stack_a.pop();
             }else if(pc.offset->c.intc == realmap["add"] || pc.offset->c.intc == realmap["sub"] || pc.offset->c.intc == realmap["mul"] || pc.offset->c.intc == realmap["div"]){
                 Content* _dest = (Content*)GetMemberAddress(*(pc.offset+1)),*_Src = (Content*)GetMemberAddress(*(pc.offset+2));
                 if(_dest == nullptr) throw VMError("add:_dest doesn't a place");
@@ -501,13 +526,13 @@ class VMRuntime{
                 if(pc.offset->c.intc == realmap["mineq"]) regflag = (_dest.intc <= _src.intc);
                 if(pc.offset->c.intc == realmap["max"])   regflag = (_dest.intc > _src.intc);
                 if(pc.offset->c.intc == realmap["min"])   regflag = (_dest.intc < _src.intc);
-            }else if(pc.offset->c.intc == realmap["goto"] || pc.offset->c.intc == realmap["gt"] || pc.offset->c.intc == realmap["gf"]){
+            }else if(pc.offset->c.intc == realmap["jmp"] || pc.offset->c.intc == realmap["jt"] || pc.offset->c.intc == realmap["jf"]){
                 Content s;
                 if(GetMemberAddress(*(pc.offset + 1)) != nullptr) s = *(Content*)GetMemberAddress(*(pc.offset+1));
                 else s = (pc.offset+1)->c;
-                if(pc.offset->c.intc == realmap["goto"]) {pc += s.intc;continue;}
-                else if(pc.offset->c.intc == realmap["gt"] && regflag == 1) {pc += s.intc;continue;}
-                else if(pc.offset->c.intc == realmap["gf"] && regflag == 0) {pc += s.intc;continue;}
+                if(pc.offset->c.intc == realmap["jmp"]) {pc += s.intc;continue;}
+                else if(pc.offset->c.intc == realmap["jt"] && regflag == 1) {pc += s.intc;continue;}
+                else if(pc.offset->c.intc == realmap["jf"] && regflag == 0) {pc += s.intc;continue;}
             }else if(pc.offset->c.intc == realmap["call"]){
                 //long i=;
                 pc = program + vme.label_array[(pc.offset+1)->c.intc].start;
@@ -517,15 +542,14 @@ class VMRuntime{
                 stack_a.pop_frame();
                 regflag = stack_a.pop(1);
                 for(int i = 31;i >= 0;i--){
-                    regs[i] = stack_a.pop();
+                    regs[i] = *stack_a.pop();
                 }
-                public_temp_place = stack_a.pop();
+                public_temp_place = *stack_a.pop();
                 long size = (pc.offset+2)->c.intc;
                 stack_a.push(_Src,size);
                 pc.offset = (ByteCode*)public_temp_place.ptrc;
                 while(pc.offset->c.intc != realmap["call"]) pc++;
                 pc++;
-                stack_a.output(std::cout);
                 continue;
                 //pc++;
             }else if(pc.offset->c.intc == realmap["in"] || pc.offset->c.intc == realmap["out"]){
@@ -544,6 +568,16 @@ class VMRuntime{
                 else reqid = (pc.offset+2)->c;
                 char* dest = GetMemberAddress(*(pc.offset + 3));
                 devhost.device_request(devid.intc,this,reqid.intc,dest);
+            }else if(pc.offset->c.intc == realmap["fork"]){
+                // fork从当前环境复制一个TSS到指定内存地址
+                TSS* tss = (TSS*)GetMemberAddress(*(pc.offset+1));
+                *tss = *thisTSS;
+            }else if(pc.offset->c.intc == realmap["restore"]){
+                // restore从指定内存地址恢复执行环境
+                TSS* tss = (TSS*)GetMemberAddress(*(pc.offset+1));
+                UnLoadTSS(); // 卸载之前的TSS
+                thisTSS = tss; // 将当前TSS设置为指定TSS
+                // 由于切换时可能是更换tss的代码，所以直接pc++
             }
             pc++;
         }
@@ -612,6 +646,6 @@ void DebugOutput(VMRuntime rt, std::ostream &out = std::cout){
 }
 
 void Memory_Watcher(VMRuntime rt,long v,std::ostream &out = std::cout){
-    Content *c = (Content*)(&rt.malloc_place[v]);
+    Content *c = (Content*)(&rt.tss_alloc[v]);
     out << "Memory Watcher=>" << v << "\n int val=>" << c->intc << "\n Charter Val=>" << std::string(c->chc,8) << "\n";
 }

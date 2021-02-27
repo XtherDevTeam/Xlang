@@ -1,5 +1,6 @@
 #include "core.cpp"
 #include "../vm/core.cpp"
+#define __DONT_CATCH_ERROR 
 
 std::string& replace_all(std::string& str,const std::string& old_value,const std::string& new_value)     
 {     
@@ -580,7 +581,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                         int cp_adr = ConstPool_Apis::Insert(cp,(char*)malloc(typen.size),typen.size); // 解释，这里是把全局变量放进常量池，初始化
                         global_symbol_table[ast.node[i].this_node.str].frame_position = cp.items[cp_adr]; // WARN: 挖坑
                         global_symbol_table[ast.node[i].this_node.str]._Typename = typen.name;
-                        asb.genCommand("mov_m").genArg("[" + std::to_string(cp.items[cp_adr]) + "]").genArg(std::to_string(0)).genArg(std::to_string(typen.size));
+                        asb.genCommand("mov_m").genArg("[" + std::to_string(cp.items[cp_adr]) + "]").genArg(std::to_string(0)).genArg(std::to_string(typen.size)); // 防止内存泄漏，删除了这段代码，不对变量进行初始化
                         continue;
                     }
                     symbol_table[ast.node[i].this_node.str] = Symbol(typen.name);
@@ -617,18 +618,18 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             // regflag
             ASMBlock asb;
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad If Statement");
-            ASMBlock tmpblock = dumpToAsm(ast.node[1],mode); // end_pos - now_pos = goto command
+            ASMBlock tmpblock = dumpToAsm(ast.node[1],mode); // end_pos - now_pos = jmp command
             asb += dumpToAsm(ast.node[0].node[0],mode);
-            asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
+            asb.genCommand("jt").genArg("2").genCommand("jf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
             asb += tmpblock;
             asb.genCommand("_$fakecommand_goto_statement_end").push();
             if(ast.node.size() > 2) {
             for(int i = 2;i < ast.node.size();i+=3){
                 if(ast.node[i].this_node.str == "elif"){
                     ASMBlock tmpblock = dumpToAsm(ast.node[i+2],mode);
-                    tmpblock.genCommand("_$fakecommand_goto_statement_end").push(); // end_pos - now_pos = goto command
+                    tmpblock.genCommand("_$fakecommand_goto_statement_end").push(); // end_pos - now_pos = jmp command
                     asb += dumpToAsm(ast.node[i+1].node[0],mode);
-                    asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
+                    asb.genCommand("jt").genArg("2").genCommand("jf").genArg(std::to_string(tmpblock.lists.size()+1)).push();
                     asb += tmpblock;
                 }else if(ast.node[i].this_node.str == "else"){
                     asb += dumpToAsm(ast.node[i+1],mode);
@@ -640,7 +641,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             }
             for(int i = 0;i < asb.lists.size();i++){
                 if(asb.lists[i].Main == "_$fakecommand_goto_statement_end"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     asb.lists[i].args.push_back(std::to_string( asb.lists.size() - 1 - i + 1 ));
                 }
             }
@@ -657,15 +658,15 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             mov 0,reg0;
             mov 0,reg1;
             equ reg0,reg1;
-            gt 2;
-            gf 6; // 4 = blocksize(2) + endofblocksize(3) + 1
+            jt 2;
+            jf 6; // 4 = blocksize(2) + endofblocksize(3) + 1
 
             add [8],1;
-            goto 1; // blocksize - itself, 2 - 1 = 1
+            jmp 1; // blocksize - itself, 2 - 1 = 1
 
             add reg0,1;
             add reg1,1;
-            goto -7; // i - 1 - inital_val(2)
+            jmp -7; // i - 1 - inital_val(2)
             */
             ASMBlock asb,inital_val,boolean_expression,for_blockstmt,endofblock;
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement)  throw ParserError("SyntaxError: Bad For Statement");
@@ -679,7 +680,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             endofblock = dumpToAsm(ast.node[0].node[2],mode);
             endofblock.genCommand("_$fakecommand_goto_loop_start").push();
 
-            boolean_expression.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(for_blockstmt.lists.size() + endofblock.lists.size() + 1)).push();
+            boolean_expression.genCommand("jt").genArg("2").genCommand("jf").genArg(std::to_string(for_blockstmt.lists.size() + endofblock.lists.size() + 1)).push();
 
             asb += inital_val;
             asb += boolean_expression;
@@ -688,15 +689,15 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 
             for(int i = 0;i < asb.lists.size();i++){
                 if(asb.lists[i].Main == "_$fakecommand_goto_loop_start"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     asb.lists[i].args.push_back("-" + std::to_string( (int)(i - inital_val.lists.size()) ));
                 }
                 if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     asb.lists[i].args.push_back(std::to_string( asb.lists.size() - endofblock.lists.size() - i + 1));
                 }
                 if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     //std::cout << "\033[31mwtf>>" << asb.lists.size() - i <<  std::endl;
                     asb.lists[i].args.push_back(std::to_string( asb.lists.size() - i + 1 ));
                 }
@@ -707,15 +708,15 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             if(ast.node[0].nodeT != Args || ast.node[1].nodeT != BlockStatement) throw CompileError("Bad While Statement");
             ASMBlock asb;
             asb += dumpToAsm(ast.node[0].node[0]);
-            asb.genCommand("gt").genArg("2").genCommand("gf").genArg(std::to_string(dumpToAsm(ast.node[1]).lists.size() + 1 + 1)).push(); // command here
+            asb.genCommand("jt").genArg("2").genCommand("jf").genArg(std::to_string(dumpToAsm(ast.node[1]).lists.size() + 1 + 1)).push(); // command here
             asb += dumpToAsm(ast.node[1]).genCommand("_$fakecommand_loop_continue").push();
             for(long i = 0;i < asb.lists.size();i++){
                 if(asb.lists[i].Main == "_$fakecommand_goto_for_end"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     asb.lists[i].args.push_back(std::to_string(asb.lists.size() - i));
                 }
                 if(asb.lists[i].Main == "_$fakecommand_loop_continue"){
-                    asb.lists[i].Main = "goto";
+                    asb.lists[i].Main = "jmp";
                     asb.lists[i].args.push_back(std::to_string(0 - i));
                 }
             }
@@ -763,7 +764,9 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
 }
 
 std::vector<ASMBlock> CompileProcess(std::string code){
+    #ifndef __DONT_CATCH_ERROR
     try{
+    #endif
     std::vector<ASMBlock> asblst;
     ASMBlock asb;
     int intext=0,block=0,brack1=0,brack2=0,brack3=0,descriptor = 0,bdescriptor = 0;
@@ -829,6 +832,7 @@ std::vector<ASMBlock> CompileProcess(std::string code){
         symbol_table.clear();
     }
     return asblst;
+    #ifndef __DONT_CATCH_ERROR
     }
     catch(CompileError e){
         e.what();
@@ -836,6 +840,7 @@ std::vector<ASMBlock> CompileProcess(std::string code){
     catch(ParserError e){
         e.what();
     }
+    #endif
 }
 
 namespace Bytecode{
@@ -851,7 +856,7 @@ namespace Bytecode{
         "mov","mov_m","push","pop","save","pop_frame",
         "add","sub","mul","div",
         "equ","neq","maxeq","mineq","max","min",
-        "goto","gt","gf","call",
+        "jmp","jt","jf","call",
         "exit","ret","in","out","req","push1b","restore","fork"
     };
     int getCommandId(std::string command){
@@ -881,6 +886,7 @@ namespace Bytecode{
             strcpy(codelbls[i].label_n,togen[i].name.c_str());
             codelbls[i].start = bytecode_top;
             for(int _each_command = 0;_each_command < togen[i].lists.size();_each_command++){
+                if(togen[i][_each_command].Main == "") continue;
                 ByteCode b;
                 b.opid = Command;
                 b.c.intc = getCommandId(togen[i][_each_command].Main);

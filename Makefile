@@ -22,3 +22,4 @@ run: all
 
 clean:
 	rm -rf test_lex.dSYM test_lex xlang.dSYM test.dSYM xlang test_lex
+	cd lib/vmlib@latest/native && make clean

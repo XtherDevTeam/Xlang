@@ -1,5 +1,6 @@
 #include "core.cpp"
 #include "../compiler/core.cpp"
+//#define __DEBUG_DISASM
 
 int main(int argc,char** argv){
     std::string path = "test.xvm";
@@ -13,8 +14,11 @@ int main(int argc,char** argv){
     }
     //try{
     //disasm(vme.code_array,vme.head.code_length);
+    #ifndef __DEBUG_DISASM
     vmr.Run();
+    #endif
     // /DebugOutput(vmr);
+    #ifndef __DEBUG_DISASM
     while(!std::cin.eof()){
         std::cout << "(debugger) > ";
         std::string s;
@@ -25,6 +29,10 @@ int main(int argc,char** argv){
         else if(main == "mem") Memory_Watcher(vmr,atol(lex.getNextToken().str.data()),std::cout);
         else if(main == "exit") break;
     }
+    #endif
+    #ifdef __DEBUG_DISASM
+    disasm(vme.code_array,vme.head.code_length);
+    #endif
     /*}catch(VMError e){
         e.what();
         std::cout << "ERRCOMMAND: ";
