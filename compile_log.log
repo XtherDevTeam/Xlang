@@ -10,12 +10,7 @@ import(headers:"lib/vmlib@latest/heap.xlang");
 import(headers:"lib/vmlib@latest/io.xlang");
 import(headers:"lib/vmlib@latest/vmapi.xlang");
 
-TSS firstTSS;
-ptr_TSS ptroftss = 0;
-firstTSS;
-asm "mov reg1,reg0";
-ptroftss;
-asm "mov_m [reg0],[reg1],296";
-fork(ptroftss);
-firstTSS;
+ptr_char buf=malloc(256);
+readLine(buf);
+buf;
 

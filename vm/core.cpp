@@ -271,7 +271,8 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "jmp","jt","jf","call",
-    "exit","ret","in","out","req","push1b","restore","fork"
+    "exit","ret","in","out","req","push1b","restore","fork",
+    "labalg","labels",
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -557,9 +558,9 @@ class VMRuntime{
                 if(GetMemberAddress(*(pc.offset + 1)) != nullptr) devid = *(Content*)GetMemberAddress(*(pc.offset+1));
                 else devid = (pc.offset+1)->c;
                 char* dest = GetMemberAddress(*(pc.offset + 2));
-                std::cout << (pc.offset+1)->c.intc << std::endl;
                 if(pc.offset->c.intc == realmap["in"]) devhost.device_in(devid.intc,this,dest);
                 else devhost.device_out(devid.intc,this,dest);
+                std::cout << dest[0];
             }else if(pc.offset->c.intc == realmap["req"]){
                 Content devid,reqid;
                 if(GetMemberAddress(*(pc.offset + 1)) != nullptr) devid = *(Content*)GetMemberAddress(*(pc.offset+1));

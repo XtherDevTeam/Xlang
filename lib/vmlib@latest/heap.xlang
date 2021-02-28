@@ -21,13 +21,9 @@ func int memcpy(ptr_char:dest,ptr_char:src,int:count){
 };
 func int strlen(ptr_char:src){
     int ret = 0;
-    src;
-    asm "mov reg0,[reg0]";
-    asm "out 0,[reg0]";
     for(ptr_char p=src,^p != '\0',p=p+1){
         ret = ret + 1;
     };
-    ret=ret+1;
     return ret;
 };
 func ptr_char strcpy(ptr_char:dest,ptr_char:src){
