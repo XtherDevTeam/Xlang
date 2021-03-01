@@ -456,8 +456,8 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
     if(ast.nodeT == Args && ast.this_node.type == TOK_PTRB){
         ASMBlock asb;
         asb += dumpToAsm(ast.node[0]);
-        return asb.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push(); // 由于先算出_dest和_Src的地址，所以这种语法是完全允许的
-        // /return asb;
+        //return asb.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push(); // 由于先算出_dest和_Src的地址，所以这种语法是完全允许的
+        return asb;
     }
     if(ast.nodeT == ExpressionStatement){
         if(ast.this_node.type == TOK_PLUS || ast.this_node.type == TOK_MINUS || ast.this_node.type == TOK_MULT || ast.this_node.type == TOK_DIV || ast.this_node.type == TOK_2EQUAL || ast.this_node.type == TOK_NOTEQUAL || ast.this_node.type == TOK_MAXEQUAL || ast.this_node.type == TOK_MINEQUAL || ast.this_node.type == TOK_MAX || ast.this_node.type == TOK_MIN){
