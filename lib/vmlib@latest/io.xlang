@@ -3,13 +3,10 @@
 */
 
 func int readLine(ptr_char:dest){
-    char p;
-    int i = 0;
-    while(p != '\n'){
-        p;
+    for(ptr_char i=dest,^(i-1) != '\n',i=i+1){
+        i;
+        asm "mov reg0,[reg0]";
         asm "in 0,[reg0]";
-        ^(dest+i) = p;
-        i=i+1;
     };
     return 0;
 };

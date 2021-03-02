@@ -4,13 +4,9 @@ Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
 import(headers:"lib/vmlib@latest/heap.xlang");
-//import(headers:"lib/vmlib@latest/io.xlang");
-//import(headers:"lib/vmlib@latest/vmapi.xlang");
+import(headers:"lib/vmlib@latest/io.xlang");
+import(headers:"lib/vmlib@latest/vmapi.xlang");
 
-//ptr_char buf=malloc(256);
-//readLine(buf);
-//buf;
-ptr_char buf="Hello,World";
-int len=strlen(buf);
-int r = len + 2;
-r;
+ptr_char buf=malloc(256);
+readLine(buf);
+buf;
