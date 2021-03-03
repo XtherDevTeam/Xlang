@@ -255,6 +255,7 @@ struct TSS{
     Content pc;
     Content regs[32];
     Content basememory;
+    Content vheap_start;
     Content _AllocSize;
 };
 
@@ -385,6 +386,7 @@ class VMRuntime{
         mainTSS.fp.intc = stack_a.fp;
         mainTSS.sp.intc = stack_a.sp;
         mainTSS.basememory.intc = 0;
+        mainTSS.vheap_start = (long)((long)heap.base_memory - (long)malloc_place)
         tss_alloc = malloc_place + mainTSS.basememory.intc;
         mainTSS.pc.intc = (long)((long)pc.offset - (long)tss_alloc);
         for(int i = 0;i < 32;i++) mainTSS.regs[i] = regs[i];
@@ -396,7 +398,8 @@ class VMRuntime{
         stack_a.sp = thisTSS->sp.intc;
         stack_a.base_memory = malloc_place + thisTSS->basememory.intc;
         stack_a.AllocSize = thisTSS->_AllocSize.intc;
-        heap.base_memory = malloc_place + thisTSS->basememory.intc;
+        heap.base_memory = malloc_place + thisTSS->base_memory.intc;
+        heap.start = mainTSS.vheap_start;
         for(int i = 0;i < 32;i++) regs[i] = thisTSS->regs[i];
         pc.offset = (ByteCode*)malloc_place + thisTSS->pc.intc;
     }
@@ -404,6 +407,7 @@ class VMRuntime{
         thisTSS->fp.intc = stack_a.fp;
         thisTSS->sp.intc = stack_a.sp;
         thisTSS->basememory.intc = (long)((long)stack_a.base_memory - (long)malloc_place);
+        thisTSS->vheap_start = heap.start;
         for(int i = 0;i < 32;i++) thisTSS->regs[i] = regs[i];
     }
     void disasm(std::ostream &out = std::cout){
