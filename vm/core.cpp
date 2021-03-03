@@ -308,6 +308,13 @@ class PC_Register{
     }
 };
 
+class InterrputControler{
+public:
+    long HasInterrputSignal;
+    bool IsProcessingSignal;
+    std::vector<Content> RegisteredProcessingFunction;
+};
+
 struct Device{
     char device_name[32];
     void* io_request;
@@ -360,6 +367,7 @@ class VMRuntime{
     VMExec vme;
     std::string allocated_memory;
     public:
+    TSS              backupTSS;
     TSS              mainTSS;
     TSS*             thisTSS;
     int              vme_fd;
@@ -372,6 +380,7 @@ class VMRuntime{
     Content          regs[32];
     Runtime_Heap     heap;
     Runtime_Stack    stack_a;
+    InterrputControler intc;
     ByteCode*        program;
     char*            constant_pool;
 
@@ -442,6 +451,13 @@ class VMRuntime{
         }
         initTss();
         while(pc.offset->c.intc != realmap["exit"]){
+            if(intc.HasInterrputSignal != -1){
+                backupTSS = mainTSS;
+                stack_a.save();
+                intc.IsProcessingSignal = true;
+                pc.offset = program + vme.label_array[intc.RegisteredProcessingFunction[intc.HasInterrputSignal].intc];
+                continue;
+            }
             if(pc.offset->c.intc != realmap["ret"]) disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
@@ -583,6 +599,11 @@ class VMRuntime{
                 UnLoadTSS(); // 卸载之前的TSS
                 thisTSS = tss; // 将当前TSS设置为指定TSS
                 // 由于切换时可能是更换tss的代码，所以直接pc++
+            }else if(pc.offset->c.intc == realmap["tret"]){
+                mainTSS = backupTSS;
+                intc.IsProcessingSignal = false;
+                intc.HasInterrputSignal = -1;
+                continue;
             }
             pc++;
         }
@@ -616,6 +637,10 @@ class VMRuntime{
             sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
         }
+
+        //init intctl
+        intc.HasInterrputSignal = -1;
+        intc.IsProcessingSignal = false;
         StartVMProc();
     }
     VMRuntime(VMExec vme,int unread_rid){
