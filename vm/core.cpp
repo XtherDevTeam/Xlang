@@ -272,7 +272,7 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "jmp","jt","jf","call",
-    "exit","ret","in","out","req","push1b","restore","fork",
+    "exit","ret","in","out","req","push1b","restore","fork","tret"
     "labalg","labels",
 };
 std::map<std::string,long> realmap;
@@ -395,7 +395,7 @@ class VMRuntime{
         mainTSS.fp.intc = stack_a.fp;
         mainTSS.sp.intc = stack_a.sp;
         mainTSS.basememory.intc = 0;
-        mainTSS.vheap_start = (long)((long)heap.base_memory - (long)malloc_place)
+        mainTSS.vheap_start.intc = (long)((long)heap.base_memory - (long)malloc_place);
         tss_alloc = malloc_place + mainTSS.basememory.intc;
         mainTSS.pc.intc = (long)((long)pc.offset - (long)tss_alloc);
         for(int i = 0;i < 32;i++) mainTSS.regs[i] = regs[i];
@@ -407,8 +407,8 @@ class VMRuntime{
         stack_a.sp = thisTSS->sp.intc;
         stack_a.base_memory = malloc_place + thisTSS->basememory.intc;
         stack_a.AllocSize = thisTSS->_AllocSize.intc;
-        heap.base_memory = malloc_place + thisTSS->base_memory.intc;
-        heap.start = mainTSS.vheap_start;
+        heap.base_memory = malloc_place + thisTSS->basememory.intc;
+        heap.start = mainTSS.vheap_start.intc;
         for(int i = 0;i < 32;i++) regs[i] = thisTSS->regs[i];
         pc.offset = (ByteCode*)malloc_place + thisTSS->pc.intc;
     }
@@ -416,7 +416,7 @@ class VMRuntime{
         thisTSS->fp.intc = stack_a.fp;
         thisTSS->sp.intc = stack_a.sp;
         thisTSS->basememory.intc = (long)((long)stack_a.base_memory - (long)malloc_place);
-        thisTSS->vheap_start = heap.start;
+        thisTSS->vheap_start.intc = heap.start;
         for(int i = 0;i < 32;i++) thisTSS->regs[i] = regs[i];
     }
     void disasm(std::ostream &out = std::cout){
@@ -455,7 +455,7 @@ class VMRuntime{
                 backupTSS = mainTSS;
                 stack_a.save();
                 intc.IsProcessingSignal = true;
-                pc.offset = program + vme.label_array[intc.RegisteredProcessingFunction[intc.HasInterrputSignal].intc];
+                pc.offset = program + vme.label_array[intc.RegisteredProcessingFunction[intc.HasInterrputSignal].intc].start;
                 continue;
             }
             if(pc.offset->c.intc != realmap["ret"]) disasm();
@@ -632,7 +632,7 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 28;i++){
+        for(int i = 0;i < 29;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
             sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
