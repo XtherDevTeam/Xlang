@@ -3,10 +3,9 @@ This is a test file for Xlang compiler
 Writed by xiaokang00010 at Febuary,12th,2021
 */
 // for testing
-import(headers:"lib/vmlib@latest/heap.xlang");
-import(headers:"lib/vmlib@latest/io.xlang");
-import(headers:"lib/vmlib@latest/vmapi.xlang");
-
-ptr_char buf=malloc(256);
-readLine(buf);
-buf;
+//import(headers:"lib/vmlib@latest/heap.xlang");
+//import(headers:"lib/vmlib@latest/io.xlang");
+//import(headers:"lib/vmlib@latest/vmapi.xlang");
+int s=1+1;
+int b=&s;
+//int s=returnonce();

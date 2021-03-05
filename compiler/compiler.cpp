@@ -298,7 +298,7 @@ namespace ConstPool_Apis
 } // namespace ConstPool_Apis
 
 bool isNormalExpression(ASTree ast){
-    if(ast.this_node.type != TOK_DOT && ast.this_node.type != Id && ast.this_node.type != TOK_ID && ast.this_node.type != TOK_STRING) return true;
+    if(ast.this_node.type != TOK_DOT && ast.this_node.type != Id && ast.this_node.type != TOK_ID && ast.this_node.type != TOK_STRING && ast.this_node.type != TOK_ADDRBLOCK) return true;
     return false;
 }
 
@@ -453,7 +453,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
         sp += getMemberSize(ast);
         return asb;
     }
-    if(ast.nodeT == Args && ast.this_node.type == TOK_PTRB){
+    if(ast.nodeT == Args && (ast.this_node.type == TOK_PTRB || ast.this_node.type == TOK_ADDRBLOCK)){
         ASMBlock asb;
         asb += dumpToAsm(ast.node[0]);
         //return asb.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId())).genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").push(); // 由于先算出_dest和_Src的地址，所以这种语法是完全允许的
@@ -480,7 +480,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             //if(ast.node[1].this_node.type == TOK_PTRID || ast.node[1].this_node.type == TOK_PTRB) ab.genArg("[reg" + std::to_string(getLastUsingRegId() - 2) + "]");
             if(isNormalExpression(ast.node[1]) || getMemberType(ast.node[1]) == __BASIC_1BYTE) /*同上*/;
             else if(ASTree_APIs::MemberExpression::hasFunctionCallStatement(ast.node[1])) ab.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId() - 1)).genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]").push();
-            else if(getMemberType(ast.node[1]) == __BASIC_8BYTE || ast.node[1].this_node.type == TOK_PTRID || ast.node[1].this_node.type == TOK_PTRB) ab.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId() - 1)).genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]").push();
+            else if(getMemberType(ast.node[1]) == __BASIC_8BYTE) ab.genCommand("mov").genArg("reg" + std::to_string(getLastUsingRegId() - 1)).genArg("[reg" + std::to_string(getLastUsingRegId() - 1) + "]").push();
             else throw CompileError("TypeError: 加减乘除以及逻辑运算仅限于基础类型,除非你想让虚拟机崩掉.\nBasic operator and boolean expression only support basic types,if you want to let the vm crash then don't do it.");
 
             if(ast.this_node.type == TOK_PLUS) ab.genCommand("add");
@@ -517,7 +517,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             RegState[getLastUsingRegId() - 1] = false;
             std::string realarg0 = "reg" + std::to_string(getLastUsingRegId()+1);
             //std::cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] <<  std::endl;
-            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER || ast.node[1].this_node.type == TOK_STRING || (ast.node[1].nodeT == ExpressionStatement && ast.node[1].this_node.type != TOK_DOT)) /*do nothing*/;
+            if(ast.node[1].this_node.type == TOK_INTEGER || ast.node[1].this_node.type == TOK_DOUBLE || ast.node[1].this_node.type == TOK_CHARTER || ast.node[1].this_node.type == TOK_STRING || (ast.node[1].nodeT == ExpressionStatement && ast.node[1].this_node.type != TOK_DOT) || ast.node[1].this_node.type == TOK_ADDRBLOCK) /*do nothing*/;
             else realarg0 = "[" + realarg0 + "]";
             asb.genCommand("mov_m").genArg("[reg" + std::to_string(getLastUsingRegId()) + "]").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[1]))).push();
             return asb;
@@ -593,7 +593,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                     if(mode){
                         std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
                         //std::cout << "BUGHERE:" << AST_nodeType[ast.node[i].node[0].nodeT] <<  std::endl;
-                        if(ast.node[i].node[1].this_node.type == TOK_INTEGER || ast.node[i].node[1].this_node.type == TOK_DOUBLE || ast.node[i].node[1].this_node.type == TOK_CHARTER || ast.node[i].node[1].this_node.type == TOK_STRING || (ast.node[i].node[1].nodeT == ExpressionStatement && ast.node[i].node[1].this_node.type != TOK_DOT)) /*do nothing*/;
+                        if(ast.node[i].node[1].this_node.type == TOK_INTEGER || ast.node[i].node[1].this_node.type == TOK_DOUBLE || ast.node[i].node[1].this_node.type == TOK_CHARTER || ast.node[i].node[1].this_node.type == TOK_STRING || (ast.node[i].node[1].nodeT == ExpressionStatement && ast.node[i].node[1].this_node.type != TOK_DOT) || ast.node[i].node[1].this_node.type == TOK_ADDRBLOCK) /*do nothing*/;
                         else realarg0 = "[" + realarg0 + "]";
                         global_symbol_table[ast.node[i].node[0].this_node.str].frame_position = cp.items[cp.count];
                         global_symbol_table[ast.node[i].node[0].this_node.str]._Typename = typen.name;
@@ -605,7 +605,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
                         continue;
                     }
                     std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
-                    if(ast.node[i].node[1].this_node.type  == TOK_INTEGER || ast.node[i].node[1].this_node.type  == TOK_DOUBLE || ast.node[i].node[1].this_node.type  == TOK_CHARTER || ast.node[i].node[1].this_node.type == TOK_STRING || (ast.node[i].node[1].nodeT == ExpressionStatement && ast.node[i].node[1].this_node.type != TOK_DOT)) /* do nothing*/;
+                    if(ast.node[i].node[1].this_node.type  == TOK_INTEGER || ast.node[i].node[1].this_node.type  == TOK_DOUBLE || ast.node[i].node[1].this_node.type  == TOK_CHARTER || ast.node[i].node[1].this_node.type == TOK_STRING || (ast.node[i].node[1].nodeT == ExpressionStatement && ast.node[i].node[1].this_node.type != TOK_DOT) || ast.node[i].node[1].this_node.type == TOK_ADDRBLOCK) /* do nothing*/;
                     else realarg0 = "[" + realarg0 + "]";
                     symbol_table[ast.node[i].node[0].this_node.str] = Symbol(typen.name);
                     asb.genCommand("push").genArg(realarg0).genArg(std::to_string(typen.size));
@@ -732,7 +732,7 @@ ASMBlock dumpToAsm(ASTree ast,int mode = false/*default is cast mode(0),but in g
             ASMBlock asb;
             asb += dumpToAsm(ast.node[0]);
             std::string realarg0 = "reg" + std::to_string(getLastUsingRegId());
-            if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER || ast.node[0].this_node.type == TOK_STRING || (ast.node[0].nodeT == ExpressionStatement && ast.node[0].this_node.type != TOK_DOT)) /*do nothing*/;
+            if(ast.node[0].this_node.type == TOK_INTEGER || ast.node[0].this_node.type == TOK_ADDRBLOCK || ast.node[0].this_node.type == TOK_DOUBLE || ast.node[0].this_node.type == TOK_CHARTER || ast.node[0].this_node.type == TOK_STRING || (ast.node[0].nodeT == ExpressionStatement && ast.node[0].this_node.type != TOK_DOT)) /*do nothing*/;
             else realarg0 = "[" + realarg0 + "]";
             return asb.genCommand("ret").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))/*.genCommand("push").genArg(realarg0).genArg(std::to_string(getMemberSize(ast.node[0])))*/.push();
         }
@@ -857,7 +857,8 @@ namespace Bytecode{
         "add","sub","mul","div",
         "equ","neq","maxeq","mineq","max","min",
         "jmp","jt","jf","call",
-        "exit","ret","in","out","req","push1b","restore","fork","tret"
+        "exit","ret","in","out","req","push1b","restore","fork",
+        "tclear","tset","trestore", // 分别为清除中断处理状态，设置中断处理状态，返回主任务
     };
     int getCommandId(std::string command){
         for(int i = 0;i < 29;i=i+1){

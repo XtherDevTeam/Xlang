@@ -29,3 +29,9 @@ func ptr_char createEnv(TSS:tss){
     ptr_char ret = malloc(tss._Alloc_Size);
     return ret;
 };
+
+Array MultiTaskList;
+
+func int multitask_init(){
+
+};

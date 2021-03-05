@@ -1,7 +1,6 @@
 /*
  - Xlang Array Support
 */
-import(headers:"__LIB_ROOT__/main.xlang")
 struct Array{
 	int allocsize;
 	ptr_char base;
@@ -18,5 +17,21 @@ struct Array{
 	func int free(){
 		hfree(allocsize);
 		return 0;
+	};
+};
+
+struct s_list_item{
+	int index;
+	ptr_char prev;
+	ptr_char next;
+	ptr_char this;
+};
+
+// 其实是链表，遍历一次要O(n^n)
+struct dymaic_array{
+	s_list_item first;
+	s_list_item end;
+	func int init(){
+		first.prev = &this;
 	};
 };

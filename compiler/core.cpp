@@ -29,10 +29,7 @@ enum TokenValue {
     TOK_SEMICOLON,
     TOK_ARGSTATEMENT,
     TOK_CBRACKETL,TOK_CBRACKETR, // []
-    TOK_BBRACKET,
-    TOK_MBRACKET,
-    TOK_BLOCK, // Block statement
-    TOK_CHARTER,
+    TOK_BBRACKET,TOK_MBRACKET,TOK_BLOCK,TOK_CHARTER,TOK_ADDRBLOCK,
 };
 std::string TOKEN_VALUE_DESCRIPTION[] =
 {
@@ -57,7 +54,7 @@ std::string TOKEN_VALUE_DESCRIPTION[] =
     "TOK_BBRACKET",
     "TOK_MBRACKET",
     "TOK_BLOCK",
-    "TOK_CHARTER",
+    "TOK_CHARTER","TOK_ADDRBLOCK"
 };
 //标签和标签的值
 typedef class _Token {
@@ -219,6 +216,10 @@ class Lexer{
                 return Token(TOK_PTRB,getNextToken().str);
             }
         }
+        if(*current == '&'){
+            Next();
+            return Token(TOK_ADDRBLOCK,getNextToken().str);
+        }
         if(*current == '!'){ Next();if(*current == '=') {Next();return Token(TOK_NOTEQUAL,"!=");}else{throw ParserError("Undefined Token at" + std::to_string(position));} }
         if(*current == '<'){ Next();if(*current == '=') {Next();return Token(TOK_MINEQUAL,"<=");}else{return Token(TOK_MIN,"<");} }
         if(*current == '>'){ Next();if(*current == '=') {Next();return Token(TOK_MAXEQUAL,">=");}else{return Token(TOK_MAX,">");} }
@@ -355,7 +356,7 @@ class ASTree{
             node.push_back( ASTree(temp_lexer) );
             return;
         }
-        if(current_tok.type == TOK_ARGSTATEMENT || current_tok.type == TOK_PTRB){
+        if(current_tok.type == TOK_ARGSTATEMENT || current_tok.type == TOK_PTRB || current_tok.type == TOK_ADDRBLOCK){
             int count1=0,count2=0,count3=0,instr = 0; // (),[],{} don't find ','
             std::string temp_str = current_tok.str,current_str = "";
             for (size_t i = 0; i < temp_str.length(); i++){
@@ -377,6 +378,7 @@ class ASTree{
             nodeT=Args;
             this_node = Token(TOK_MBRACKET,"()");
             if(current_tok.type == TOK_PTRB) this_node = current_tok;
+            else if(current_tok.type == TOK_ADDRBLOCK) this_node = current_tok;
             if(current_str != ""){
                 Lexer temp_lexer(current_str);
                 node.push_back( ASTree(temp_lexer) );
