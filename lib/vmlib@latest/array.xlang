@@ -2,36 +2,78 @@
  - Xlang Array Support
 */
 struct Array{
-	int allocsize;
-	ptr_char base;
-	func int init(ptr_Array:ptr,int:base,int:count){
-		^ptr.allocsize = base * count;
-		^ptr.base = malloc(^ptr.size);
-	};
-	func ptr_int gets(int index){
-		return ^ptr.base + index * 8;
-	};
-	func ptr_char getc(int index){
-		return ^ptr.base + index * 1;
-	};
-	func int free(){
-		hfree(allocsize);
-		return 0;
-	};
+    int allocsize;
+    ptr_char base;
+    func int init(ptr_Array:ptr,int:base,int:count){
+        ^ptr.allocsize = base * count;
+        ^ptr.base = malloc(^ptr.size);
+    };
+    func ptr_int gets(int index){
+        return ^ptr.base + index * 8;
+    };
+    func ptr_char getc(int index){
+        return ^ptr.base + index * 1;
+    };
+    func int free(){
+        hfree(allocsize);
+        return 0;
+    };
 };
 
 struct s_list_item{
-	int index;
-	ptr_char prev;
-	ptr_char next;
-	ptr_char this;
+    int index;
+    ptr_char prev;
+    ptr_char next;
+    ptr_char this;
 };
 
 // 其实是链表，遍历一次要O(n^n)
 struct dymaic_array{
-	s_list_item first;
-	s_list_item end;
-	func int init(){
-		first.prev = &this;
-	};
+    int sizeof_item;
+    int size;
+    ptr_s_list_item first;
+    ptr_s_list_item top;
+    func int init(ptr_dymaic_array:this){
+        first = malloc(32); // 4*8
+        // 初始化第一个元素
+        ^first.prev = &(^this.first);
+        ^first.next = &(^this.first);
+        ^first.this = malloc(sizeof_item);
+        top = &first;
+        size = 1;
+    };
+    func int insert(ptr_dymaic_array:this){
+        first.next = malloc(32); // 4*8
+        ptr_s_list_item p = ^first.next;
+        ^p.index = size;
+        ^p.prev = top;
+        ^p.next = first;
+        ^p.this = malloc(sizeof_item);
+        ^top.next = p;
+        top = p;
+        size = size + 1;
+        return 0;
+    };
+    func int remove(ptr_dymaic_array:this,int index){
+        ptr_s_list_item p = &first;
+        int currentindex = 0;
+        for(p=&first,currentindex != index,p = ^p.next){
+            currentindex = currentindex + 1;
+        };
+        p = p.prev;
+        ptr_s_list_item prev = p.prev;
+        ptr_s_list_item next = p.next;
+        ^prev.next = next;
+        ^next.prev = prev;
+        free(p.this);
+        free(p);
+        return 0;
+    };
+    func int destoy(){
+        for(ptr_s_list_item p = top;p != first;p = p.prev){
+            free(p.this);
+            free(p.next);
+        };
+        return 0;
+    };
 };

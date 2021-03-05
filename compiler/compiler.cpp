@@ -1,6 +1,6 @@
 #include "core.cpp"
 #include "../vm/core.cpp"
-#define __DONT_CATCH_ERROR 
+//#define __DONT_CATCH_ERROR 
 
 std::string& replace_all(std::string& str,const std::string& old_value,const std::string& new_value)     
 {     
@@ -859,9 +859,10 @@ namespace Bytecode{
         "jmp","jt","jf","call",
         "exit","ret","in","out","req","push1b","restore","fork",
         "tclear","tset","trestore", // 分别为清除中断处理状态，设置中断处理状态，返回主任务
+        "labalg","labels", // label-get label-set
     };
     int getCommandId(std::string command){
-        for(int i = 0;i < 29;i=i+1){
+        for(int i = 0;i < 33;i=i+1){
             if(command == COMMAND_MAP[i]) return i;
         }
         std::cout << "Unknown Command Id:" << command << std::endl;

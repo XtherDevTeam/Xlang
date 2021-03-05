@@ -272,8 +272,9 @@ std::string COMMAND_MAP[] = {
     "add","sub","mul","div",
     "equ","neq","maxeq","mineq","max","min",
     "jmp","jt","jf","call",
-    "exit","ret","in","out","req","push1b","restore","fork","tret"
-    "labalg","labels",
+    "exit","ret","in","out","req","push1b","restore","fork",
+    "tclear","tset","trestore", // 分别为清除中断处理状态，设置中断处理状态，返回主任务
+    "labalg","labels", // label-get label-set
 };
 std::map<std::string,long> realmap;
 class PC_Register{
@@ -598,11 +599,15 @@ class VMRuntime{
                 TSS* tss = (TSS*)GetMemberAddress(*(pc.offset+1));
                 UnLoadTSS(); // 卸载之前的TSS
                 thisTSS = tss; // 将当前TSS设置为指定TSS
-                // 由于切换时可能是更换tss的代码，所以直接pc++
-            }else if(pc.offset->c.intc == realmap["tret"]){
-                mainTSS = backupTSS;
+                continue; // 多任务需要
+            }else if(pc.offset->c.intc == realmap["tset"]){
+                intc.IsProcessingSignal = true;
+                continue;
+            }else if(pc.offset->c.intc == realmap["tclear"]){
                 intc.IsProcessingSignal = false;
-                intc.HasInterrputSignal = -1;
+                continue;
+            }else if(pc.offset->c.intc == realmap["trestore"]){
+                mainTSS = backupTSS;
                 continue;
             }
             pc++;
@@ -632,9 +637,8 @@ class VMRuntime{
         if(vm_rules["verbose"] == true){
             printf("Xtime VM Core[1.0.01]\nStarting...\n");
         }
-        for(int i = 0;i < 29;i++){
+        for(int i = 0;i < 33;i++){
             //std::cout << "COMMAND:" << COMMAND_MAP[i] << std::endl;
-            sizeof(COMMAND_MAP);
             realmap[COMMAND_MAP[i]] = i;
         }
 
