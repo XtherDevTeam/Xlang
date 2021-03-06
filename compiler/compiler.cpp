@@ -859,7 +859,7 @@ namespace Bytecode{
         "jmp","jt","jf","call",
         "exit","ret","in","out","req","push1b","restore","fork",
         "tclear","tset","trestore", // 分别为清除中断处理状态，设置中断处理状态，返回主任务
-        "labalg","labels", // label-get label-set
+        "labelg","labels", // label-get label-set
     };
     int getCommandId(std::string command){
         for(int i = 0;i < 33;i=i+1){

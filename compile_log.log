@@ -10,5 +10,9 @@ import(headers:"lib/vmlib@latest/heap.xlang");
 import(headers:"lib/vmlib@latest/io.xlang");
 import(headers:"lib/vmlib@latest/vmapi.xlang");
 
-printLine("Hello,World");
+TSS tss;
+fork(&tss);
+int labelg = 0;
+labelg;
+asm "labelg 1,[reg0]";
 
