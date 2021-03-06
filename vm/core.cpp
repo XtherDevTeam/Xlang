@@ -255,6 +255,7 @@ struct TSS{
     Content pc;
     Content regs[32];
     Content basememory;
+    Content custom_code_labels;
     Content vheap_start;
     Content _AllocSize;
 };
@@ -368,6 +369,7 @@ class VMRuntime{
     VMExec vme;
     std::string allocated_memory;
     public:
+    Content          OriginCodeLabel;
     TSS              backupTSS;
     TSS              mainTSS;
     TSS*             thisTSS;
@@ -396,8 +398,9 @@ class VMRuntime{
         mainTSS.fp.intc = stack_a.fp;
         mainTSS.sp.intc = stack_a.sp;
         mainTSS.basememory.intc = 0;
-        mainTSS.vheap_start.intc = (long)((long)heap.base_memory - (long)malloc_place);
+        mainTSS.custom_code_labels.intc = LONG_MAX;
         tss_alloc = malloc_place + mainTSS.basememory.intc;
+        mainTSS.vheap_start.intc = (long)((long)heap.base_memory - (long)tss_alloc);
         mainTSS.pc.intc = (long)((long)pc.offset - (long)tss_alloc);
         for(int i = 0;i < 32;i++) mainTSS.regs[i] = regs[i];
         mainTSS._AllocSize.intc = _Alloc_Size;
@@ -411,13 +414,15 @@ class VMRuntime{
         heap.base_memory = malloc_place + thisTSS->basememory.intc;
         heap.start = mainTSS.vheap_start.intc;
         for(int i = 0;i < 32;i++) regs[i] = thisTSS->regs[i];
-        pc.offset = (ByteCode*)malloc_place + thisTSS->pc.intc;
+        pc.offset = (ByteCode*)tss_alloc + thisTSS->pc.intc;
+        if(thisTSS->custom_code_labels.intc != LONG_MAX) vme.label_array = (CodeLabel*)(tss_alloc + thisTSS->custom_code_labels.intc);
     }
     void UnLoadTSS(){
         thisTSS->fp.intc = stack_a.fp;
         thisTSS->sp.intc = stack_a.sp;
-        thisTSS->basememory.intc = (long)((long)stack_a.base_memory - (long)malloc_place);
+        thisTSS->basememory.intc = (long)((long)stack_a.base_memory - (long)tss_alloc);
         thisTSS->vheap_start.intc = heap.start;
+        if(thisTSS->custom_code_labels.intc != LONG_MAX) thisTSS->custom_code_labels.intc = (long)thisTSS->custom_code_labels.intc - (long)malloc_place;
         for(int i = 0;i < 32;i++) thisTSS->regs[i] = regs[i];
     }
     void disasm(std::ostream &out = std::cout){
@@ -459,7 +464,7 @@ class VMRuntime{
                 pc.offset = program + vme.label_array[intc.RegisteredProcessingFunction[intc.HasInterrputSignal].intc].start;
                 continue;
             }
-            if(pc.offset->c.intc != realmap["ret"]) disasm();
+            //if(pc.offset->c.intc != realmap["ret"]) disasm();
             if(pc.offset->c.intc == realmap["mov"]){
                 // Normal move command, only support 8 byte
                 char* _dest;
@@ -581,7 +586,7 @@ class VMRuntime{
                 char* dest = GetMemberAddress(*(pc.offset + 2));
                 if(pc.offset->c.intc == realmap["in"]) devhost.device_in(devid.intc,this,dest);
                 else devhost.device_out(devid.intc,this,dest);
-                std::cout << dest[0];
+                //std::cout << dest[0];
             }else if(pc.offset->c.intc == realmap["req"]){
                 Content devid,reqid;
                 if(GetMemberAddress(*(pc.offset + 1)) != nullptr) devid = *(Content*)GetMemberAddress(*(pc.offset+1));
@@ -602,13 +607,22 @@ class VMRuntime{
                 continue; // 多任务需要
             }else if(pc.offset->c.intc == realmap["tset"]){
                 intc.IsProcessingSignal = true;
-                continue;
             }else if(pc.offset->c.intc == realmap["tclear"]){
                 intc.IsProcessingSignal = false;
-                continue;
             }else if(pc.offset->c.intc == realmap["trestore"]){
                 mainTSS = backupTSS;
                 continue;
+            }else if(pc.offset->c.intc == realmap["labelg"]){
+                Content* dest = (Content*)GetMemberAddress(*(pc.offset+2));
+                dest->intc = (long)(program + vme.label_array[((Content*)GetMemberAddress(*(pc.offset+1)))->intc].start) - (long)tss_alloc;
+            }else if(pc.offset->c.intc == realmap["labels"]){
+                Content lblid;
+                if(GetMemberAddress(*(pc.offset + 1)) != nullptr) lblid = *(Content*)GetMemberAddress(*(pc.offset+1));
+                else lblid = (pc.offset+1)->c;
+                Content addr;
+                if(GetMemberAddress(*(pc.offset + 2)) != nullptr) addr = *(Content*)GetMemberAddress(*(pc.offset+2));
+                else addr = (pc.offset+2)->c;
+                vme.label_array[((Content*)GetMemberAddress(*(pc.offset+1)))->intc].start = addr.intc;
             }
             pc++;
         }

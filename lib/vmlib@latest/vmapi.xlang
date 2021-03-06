@@ -6,6 +6,7 @@ struct TSS{
         reg17,reg18,reg19,reg20,reg21,reg22,reg23,reg24,reg25,reg26,reg27,reg28,reg29,reg30,reg31;
     ptr_char basememory;
     ptr_char vheap_start;
+    ptr_char custom_code_label;
     int _Alloc_Size;
 };
 
