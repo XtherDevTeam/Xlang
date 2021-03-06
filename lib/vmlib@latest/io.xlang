@@ -13,9 +13,7 @@ func int readLine(ptr_char:dest){
 
 func int printLine(ptr_char:dest){
     for(ptr_char i=dest,^(i-1) != '\n',i=i+1){
-        if(^i == '\0'){
-            break;
-        };
+        if(^i == '\0'){break;};
         i;
         asm "mov reg0,[reg0]";
         asm "out 0,[reg0]";

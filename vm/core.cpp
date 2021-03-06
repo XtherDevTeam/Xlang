@@ -614,7 +614,8 @@ class VMRuntime{
                 continue;
             }else if(pc.offset->c.intc == realmap["labelg"]){
                 Content* dest = (Content*)GetMemberAddress(*(pc.offset+2));
-                dest->intc = (long)(program + vme.label_array[((Content*)GetMemberAddress(*(pc.offset+1)))->intc].start) - (long)tss_alloc;
+                Content num = ((Content*)GetMemberAddress(*(pc.offset+2)) == nullptr) ? (pc.offset+2)->c : *(Content*)GetMemberAddress(*(pc.offset+2));
+                dest->intc = (long)(program + vme.label_array[num.intc].start) - (long)tss_alloc;
             }else if(pc.offset->c.intc == realmap["labels"]){
                 Content lblid;
                 if(GetMemberAddress(*(pc.offset + 1)) != nullptr) lblid = *(Content*)GetMemberAddress(*(pc.offset+1));

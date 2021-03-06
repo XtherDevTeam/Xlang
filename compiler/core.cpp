@@ -387,9 +387,9 @@ class ASTree{
         }
         if(current_tok.type == TOK_ID || current_tok.type == TOK_PTRID){
             if(lexer.EndOfText()){
-                //std::cout << lexer.Text << lexer.position <<  std::endl;
                 this_node = current_tok;
-                this->nodeT = Id;
+                if(this_node.str != "break" && this_node.str != "continue") this->nodeT = Id;
+                else this->nodeT = NormalStatement;
                 return;
             }
             this->nodeT = NormalStatement;
