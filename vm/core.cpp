@@ -64,7 +64,7 @@ struct VMExec{
     ConstantPool cpool;
 };
 
-void VMExec_Serialization(char* filename,VMExec vme){
+void VMExec_Serialization(const char* filename,VMExec vme){
     int fd = open(filename,O_RDWR|O_CREAT,0777);
     if(fd == -1) perror("File open error!");
     write(fd,&vme.head,sizeof(VMExecHeader));
