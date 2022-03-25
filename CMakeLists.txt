@@ -10,4 +10,4 @@ add_executable(Xlang2
         frontend/Lexer.hpp share/IOStream.cpp
         share/IOStream.hpp share/FileStream.cpp
         share/StringUtils.cpp share/XlangException.cpp
-        )
+        frontend/AST.cpp frontend/AST.hpp)

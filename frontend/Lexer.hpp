@@ -12,10 +12,16 @@
 #include "../share/FileStream.hpp"
 #include "../share/XlangException.hpp"
 
+/**
+ * Keywords in Xlang 2
+ */
 static XArray<XString> LexerReservedWords{
         L"if", L"else", L"switch", L"for", L"while", L"var", L"const"
 };
 
+/**
+ * @biref Exceptions of Lexer in Xlang2
+ */
 class LexerException : XlangException {
     std::string message;
 public:
@@ -28,8 +34,14 @@ public:
 
 class Lexer {
 private:
+    /**
+     * Source codes.
+     */
     XString String;
 public:
+    /**
+     * Kinds of tokens.
+     */
     enum class TokenKind : int {
         Identifier,
         String,
@@ -71,6 +83,9 @@ public:
         EoF,
     };
 
+    /**
+     * Token type
+     */
     class Token {
     public:
         TokenKind Kind;
@@ -81,16 +96,34 @@ public:
         Token(TokenKind Kind, XString Value);
     };
 
+    /**
+     * The last token has been got
+     */
     Token LastToken;
 
+    /**
+     * @biref Default constructor of Lexer
+     */
     Lexer();
 
+    /**
+     * @biref Initialize a Lexer with source codes.
+     * @param String Source codes
+     */
     explicit Lexer(XString String);
 
     XInteger Line{}, Column{}, Position{};
 
+    /**
+     * @biref Get next character
+     * @return Next character
+     */
     XCharacter NextCharacter();
 
+    /**
+     * @biref Get next token
+     * @return The next token
+     */
     Token Scan();
 };
 
