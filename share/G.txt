@@ -1,2 +1,9 @@
 /* AST output AST kinds */
-Primary
+/* Primary */
+NotMatch, Primary, ExtendPrimary, Identifier, Arguments
+/* Expression */
+IndexExpression, FunctionCallingExpression, MemberExpression, NegativeExpression, IncrementExpression, DecrementExpression,
+MultiplicationExpression, AdditionExpression, BinaryMoveExpression,
+ComparingExpression, EqualExpression, BinaryExpression, LogicExpression
+/* rvalue Expression */
+AssignmentExpression

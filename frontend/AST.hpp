@@ -13,6 +13,7 @@
  * @biref AST Tree structure.
  */
 class AST {
+public:
     enum class TreeType : int {
 #include "../share/G.txt"
     } Type;
@@ -25,21 +26,29 @@ class AST {
 
     /**
      * @biref Construct a leaf node.
-     * @param Node Token of this node
+     * @param Type AST Kind of this node
+     * @param Node Subtrees of this node
      */
-    AST(Lexer::Token Node);
+    AST(TreeType Type, Lexer::Token Node);
 
     /**
      * @biref Construct a branch node.
+     * @param Type AST Kind of this node
      * @param Subtrees Subtrees of this node
      */
-    AST(XArray<AST> Subtrees);
+    AST(TreeType Type, XArray<AST> Subtrees);
 
     /**
      * @biref Return this node is or isn't leaf node
-     * @return A boolean value.
+     * @return A boolean value
      */
-    XBoolean IsLeafNode();
+    XBoolean IsLeafNode() const;
+
+    /**
+     * Return this node is or isn't a failed to match node
+     * @return A boolean value
+     */
+    XBoolean IsNotMatchNode() const;
 };
 
 
