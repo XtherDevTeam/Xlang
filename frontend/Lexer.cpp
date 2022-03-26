@@ -77,7 +77,7 @@ Lexer::Token Lexer::Scan() {
             NextCharacter();
         }
         TempStr = String.substr(Start, Position - Start);
-
+        NextCharacter(); // Skip
         LastToken = {TokenKind::String, TempStr};
     }
         /* Expression symbols */
@@ -87,6 +87,9 @@ Lexer::Token Lexer::Scan() {
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
             LastToken = {TokenKind::AdditionAssignment, L"+="};
+        } else if (String[Position] == L'+') {
+            NextCharacter();   // Read after '+'
+            LastToken = {TokenKind::IncrementSign, L"++"};
         } else {
             LastToken = {TokenKind::Plus, L"+"};
         }
@@ -97,6 +100,9 @@ Lexer::Token Lexer::Scan() {
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
             LastToken = {TokenKind::SubtractionAssignment, L"-="};
+        } else if (String[Position] == L'-') {
+            NextCharacter();   // Read after '+'
+            LastToken = {TokenKind::DecrementSign, L"--"};
         } else {
             LastToken = {TokenKind::Minus, L"-"};
         }
@@ -239,6 +245,11 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         LastToken = {TokenKind::Colon, L","};
     }
+        /* Dots */
+    else if (String[Position] == L'.') {
+        NextCharacter();
+        LastToken = {TokenKind::Dot, L"."};
+    }
         /* End of file */
     else if (String[Position] == L'\0') {
         LastToken = {TokenKind::EoF, L""};
@@ -248,6 +259,10 @@ Lexer::Token Lexer::Scan() {
         throw LexerException(Line, Column, L"Unknown token : " + std::to_wstring(String[Position]));
     }
     return LastToken;
+}
+
+void Lexer::Reset() {
+    Line = Column = Position = 0;
 }
 
 Lexer::Token::Token() : Kind(TokenKind::EoF), Value() {}

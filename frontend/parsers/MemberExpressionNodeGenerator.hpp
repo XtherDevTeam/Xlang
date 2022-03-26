@@ -7,6 +7,8 @@
 
 #include "BaseGenerator.hpp"
 
+#include "FunctionCallingExpressionNodeGenerator.hpp"
+
 class MemberExpressionNodeGenerator : BaseGenerator {
 public:
     explicit MemberExpressionNodeGenerator(Lexer &L);

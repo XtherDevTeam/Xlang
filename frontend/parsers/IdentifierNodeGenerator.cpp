@@ -14,6 +14,6 @@ AST IdentifierNodeGenerator::Parse() {
         L.Scan();   // prepare for next-time's read.
         return Result;
     }
-    Rollback(); // rollback to initial state.
+    Rollback( ); // rollback to initial state.
     return {};
 }

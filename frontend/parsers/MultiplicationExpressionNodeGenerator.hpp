@@ -6,6 +6,8 @@
 #define XLANG2_MULTIPLICATIONEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "IncrementExpressionNodeGenerator.hpp"
+#include "DecrementExpressionNodeGenerator.hpp"
 
 class MultiplicationExpressionNodeGenerator : BaseGenerator {
 public:

@@ -56,6 +56,8 @@ public:
         BinaryXOR,                  // ^
         BinaryOr,                   // |
         BinaryAnd,                  // &
+        IncrementSign,              // ++
+        DecrementSign,              // --
         BinaryLeftMove,             // <<
         BinaryRightMove,            // >>
         AdditionAssignment,         // +=
@@ -80,6 +82,7 @@ public:
         RightBraces,                // }
         Semicolon,                  // ;
         Colon,                      // ,
+        Dot,                        // .
         EoF,
     };
 
@@ -125,6 +128,11 @@ public:
      * @return The next token
      */
     Token Scan();
+
+    /**
+     * @biref Reset Lexer to initial state.
+     */
+    void Reset();
 };
 
 

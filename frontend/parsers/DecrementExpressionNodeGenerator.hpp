@@ -6,6 +6,7 @@
 #define XLANG2_DECREMENTEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "NegativeExpressionNodeGenerator.hpp"
 
 class DecrementExpressionNodeGenerator : BaseGenerator {
 public:

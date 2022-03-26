@@ -9,5 +9,14 @@ DecrementExpressionNodeGenerator::DecrementExpressionNodeGenerator(Lexer &L) : B
 }
 
 AST DecrementExpressionNodeGenerator::Parse() {
-    return BaseGenerator::Parse();
+    AST Right = NegativeExpressionNodeGenerator(L).Parse();
+    if (Right.IsNotMatchNode()) {
+        Rollback();
+        return {};
+    }
+    if (L.LastToken.Kind == Lexer::TokenKind::DecrementSign) {
+        L.Scan();
+        return {AST::TreeType::DecrementExpression, {Right}};
+    }
+    return Right;
 }

@@ -6,6 +6,7 @@
 #define XLANG2_INDEXEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "ExpressionNodeGenerator.hpp"
 
 class IndexExpressionNodeGenerator : BaseGenerator {
 public:

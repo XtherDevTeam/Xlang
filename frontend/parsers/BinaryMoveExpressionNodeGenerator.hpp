@@ -6,6 +6,7 @@
 #define XLANG2_BINARYMOVEEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "AdditionExpressionNodeGenerator.hpp"
 
 class BinaryMoveExpressionNodeGenerator : BaseGenerator {
 public:

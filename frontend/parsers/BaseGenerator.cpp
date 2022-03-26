@@ -17,3 +17,7 @@ void BaseGenerator::Rollback() {
     L.Position = InitialPosition;
     L.LastToken = InitialLastToken;
 }
+
+void BaseGenerator::MakeException(const XString &Reason) const {
+    throw ParserException(InitialLine, InitialColumn, Reason);
+}

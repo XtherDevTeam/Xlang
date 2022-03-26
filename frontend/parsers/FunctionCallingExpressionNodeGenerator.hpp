@@ -14,7 +14,7 @@ class FunctionCallingExpressionNodeGenerator : BaseGenerator {
 public:
     explicit FunctionCallingExpressionNodeGenerator(Lexer &L);
 
-    AST Parse() override;
+    AST Parse( ) override;
 };
 
 

@@ -10,13 +10,6 @@ Status: `Implmented`
 
 Grammar: `Primary ::= TokenInteger | TokenDecimal | TokenString`
 
-
-### ExtendPrimary
-
-Status: `Unimplmented`
-
-Grammar: `ExtendPrimary ::= Primary | Identifier`
-
 ### Identifier
 
 Status: `Implmented`
@@ -25,55 +18,53 @@ Grammar: `Identifier ::= TokenIdentifier`
 
 ### Arguments
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar: `Arguments ::= TokenLeftParentheses [ Expression { ", " Expression } ] TokenRightParentheses`
 
 ### IndexExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar: 
 ```
-IndexExpression ::= IndexExpression LeftBracket Expression RightBracket
-                  | Identifier Leftbracket Expression RightBracket
+IndexExpression ::= IndexExpression TokenLeftBracket Expression TokenRightBracket
+                  | Identifier TokenLeftbracket Expression TokenRightBracket
                   | Identifier
 ```
 
 ### FunctionCallingExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
-FunctionCallingExpression ::= FunctionCallingExpression LeftBracket Expression RightBracket
-                            | IndexExpression Leftbracket Expression RightBracket
-                            | IndexExpression
+FunctionCallingExpression ::= IndexExpression Arguments
 ```
 
 ### MemberExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar: 
 ```
-MemberExpression ::= FunctionCallingExpression TokenDot MemberExpression
-                   | FunctionCallingExpression
+MemberExpression ::= MemberExpression TokenDot FunctionCallingExpression
+                   | FunctionCallingExpression [ TokenDot FunctionCallingExpression ]
 ```
 
 ### NegativeExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
-NegativeExpression ::= TokenMinus MemberExpression
-                     | MemberExpression
+NegativeExpression ::= TokenMinus ( MemberExpression | Primary )
+                     | ( MemberExpression | Primary )
 ```
 
 ### IncrementExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -83,7 +74,7 @@ IncrementExpression ::= TokenIncrementSign NegativeExpression
 
 ### DecrementExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -93,7 +84,7 @@ DecrementExpression ::= TokenDecrementSign NegativeExpression
 
 ### MultiplicationExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -117,13 +108,13 @@ Status: `Unimplmented`
 
 Grammar:
 ```
-BinaryMoveExpression ::= MultiplicationExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) BinaryMoveExpression
-                       | MultiplicationExpression
+BinaryMoveExpression ::= AdditionExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) BinaryMoveExpression
+                       | AdditionExpression
 ```
 
 ### ComparingExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -133,7 +124,7 @@ ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinary
 
 ### EqualExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -143,7 +134,7 @@ ComparingExpression ::= ComparingExpression ( TokenEqual | TokenNotEqual ) Compa
 
 ### BinaryExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -153,7 +144,7 @@ BinaryExpression ::= EqualExpression ( TokeBinaryXOR | TokenBinaryOr | TokenBina
 
 ### LogicExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -163,7 +154,7 @@ LogicExpression ::= BinaryExpression ( TokenLogicAnd | TokenLogicOr ) LogicExpre
 
 ### AssignmentExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```
@@ -172,7 +163,7 @@ AssignmentExpression ::= MemberExpression ( TokenAssignSign | TokenAdditionAssig
 
 ### Expression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Grammar:
 ```

@@ -6,6 +6,8 @@
 #define XLANG2_EXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "LogicExpressionNodeGenerator.hpp"
+#include "AssignmentExpressionNodeGenerator.hpp"
 
 class ExpressionNodeGenerator : BaseGenerator {
 public:

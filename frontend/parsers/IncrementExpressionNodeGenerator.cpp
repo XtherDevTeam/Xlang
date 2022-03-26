@@ -9,5 +9,14 @@ IncrementExpressionNodeGenerator::IncrementExpressionNodeGenerator(Lexer &L) : B
 }
 
 AST IncrementExpressionNodeGenerator::Parse() {
-    return BaseGenerator::Parse();
+    AST Right = NegativeExpressionNodeGenerator(L).Parse();
+    if (Right.IsNotMatchNode()) {
+        Rollback();
+        return {};
+    }
+    if (L.LastToken.Kind == Lexer::TokenKind::IncrementSign) {
+        L.Scan();
+        return {AST::TreeType::IncrementExpression, {Right}};
+    }
+    return Right;
 }

@@ -6,6 +6,7 @@
 #define XLANG2_BINARYEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "EqualExpressionNodeGenerator.hpp"
 
 class BinaryExpressionNodeGenerator : BaseGenerator {
 public:

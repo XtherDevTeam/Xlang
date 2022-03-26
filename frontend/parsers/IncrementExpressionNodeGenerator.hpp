@@ -6,6 +6,7 @@
 #define XLANG2_INCREMENTEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "NegativeExpressionNodeGenerator.hpp"
 
 class IncrementExpressionNodeGenerator : BaseGenerator {
 public:

@@ -11,7 +11,7 @@ class IdentifierNodeGenerator : BaseGenerator {
 public:
     explicit IdentifierNodeGenerator(Lexer &L);
 
-    AST Parse() override;
+    AST Parse( ) override;
 };
 
 

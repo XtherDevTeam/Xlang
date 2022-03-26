@@ -8,7 +8,7 @@ FunctionCallingExpressionNodeGenerator::FunctionCallingExpressionNodeGenerator(L
 
 }
 
-AST FunctionCallingExpressionNodeGenerator::Parse() {
+AST FunctionCallingExpressionNodeGenerator::Parse( ) {
     AST Result{};
     AST First = IndexExpressionNodeGenerator(L).Parse();
     if (First.IsNotMatchNode()) {

@@ -15,7 +15,30 @@
 class AST {
 public:
     enum class TreeType : int {
-#include "../share/G.txt"
+/* AST output AST kinds */
+/* Primary */
+        NotMatch,
+        Primary,
+        ExtendPrimary,
+        Identifier,
+        Arguments,
+        Operator,
+/* Expression */
+        IndexExpression,
+        FunctionCallingExpression,
+        MemberExpression,
+        NegativeExpression,
+        IncrementExpression,
+        DecrementExpression,
+        MultiplicationExpression,
+        AdditionExpression,
+        BinaryMoveExpression,
+        ComparingExpression,
+        EqualExpression,
+        BinaryExpression,
+        LogicExpression,
+/* rvalue Expression */
+        AssignmentExpression
     } Type;
     Lexer::Token Node;
     XArray<AST> Subtrees;

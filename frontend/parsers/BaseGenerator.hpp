@@ -8,6 +8,8 @@
 #include "../../share/config.hpp"
 #include "../AST.hpp"
 
+#include "ParserException.hpp"
+
 /**
  * @biref a base class of generators
  */
@@ -32,6 +34,8 @@ public:
      * @return a AST node
      */
     virtual AST Parse();
+
+    void MakeException(const XString &Reason) const;
 };
 
 

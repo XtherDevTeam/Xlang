@@ -9,5 +9,19 @@ EqualExpressionNodeGenerator::EqualExpressionNodeGenerator(Lexer &L) : BaseGener
 }
 
 AST EqualExpressionNodeGenerator::Parse() {
-    return BaseGenerator::Parse();
+    AST Left = ComparingExpressionNodeGenerator(L).Parse();
+    if (Left.IsNotMatchNode()) {
+        Rollback();
+        return {};
+    }
+    if (L.LastToken.Kind != Lexer::TokenKind::Equal and L.LastToken.Kind != Lexer::TokenKind::NotEqual) {
+        return Left;
+    }
+    AST Operator = {AST::TreeType::Operator, L.LastToken};
+    L.Scan();
+    AST Right = EqualExpressionNodeGenerator(L).Parse();
+    if (Right.IsNotMatchNode()) {
+        MakeException(L"Expected a rvalue expression.");
+    }
+    return {AST::TreeType::EqualExpression, {Left, Operator, Right}};
 }

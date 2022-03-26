@@ -7,6 +7,8 @@
 
 #include "BaseGenerator.hpp"
 
+#include "ExpressionNodeGenerator.hpp"
+
 class ArgumentsNodeGenerator : BaseGenerator {
 public:
 

@@ -6,6 +6,8 @@
 #define XLANG2_NEGATIVEEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "PrimaryNodeGenerator.hpp"
+#include "MemberExpressionNodeGenerator.hpp"
 
 class NegativeExpressionNodeGenerator : BaseGenerator {
 public:

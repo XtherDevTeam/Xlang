@@ -6,6 +6,7 @@
 #define XLANG2_EQUALEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "ComparingExpressionNodeGenerator.hpp"
 
 class EqualExpressionNodeGenerator : BaseGenerator {
 public:

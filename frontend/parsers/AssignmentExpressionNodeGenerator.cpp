@@ -9,5 +9,23 @@ AssignmentExpressionNodeGenerator::AssignmentExpressionNodeGenerator(Lexer &L) :
 }
 
 AST AssignmentExpressionNodeGenerator::Parse() {
-    return BaseGenerator::Parse();
+    AST Left = MemberExpressionNodeGenerator(L).Parse();
+    if (Left.IsNotMatchNode()) {
+        return {};
+    }
+    if (L.LastToken.Kind != Lexer::TokenKind::AssignSign and
+        L.LastToken.Kind != Lexer::TokenKind::AdditionAssignment and
+        L.LastToken.Kind != Lexer::TokenKind::SubtractionAssignment and
+        L.LastToken.Kind != Lexer::TokenKind::MultiplicationAssignment and
+        L.LastToken.Kind != Lexer::TokenKind::DivisionAssignment and
+        L.LastToken.Kind != Lexer::TokenKind::RemainderAssignment) {
+        MakeException(L"Expected one of '=', '+=', '-=', '*=', '/=', '%='.");
+    }
+    AST Operator = {AST::TreeType::Operator, L.LastToken};
+    L.Scan();
+    AST Right = LogicExpressionNodeGenerator(L).Parse();
+    if (Right.IsNotMatchNode()) {
+        MakeException(L"Expected a rvalue expression.");
+    }
+    return {AST::TreeType::AssignmentExpression, {Left, Operator, Right}};
 }

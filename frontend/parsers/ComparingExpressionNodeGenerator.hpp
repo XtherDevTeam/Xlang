@@ -6,11 +6,14 @@
 #define XLANG2_COMPARINGEXPRESSIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "BinaryMoveExpressionNodeGenerator.hpp"
 
 class ComparingExpressionNodeGenerator : BaseGenerator {
-    explicit ComparingExpressionNodeGenerator(Lexer &L);
 
+public:
     AST Parse() override;
+
+    explicit ComparingExpressionNodeGenerator(Lexer &L);
 };
 
 
