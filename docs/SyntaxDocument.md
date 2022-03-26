@@ -1,4 +1,4 @@
-# The Grammar document of Xlang 2
+# The Syntax document of Xlang 2
 
 Parsers in Xlang 2 are kind of `LL(1)` Parsers.
 
@@ -8,25 +8,25 @@ We are still developing on AST generating.
 
 Status: `Implmented`
 
-Grammar: `Primary ::= TokenInteger | TokenDecimal | TokenString`
+Syntax: `Primary ::= TokenInteger | TokenDecimal | TokenString`
 
 ### Identifier
 
 Status: `Implmented`
 
-Grammar: `Identifier ::= TokenIdentifier`
+Syntax: `Identifier ::= TokenIdentifier`
 
 ### Arguments
 
 Status: `Implmented`
 
-Grammar: `Arguments ::= TokenLeftParentheses [ Expression { ", " Expression } ] TokenRightParentheses`
+Syntax: `Arguments ::= TokenLeftParentheses [ Expression { ", " Expression } ] TokenRightParentheses`
 
 ### IndexExpression
 
 Status: `Implmented`
 
-Grammar: 
+Syntax: 
 ```
 IndexExpression ::= IndexExpression TokenLeftBracket Expression TokenRightBracket
                   | Identifier TokenLeftbracket Expression TokenRightBracket
@@ -37,7 +37,7 @@ IndexExpression ::= IndexExpression TokenLeftBracket Expression TokenRightBracke
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 FunctionCallingExpression ::= IndexExpression Arguments
 ```
@@ -46,7 +46,7 @@ FunctionCallingExpression ::= IndexExpression Arguments
 
 Status: `Implmented`
 
-Grammar: 
+Syntax: 
 ```
 MemberExpression ::= MemberExpression TokenDot FunctionCallingExpression
                    | FunctionCallingExpression [ TokenDot FunctionCallingExpression ]
@@ -56,7 +56,7 @@ MemberExpression ::= MemberExpression TokenDot FunctionCallingExpression
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 NegativeExpression ::= TokenMinus ( MemberExpression | Primary )
                      | ( MemberExpression | Primary )
@@ -66,7 +66,7 @@ NegativeExpression ::= TokenMinus ( MemberExpression | Primary )
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 IncrementExpression ::= TokenIncrementSign NegativeExpression
                       | NegativeExpression
@@ -76,7 +76,7 @@ IncrementExpression ::= TokenIncrementSign NegativeExpression
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 DecrementExpression ::= TokenDecrementSign NegativeExpression
                       | NegativeExpression
@@ -86,7 +86,7 @@ DecrementExpression ::= TokenDecrementSign NegativeExpression
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 MultiplicationExpression ::= ( IncrementExpression | DecrementExpression ) ( TokenAsterisk | TokenSlash | TokenReminderSign ) MultiplicationExpression
                            | ( IncrementExpression | DecrementExpression )
@@ -96,7 +96,7 @@ MultiplicationExpression ::= ( IncrementExpression | DecrementExpression ) ( Tok
 
 Status: `Unimplmented`
 
-Grammar:
+Syntax:
 ```
 MultiplicationExpression ::= MultiplicationExpression ( TokenPlus | TokenMinus ) AdditionExpression
                            | MultiplicationExpression
@@ -106,7 +106,7 @@ MultiplicationExpression ::= MultiplicationExpression ( TokenPlus | TokenMinus )
 
 Status: `Unimplmented`
 
-Grammar:
+Syntax:
 ```
 BinaryMoveExpression ::= AdditionExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) BinaryMoveExpression
                        | AdditionExpression
@@ -116,7 +116,7 @@ BinaryMoveExpression ::= AdditionExpression ( TokenBinaryLeftMove | TokenBinaryR
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) ComparingExpression
                       | BinaryMoveExpression
@@ -126,7 +126,7 @@ ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinary
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 ComparingExpression ::= ComparingExpression ( TokenEqual | TokenNotEqual ) ComparingExpression
                       | ComparingExpression
@@ -136,7 +136,7 @@ ComparingExpression ::= ComparingExpression ( TokenEqual | TokenNotEqual ) Compa
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 BinaryExpression ::= EqualExpression ( TokeBinaryXOR | TokenBinaryOr | TokenBinaryAnd ) BinaryExpression
                    | EqualExpression
@@ -146,7 +146,7 @@ BinaryExpression ::= EqualExpression ( TokeBinaryXOR | TokenBinaryOr | TokenBina
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 LogicExpression ::= BinaryExpression ( TokenLogicAnd | TokenLogicOr ) LogicExpression
                   | BinaryExpression
@@ -156,7 +156,7 @@ LogicExpression ::= BinaryExpression ( TokenLogicAnd | TokenLogicOr ) LogicExpre
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 AssignmentExpression ::= MemberExpression ( TokenAssignSign | TokenAdditionAssignment | TokenSubtractionAssignment | TokenMultiplationAssignment | TokenDivisionAssignment | RemainderAssignment ) LogicExpression
 ```
@@ -165,7 +165,7 @@ AssignmentExpression ::= MemberExpression ( TokenAssignSign | TokenAdditionAssig
 
 Status: `Implmented`
 
-Grammar:
+Syntax:
 ```
 Expression ::= LogicExpression
              | AssignmentExpression
