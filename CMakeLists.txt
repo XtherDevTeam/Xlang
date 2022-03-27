@@ -48,11 +48,11 @@ add_executable(Xlang2
         frontend/parsers/AssignmentExpressionNodeGenerator.hpp
         frontend/parsers/ExpressionNodeGenerator.cpp
         frontend/parsers/ExpressionNodeGenerator.hpp
-        frontend/parsers/ParserException.cpp
+        frontend/parsers/BytecodeGenerateException.cpp
         frontend/parsers/ParserException.hpp
         bytecode/Operand.hpp
         bytecode/Operand.cpp
         bytecode/BytecodeCommand.hpp
         bytecode/BytecodeCommand.cpp
         backend/LocalEnvironment.cpp
-        backend/LocalEnvironment.hpp backend/Typename.cpp backend/Typename.hpp xtimevm/XlangClass.cpp xtimevm/XlangClass.hpp)
+        backend/LocalEnvironment.hpp backend/Typename.cpp backend/Typename.hpp xtimevm/XlangClass.cpp xtimevm/XlangClass.hpp bytecode/BytecodeCommandArray.cpp bytecode/BytecodeCommandArray.hpp backend/BytecodeGenerator.cpp backend/BytecodeGenerator.hpp)

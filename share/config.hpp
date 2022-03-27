@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <clocale>
 
 using XString = std::wstring;
 using XInteger = long int;
