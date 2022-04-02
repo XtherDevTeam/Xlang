@@ -92,11 +92,12 @@ public:
     class Token {
     public:
         TokenKind Kind;
+        XInteger Line, Column;
         XString Value;
 
         Token();
 
-        Token(TokenKind Kind, XString Value);
+        Token(TokenKind Kind, XString Value, XInteger Line, XInteger Column);
     };
 
     /**

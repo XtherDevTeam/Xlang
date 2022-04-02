@@ -55,4 +55,4 @@ add_executable(Xlang2
         bytecode/BytecodeCommand.hpp
         bytecode/BytecodeCommand.cpp
         backend/LocalEnvironment.cpp
-        backend/LocalEnvironment.hpp backend/Typename.cpp backend/Typename.hpp xtimevm/XlangClass.cpp xtimevm/XlangClass.hpp bytecode/BytecodeCommandArray.cpp bytecode/BytecodeCommandArray.hpp backend/BytecodeGenerator.cpp backend/BytecodeGenerator.hpp)
+        backend/LocalEnvironment.hpp backend/Typename.cpp backend/Typename.hpp xtimevm/XlangClass.cpp xtimevm/XlangClass.hpp bytecode/BytecodeCommandArray.cpp bytecode/BytecodeCommandArray.hpp backend/BytecodeGenerator.cpp backend/BytecodeGenerator.hpp backend/GlobalEnvironment.cpp backend/GlobalEnvironment.hpp backend/XlangFunction.cpp backend/XlangFunction.hpp backend/TypenameDerive.cpp backend/TypenameDerive.hpp)

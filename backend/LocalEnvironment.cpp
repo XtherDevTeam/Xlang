@@ -3,3 +3,16 @@
 //
 
 #include "LocalEnvironment.hpp"
+
+#include <utility>
+
+LocalEnvironment::LocalEnvironment() : CreateBy(), ParentEnvironment(0), SymbolTable() {
+
+}
+
+LocalEnvironment::LocalEnvironment(XString CreateBy, XIndexType ParentEnvironment) : CreateBy(std::move(CreateBy)),
+                                                                                     ParentEnvironment(
+                                                                                             ParentEnvironment),
+                                                                                     SymbolTable() {
+
+}

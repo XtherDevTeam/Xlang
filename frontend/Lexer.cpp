@@ -45,7 +45,7 @@ Lexer::Token Lexer::Scan() {
 
         LastToken = {
                 std::find(LexerReservedWords.begin(), LexerReservedWords.end(), TempStr) != LexerReservedWords.end()
-                ? TokenKind::ReservedWords : TokenKind::Identifier, TempStr};
+                ? TokenKind::ReservedWords : TokenKind::Identifier, TempStr, Line, Column};
     }
         /* Digital literals */
     else if (IsDigit(String[Position])) {
@@ -59,9 +59,9 @@ Lexer::Token Lexer::Scan() {
             while (String[Position] and IsDigit(String[Position])) NextCharacter();
             TempStr += L'.' + String.substr(Start, Position - Start);
 
-            LastToken = {TokenKind::Decimal, TempStr};
+            LastToken = {TokenKind::Decimal, TempStr, Line, Column};
         } else {
-            LastToken = {TokenKind::Integer, TempStr};
+            LastToken = {TokenKind::Integer, TempStr, Line, Column};
         }
     }
         /* String literals */
@@ -78,7 +78,7 @@ Lexer::Token Lexer::Scan() {
         }
         TempStr = String.substr(Start, Position - Start);
         NextCharacter(); // Skip
-        LastToken = {TokenKind::String, TempStr};
+        LastToken = {TokenKind::String, TempStr, Line, Column};
     }
         /* Expression symbols */
         /* Starts with + */
@@ -86,12 +86,12 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::AdditionAssignment, L"+="};
+            LastToken = {TokenKind::AdditionAssignment, L"+=", Line, Column};
         } else if (String[Position] == L'+') {
             NextCharacter();   // Read after '+'
-            LastToken = {TokenKind::IncrementSign, L"++"};
+            LastToken = {TokenKind::IncrementSign, L"++", Line, Column};
         } else {
-            LastToken = {TokenKind::Plus, L"+"};
+            LastToken = {TokenKind::Plus, L"+", Line, Column};
         }
     }
         /* Starts with - */
@@ -99,12 +99,12 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::SubtractionAssignment, L"-="};
+            LastToken = {TokenKind::SubtractionAssignment, L"-=", Line, Column};
         } else if (String[Position] == L'-') {
             NextCharacter();   // Read after '+'
-            LastToken = {TokenKind::DecrementSign, L"--"};
+            LastToken = {TokenKind::DecrementSign, L"--", Line, Column};
         } else {
-            LastToken = {TokenKind::Minus, L"-"};
+            LastToken = {TokenKind::Minus, L"-", Line, Column};
         }
     }
         /* Starts with * */
@@ -112,9 +112,9 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::MultiplicationAssignment, L"*="};
+            LastToken = {TokenKind::MultiplicationAssignment, L"*=", Line, Column};
         } else {
-            LastToken = {TokenKind::Asterisk, L"*"};
+            LastToken = {TokenKind::Asterisk, L"*", Line, Column};
         }
     }
         /* Starts with / */
@@ -122,9 +122,9 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::DivisionAssignment, L"/="};
+            LastToken = {TokenKind::DivisionAssignment, L"/=", Line, Column};
         } else {
-            LastToken = {TokenKind::Slash, L"/"};
+            LastToken = {TokenKind::Slash, L"/", Line, Column};
         }
     }
         /* Starts with % */
@@ -132,9 +132,9 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::RemainderAssignment, L"%="};
+            LastToken = {TokenKind::RemainderAssignment, L"%=", Line, Column};
         } else {
-            LastToken = {TokenKind::PercentSign, L"%"};
+            LastToken = {TokenKind::PercentSign, L"%", Line, Column};
         }
     }
         /* Binary symbols */
@@ -143,9 +143,9 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'|') {
             NextCharacter();
-            LastToken = {TokenKind::LogicOr, L"||"};
+            LastToken = {TokenKind::LogicOr, L"||", Line, Column};
         } else {
-            LastToken = {TokenKind::BinaryOr, L"|"};
+            LastToken = {TokenKind::BinaryOr, L"|", Line, Column};
         }
     }
         /* And */
@@ -153,15 +153,15 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'&') {
             NextCharacter();
-            LastToken = {TokenKind::LogicAnd, L"&&"};
+            LastToken = {TokenKind::LogicAnd, L"&&", Line, Column};
         } else {
-            LastToken = {TokenKind::BinaryAnd, L"&"};
+            LastToken = {TokenKind::BinaryAnd, L"&", Line, Column};
         }
     }
         /* XOR */
     else if (String[Position] == L'^') {
         NextCharacter();
-        LastToken = {TokenKind::BinaryXOR, L"^"};
+        LastToken = {TokenKind::BinaryXOR, L"^", Line, Column};
     }
         /* Logic symbols */
         /* Starts with = */
@@ -169,9 +169,9 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::Equal, L"=="};
+            LastToken = {TokenKind::Equal, L"==", Line, Column};
         } else {
-            LastToken = {TokenKind::AssignSign, L"="};
+            LastToken = {TokenKind::AssignSign, L"=", Line, Column};
         }
     }
         /* Starts with ! */
@@ -179,7 +179,7 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::NotEqual, L"!="};
+            LastToken = {TokenKind::NotEqual, L"!=", Line, Column};
         }
         throw LexerException(Line, Column, L"Unknown token : " + std::to_wstring(String[Position]));
     }
@@ -188,12 +188,12 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::LessThanOrEqual, L"<="};
+            LastToken = {TokenKind::LessThanOrEqual, L"<=", Line, Column};
         } else if (String[Position] == '<') {
             NextCharacter();   // Read after '>'
-            LastToken = {TokenKind::BinaryLeftMove, L"<<"};
+            LastToken = {TokenKind::BinaryLeftMove, L"<<", Line, Column};
         } else {
-            LastToken = {TokenKind::LessThan, L"<"};
+            LastToken = {TokenKind::LessThan, L"<", Line, Column};
         }
     }
         /* Starts with > */
@@ -201,58 +201,58 @@ Lexer::Token Lexer::Scan() {
         NextCharacter();
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
-            LastToken = {TokenKind::MoreThanOrEqual, L">="};
+            LastToken = {TokenKind::MoreThanOrEqual, L">=", Line, Column};
         } else if (String[Position] == '>') {
             NextCharacter();   // Read after '>'
-            LastToken = {TokenKind::BinaryRightMove, L">>"};
+            LastToken = {TokenKind::BinaryRightMove, L">>", Line, Column};
         } else {
-            LastToken = {TokenKind::MoreThan, L">"};
+            LastToken = {TokenKind::MoreThan, L">", Line, Column};
         }
     }
         /* Brackets symbols */
         /* Parentheses */
     else if (String[Position] == L'(') {
         NextCharacter();
-        LastToken = {TokenKind::LeftParentheses, L"("};
+        LastToken = {TokenKind::LeftParentheses, L"(", Line, Column};
     } else if (String[Position] == L')') {
         NextCharacter();
-        LastToken = {TokenKind::RightParentheses, L")"};
+        LastToken = {TokenKind::RightParentheses, L")", Line, Column};
     }
         /* Brackets */
     else if (String[Position] == L'[') {
         NextCharacter();
-        LastToken = {TokenKind::LeftBracket, L"["};
+        LastToken = {TokenKind::LeftBracket, L"[", Line, Column};
     } else if (String[Position] == L']') {
         NextCharacter();
-        LastToken = {TokenKind::RightBracket, L"]"};
+        LastToken = {TokenKind::RightBracket, L"]", Line, Column};
     }
         /* Braces */
     else if (String[Position] == L'{') {
         NextCharacter();
-        LastToken = {TokenKind::LeftBraces, L"{"};
+        LastToken = {TokenKind::LeftBraces, L"{", Line, Column};
     } else if (String[Position] == L'}') {
         NextCharacter();
-        LastToken = {TokenKind::RightBraces, L"}"};
+        LastToken = {TokenKind::RightBraces, L"}", Line, Column};
     }
         /* Split symbols */
         /* Semicolons */
     else if (String[Position] == L';') {
         NextCharacter();
-        LastToken = {TokenKind::Semicolon, L";"};
+        LastToken = {TokenKind::Semicolon, L";", Line, Column};
     }
         /* Colons */
     else if (String[Position] == L',') {
         NextCharacter();
-        LastToken = {TokenKind::Colon, L","};
+        LastToken = {TokenKind::Colon, L",", Line, Column};
     }
         /* Dots */
     else if (String[Position] == L'.') {
         NextCharacter();
-        LastToken = {TokenKind::Dot, L"."};
+        LastToken = {TokenKind::Dot, L".", Line, Column};
     }
         /* End of file */
     else if (String[Position] == L'\0') {
-        LastToken = {TokenKind::EoF, L""};
+        LastToken = {TokenKind::EoF, L"", Line, Column};
     }
         /* Unknown tokens */
     else {
@@ -265,9 +265,11 @@ void Lexer::Reset() {
     Line = Column = Position = 0;
 }
 
-Lexer::Token::Token() : Kind(TokenKind::EoF), Value() {}
+Lexer::Token::Token() : Kind(TokenKind::EoF), Line(0), Column(0), Value() {}
 
-Lexer::Token::Token(Lexer::TokenKind Kind, XString Value) : Kind(Kind), Value(std::move(Value)) {}
+Lexer::Token::Token(Lexer::TokenKind Kind, XString Value, XInteger Line, XInteger Column) : Kind(Kind), Line(Line),
+                                                                                            Column(Column),
+                                                                                            Value(std::move(Value)) {}
 
 LexerException::LexerException() = default;
 

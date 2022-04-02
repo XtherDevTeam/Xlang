@@ -13,7 +13,11 @@ class LocalEnvironment {
 public:
     XString CreateBy;
     XIndexType ParentEnvironment;
-    XMap<XIndexType, Typename> SymbolTable;
+    XMap<XString, Typename> SymbolTable;
+
+    LocalEnvironment();
+
+    LocalEnvironment(XString CreateBy, XIndexType ParentEnvironment);
 };
 
 

@@ -19,23 +19,14 @@ public:
         String,
         Array,
         Class,
+        Function,
     } Kind;
 
-    /**
-     * @biref Saving types of parent classes [TypenameHash -> ParentClass]
-     */
-    XMap<XIndexType, Typename> Parents;
+    XClassIndexType ClassIndexInGlobalEnvironment{};
 
-    /**
-     * @biref VTable of this class. [VariableNameHash -> TypeOfVariable]
-     */
-    XMap<XIndexType, Typename> VTable;
+    XFunctionIndexType FunctionIndexInGlobalEnvironment{};
 
-    XIndexType ArraySize;
-
-    Typename *ArrayTypename;
-
-    XIndexType StringReferenceToConstantPool;
+    XIndexType StringReferenceToConstantPool{};
 
     /**
      * @biref Default constructor
@@ -48,21 +39,7 @@ public:
      */
     explicit Typename(TypenameKind Kind);
 
-    /**
-     * @biref Initialize a class typename
-     * @param Parents Parents of this class
-     * @param VTable VTable of this class
-     */
-    Typename(XMap<XIndexType, Typename> Parents, XMap<XIndexType, Typename> VTable);
-
-    /**
-     * @biref Initialize a array typename
-     * @param ArraySize Size of an array
-     * @param ArrayTypename Type of this array
-     */
-    Typename(XIndexType ArraySize, const Typename &ArrayTypename);
-
-    Typename(const Typename &rhs);
+    Typename(TypenameKind Kind, XIndexType Index);
 
     ~Typename();
 };

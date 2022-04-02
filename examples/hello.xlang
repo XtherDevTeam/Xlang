@@ -1,0 +1,10 @@
+import lib.xlang.IO;
+
+public class Main {
+    String Message;
+
+    constructor() {
+        Message = "Hello, world!";
+        lib.xlang.IO.printString(Message);
+    };
+};
