@@ -22,3 +22,18 @@ XBoolean AST::IsLeafNode() const {
 XBoolean AST::IsNotMatchNode() const {
     return Type == TreeType::NotMatch;
 }
+
+Lexer::Token AST::GetFirstNotNullToken() {
+    if (IsNotMatchNode()) {
+        return {};
+    } else if (IsLeafNode()) {
+        return Node;
+    } else {
+        for (auto &i: Subtrees) {
+            Lexer::Token R = i.GetFirstNotNullToken();
+            if (R != Lexer::Token())
+                return R;
+        }
+        return {};
+    }
+}

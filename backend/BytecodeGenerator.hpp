@@ -10,10 +10,15 @@
 #include "BytecodeGenerateException.hpp"
 
 #include "../frontend/AST.hpp"
+#include "GlobalEnvironment.hpp"
 
 class BytecodeGenerator {
 public:
+    GlobalEnvironment Environment;
 
+    BytecodeGenerator();
+
+    BytecodeCommandArray Generate(AST &Target);
 };
 
 

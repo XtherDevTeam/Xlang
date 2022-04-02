@@ -26,7 +26,8 @@ Syntax: `Arguments ::= TokenLeftParentheses [ Expression { ", " Expression } ] T
 
 Status: `Implmented`
 
-Syntax: 
+Syntax:
+
 ```
 IndexExpression ::= IndexExpression TokenLeftBracket Expression TokenRightBracket
                   | Identifier TokenLeftbracket Expression TokenRightBracket
@@ -38,6 +39,7 @@ IndexExpression ::= IndexExpression TokenLeftBracket Expression TokenRightBracke
 Status: `Implmented`
 
 Syntax:
+
 ```
 FunctionCallingExpression ::= IndexExpression Arguments
 ```
@@ -46,7 +48,8 @@ FunctionCallingExpression ::= IndexExpression Arguments
 
 Status: `Implmented`
 
-Syntax: 
+Syntax:
+
 ```
 MemberExpression ::= MemberExpression TokenDot FunctionCallingExpression
                    | FunctionCallingExpression [ TokenDot FunctionCallingExpression ]
@@ -57,6 +60,7 @@ MemberExpression ::= MemberExpression TokenDot FunctionCallingExpression
 Status: `Implmented`
 
 Syntax:
+
 ```
 NegativeExpression ::= TokenMinus ( MemberExpression | Primary )
                      | ( MemberExpression | Primary )
@@ -67,6 +71,7 @@ NegativeExpression ::= TokenMinus ( MemberExpression | Primary )
 Status: `Implmented`
 
 Syntax:
+
 ```
 IncrementExpression ::= TokenIncrementSign NegativeExpression
                       | NegativeExpression
@@ -77,6 +82,7 @@ IncrementExpression ::= TokenIncrementSign NegativeExpression
 Status: `Implmented`
 
 Syntax:
+
 ```
 DecrementExpression ::= TokenDecrementSign NegativeExpression
                       | NegativeExpression
@@ -87,6 +93,7 @@ DecrementExpression ::= TokenDecrementSign NegativeExpression
 Status: `Implmented`
 
 Syntax:
+
 ```
 MultiplicationExpression ::= ( IncrementExpression | DecrementExpression ) ( TokenAsterisk | TokenSlash | TokenReminderSign ) MultiplicationExpression
                            | ( IncrementExpression | DecrementExpression )
@@ -97,6 +104,7 @@ MultiplicationExpression ::= ( IncrementExpression | DecrementExpression ) ( Tok
 Status: `Unimplmented`
 
 Syntax:
+
 ```
 MultiplicationExpression ::= MultiplicationExpression ( TokenPlus | TokenMinus ) AdditionExpression
                            | MultiplicationExpression
@@ -107,6 +115,7 @@ MultiplicationExpression ::= MultiplicationExpression ( TokenPlus | TokenMinus )
 Status: `Unimplmented`
 
 Syntax:
+
 ```
 BinaryMoveExpression ::= AdditionExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) BinaryMoveExpression
                        | AdditionExpression
@@ -117,6 +126,7 @@ BinaryMoveExpression ::= AdditionExpression ( TokenBinaryLeftMove | TokenBinaryR
 Status: `Implmented`
 
 Syntax:
+
 ```
 ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) ComparingExpression
                       | BinaryMoveExpression
@@ -127,6 +137,7 @@ ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinary
 Status: `Implmented`
 
 Syntax:
+
 ```
 ComparingExpression ::= ComparingExpression ( TokenEqual | TokenNotEqual ) ComparingExpression
                       | ComparingExpression
@@ -137,6 +148,7 @@ ComparingExpression ::= ComparingExpression ( TokenEqual | TokenNotEqual ) Compa
 Status: `Implmented`
 
 Syntax:
+
 ```
 BinaryExpression ::= EqualExpression ( TokeBinaryXOR | TokenBinaryOr | TokenBinaryAnd ) BinaryExpression
                    | EqualExpression
@@ -147,6 +159,7 @@ BinaryExpression ::= EqualExpression ( TokeBinaryXOR | TokenBinaryOr | TokenBina
 Status: `Implmented`
 
 Syntax:
+
 ```
 LogicExpression ::= BinaryExpression ( TokenLogicAnd | TokenLogicOr ) LogicExpression
                   | BinaryExpression
@@ -157,6 +170,7 @@ LogicExpression ::= BinaryExpression ( TokenLogicAnd | TokenLogicOr ) LogicExpre
 Status: `Implmented`
 
 Syntax:
+
 ```
 AssignmentExpression ::= MemberExpression ( TokenAssignSign | TokenAdditionAssignment | TokenSubtractionAssignment | TokenMultiplationAssignment | TokenDivisionAssignment | RemainderAssignment ) LogicExpression
 ```
@@ -166,7 +180,69 @@ AssignmentExpression ::= MemberExpression ( TokenAssignSign | TokenAdditionAssig
 Status: `Implmented`
 
 Syntax:
+
 ```
 Expression ::= LogicExpression
              | AssignmentExpression
+```
+
+### TypeSpecifierNodeGenerator
+
+Status: `Implmented`
+
+Syntax:
+
+```
+TypeSpecifierNodeGenerator ::= Identifier TokenLeftBracket TokenRightBracket
+                | Identifier
+```
+
+### AccessDescriptor
+
+Status: `Implmented`
+
+Syntax:
+
+```
+AccessDescriptor ::= "public" | "private"
+```
+
+### VariableDescriptor
+
+Status: `Implmented`
+
+Syntax:
+
+```
+AccessDescriptor ::= "const" | "final"
+```
+
+### MethodDescriptor
+
+Status: `Implmented`
+
+Syntax:
+
+```
+MethodDescriptor ::= "override" | "virtual" | "final"
+```
+
+### VariableDefinition
+
+Status: `Implmented`
+
+Syntax:
+
+```
+VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifierNodeGenerator Identifier TokenEqual Expression
+```
+
+### VariableDeclaration
+
+Status: `Implmented`
+
+Syntax:
+
+```
+VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifierNodeGenerator Identifier
 ```

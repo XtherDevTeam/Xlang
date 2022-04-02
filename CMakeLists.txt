@@ -3,6 +3,9 @@ project(Xlang2)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_FLAGS "-static")
+set(CMAKE_C_FLAGS "-static")
+
 add_executable(Xlang2
         main.cpp
         share/config.hpp frontend/Lexer.cpp
@@ -10,6 +13,8 @@ add_executable(Xlang2
         share/IOStream.hpp share/FileStream.cpp
         share/StringUtils.cpp share/XlangException.cpp
         frontend/AST.cpp frontend/AST.hpp
+        frontend/parsers/ParserException.hpp
+        frontend/parsers/ParserException.cpp
         frontend/parsers/PrimaryNodeGenerator.cpp
         frontend/parsers/PrimaryNodeGenerator.hpp
         frontend/parsers/BaseGenerator.cpp
@@ -48,11 +53,31 @@ add_executable(Xlang2
         frontend/parsers/AssignmentExpressionNodeGenerator.hpp
         frontend/parsers/ExpressionNodeGenerator.cpp
         frontend/parsers/ExpressionNodeGenerator.hpp
-        frontend/parsers/BytecodeGenerateException.cpp
+        backend/BytecodeGenerateException.hpp
+        backend/BytecodeGenerateException.cpp
         frontend/parsers/ParserException.hpp
         bytecode/Operand.hpp
         bytecode/Operand.cpp
         bytecode/BytecodeCommand.hpp
         bytecode/BytecodeCommand.cpp
         backend/LocalEnvironment.cpp
-        backend/LocalEnvironment.hpp backend/Typename.cpp backend/Typename.hpp xtimevm/XlangClass.cpp xtimevm/XlangClass.hpp bytecode/BytecodeCommandArray.cpp bytecode/BytecodeCommandArray.hpp backend/BytecodeGenerator.cpp backend/BytecodeGenerator.hpp backend/GlobalEnvironment.cpp backend/GlobalEnvironment.hpp backend/XlangFunction.cpp backend/XlangFunction.hpp backend/TypenameDerive.cpp backend/TypenameDerive.hpp)
+        backend/LocalEnvironment.hpp
+        backend/Typename.cpp backend/Typename.hpp
+        xtimevm/XlangClass.cpp
+        xtimevm/XlangClass.hpp
+        bytecode/BytecodeCommandArray.cpp
+        bytecode/BytecodeCommandArray.hpp
+        backend/BytecodeGenerator.cpp
+        backend/BytecodeGenerator.hpp
+        backend/GlobalEnvironment.cpp
+        backend/GlobalEnvironment.hpp
+        backend/XlangFunction.cpp
+        backend/XlangFunction.hpp
+        backend/TypenameDerive.cpp
+        backend/TypenameDerive.hpp
+        backend/XlangClass.cpp
+        backend/XlangClass.hpp
+        frontend/parsers/TypeSpecifierNodeGenerator.cpp
+        frontend/parsers/TypeSpecifierNodeGenerator.hpp
+        frontend/parsers/AccessDescriptorNodeGenerator.cpp
+        frontend/parsers/AccessDescriptorNodeGenerator.hpp frontend/parsers/VariableDescriptorNodeGenerator.cpp frontend/parsers/VariableDescriptorNodeGenerator.hpp frontend/parsers/MethodDescriptorNodeGenerator.cpp frontend/parsers/MethodDescriptorNodeGenerator.hpp frontend/parsers/VariableDefinitionNodeGenerator.cpp frontend/parsers/VariableDefinitionNodeGenerator.hpp)

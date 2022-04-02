@@ -8,12 +8,13 @@
 #include "../share/config.hpp"
 
 #include "Typename.hpp"
+#include "TypenameDerive.hpp"
 
 class LocalEnvironment {
 public:
     XString CreateBy;
     XIndexType ParentEnvironment;
-    XMap<XString, Typename> SymbolTable;
+    XMap<XString, TypenameDerive> SymbolTable;
 
     LocalEnvironment();
 

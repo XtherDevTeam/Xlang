@@ -19,7 +19,6 @@ public:
 /* Primary */
         NotMatch,
         Primary,
-        ExtendPrimary,
         Identifier,
         Arguments,
         Operator,
@@ -37,8 +36,19 @@ public:
         EqualExpression,
         BinaryExpression,
         LogicExpression,
-/* rvalue Expression */
-        AssignmentExpression
+/* rvalue expression */
+        AssignmentExpression,
+/* literals */
+        ArrayLiteral,
+/* Descriptors */
+        TypeSpecifier,
+        AccessDescriptor,
+        VariableDescriptor,
+        MethodDescriptor,
+        Descriptors,
+/* Variable definition statements */
+        VariableDefinition,
+        VariableDeclaration,
     } Type;
     Lexer::Token Node;
     XArray<AST> Subtrees;
@@ -65,13 +75,19 @@ public:
      * @biref Return this node is or isn't leaf node
      * @return A boolean value
      */
-    XBoolean IsLeafNode() const;
+    [[nodiscard]] XBoolean IsLeafNode() const;
 
     /**
-     * Return this node is or isn't a failed to match node
+     * @brief Return this node is or isn't a failed to match node
      * @return A boolean value
      */
-    XBoolean IsNotMatchNode() const;
+    [[nodiscard]] XBoolean IsNotMatchNode() const;
+
+    /**
+     * @biref Get first non-null token
+     * @return A token
+     */
+    Lexer::Token GetFirstNotNullToken();
 };
 
 

@@ -16,7 +16,7 @@
  * Keywords in Xlang 2
  */
 static XArray<XString> LexerReservedWords{
-        L"if", L"else", L"switch", L"for", L"while", L"var", L"const"
+        L"if", L"else", L"switch", L"for", L"while", L"public", L"private", L"const", L"final", L"virtual", L"override"
 };
 
 /**
@@ -98,6 +98,10 @@ public:
         Token();
 
         Token(TokenKind Kind, XString Value, XInteger Line, XInteger Column);
+
+        bool operator==(const Token &rhs) const;
+
+        bool operator!=(const Token &rhs) const;
     };
 
     /**

@@ -9,6 +9,7 @@
 #include "Operand.hpp"
 
 class BytecodeCommand {
+public:
     enum class Instruction : int {
         /* push commands */
         push_integer,

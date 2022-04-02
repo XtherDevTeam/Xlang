@@ -6,11 +6,15 @@
 #define XLANG2_XLANGFUNCTION_HPP
 
 #include "../share/config.hpp"
+
 #include "Typename.hpp"
+#include "../bytecode/BytecodeCommandArray.hpp"
 
 class XlangFunction {
 public:
     XString FunctionName;
+
+    BytecodeCommandArray Bytecodes;
 };
 
 

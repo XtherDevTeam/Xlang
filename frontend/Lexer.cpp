@@ -271,6 +271,14 @@ Lexer::Token::Token(Lexer::TokenKind Kind, XString Value, XInteger Line, XIntege
                                                                                             Column(Column),
                                                                                             Value(std::move(Value)) {}
 
+bool Lexer::Token::operator==(const Lexer::Token &rhs) const {
+    return (Line == rhs.Line && Column == rhs.Column && Kind == rhs.Kind && Value == rhs.Value);
+}
+
+bool Lexer::Token::operator!=(const Lexer::Token &rhs) const {
+    return (Line != rhs.Line && Column != rhs.Column && Kind == rhs.Kind && Value == rhs.Value);
+}
+
 LexerException::LexerException() = default;
 
 LexerException::LexerException(XInteger Line, XInteger Column, const XString &Reason) {

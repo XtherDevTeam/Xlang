@@ -15,6 +15,10 @@ class TypenameDerive {
         FunctionDerive,
         NoDerive
     } Kind;
+    enum class Access : int {
+        Public,
+        Private,
+    } AccessDerive;
     Typename OriginalType;
 
     /**
