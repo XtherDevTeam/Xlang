@@ -32,4 +32,6 @@ Typename::Typename(Typename::TypenameKind Kind, XIndexType Index) : Kind(Kind) {
     }
 }
 
+Typename &Typename::operator=(const Typename &rhs) = default;
+
 Typename::~Typename() = default;

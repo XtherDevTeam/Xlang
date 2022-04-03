@@ -46,12 +46,14 @@ public:
         VariableDescriptor,
         MethodDescriptor,
         Descriptors,
+        ArrayDimensionsCount,
 /* Variable definition statements */
         VariableDefinition,
         VariableDeclaration,
     } Type;
     Lexer::Token Node;
     XArray<AST> Subtrees;
+    XIndexType TypeSpecifierArrayDimensionsCount;
 
     AST();
 

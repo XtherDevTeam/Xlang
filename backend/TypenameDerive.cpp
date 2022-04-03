@@ -4,21 +4,25 @@
 
 #include "TypenameDerive.hpp"
 
-TypenameDerive::TypenameDerive(XArray<XInteger> ArrayDimensions) : Kind(DeriveKind::ArrayDerive),
-                                                                   AccessDerive(Access::Public),
-                                                                   ArrayDimensions(std::move(ArrayDimensions)) {
+TypenameDerive::TypenameDerive(XIndexType ArrayDimensions) : Kind(DeriveKind::ArrayDerive),
+                                                             ArrayDimensionCount(ArrayDimensions) {
 
 }
 
 TypenameDerive::TypenameDerive(XArray<Typename> FunctionArgumentsList) : Kind(DeriveKind::FunctionDerive),
-                                                                         AccessDerive(Access::Public),
-                                                                         ArrayDimensions(),
+                                                                         ArrayDimensionCount(),
                                                                          FunctionArgumentsList(
                                                                                  std::move(FunctionArgumentsList)) {
 
 }
 
-TypenameDerive::TypenameDerive() : Kind(DeriveKind::NoDerive), AccessDerive(Access::Public), ArrayDimensions(),
+TypenameDerive::TypenameDerive() : Kind(DeriveKind::NoDerive), ArrayDimensionCount(),
                                    FunctionArgumentsList() {
+
+}
+
+TypenameDerive::TypenameDerive(const Typename &OriginalTypename) : Kind(DeriveKind::NoDerive),
+                                                                   OriginalType(OriginalTypename),
+                                                                   ArrayDimensionCount() {
 
 }

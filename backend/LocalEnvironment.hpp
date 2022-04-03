@@ -7,14 +7,13 @@
 
 #include "../share/config.hpp"
 
-#include "Typename.hpp"
-#include "TypenameDerive.hpp"
+#include "SymbolTableItem.hpp"
 
 class LocalEnvironment {
 public:
     XString CreateBy;
     XIndexType ParentEnvironment;
-    XMap<XString, TypenameDerive> SymbolTable;
+    XArray<SymbolTableItem> SymbolItem;
 
     LocalEnvironment();
 

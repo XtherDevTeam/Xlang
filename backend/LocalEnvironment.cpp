@@ -6,13 +6,13 @@
 
 #include <utility>
 
-LocalEnvironment::LocalEnvironment() : CreateBy(), ParentEnvironment(0), SymbolTable() {
+LocalEnvironment::LocalEnvironment() : CreateBy(), ParentEnvironment(0), SymbolItem() {
 
 }
 
 LocalEnvironment::LocalEnvironment(XString CreateBy, XIndexType ParentEnvironment) : CreateBy(std::move(CreateBy)),
                                                                                      ParentEnvironment(
                                                                                              ParentEnvironment),
-                                                                                     SymbolTable() {
+                                                                                     SymbolItem() {
 
 }

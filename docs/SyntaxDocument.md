@@ -101,7 +101,7 @@ MultiplicationExpression ::= ( IncrementExpression | DecrementExpression ) ( Tok
 
 ### AdditionExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Syntax:
 
@@ -112,7 +112,7 @@ MultiplicationExpression ::= MultiplicationExpression ( TokenPlus | TokenMinus )
 
 ### BinaryMoveExpression
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Syntax:
 
@@ -128,7 +128,7 @@ Status: `Implmented`
 Syntax:
 
 ```
-ComparingExpression ::= BinaryMoveExpression ( TokenBinaryLeftMove | TokenBinaryRightMove ) ComparingExpression
+ComparingExpression ::= BinaryMoveExpression ( TokenLessThanOrEqual | TokenMoreThanOrEqual | TokenLessThan | TokenMoreThan ) ComparingExpression
                       | BinaryMoveExpression
 ```
 
@@ -193,8 +193,7 @@ Status: `Implmented`
 Syntax:
 
 ```
-TypeSpecifierNodeGenerator ::= Identifier TokenLeftBracket TokenRightBracket
-                | Identifier
+TypeSpecifierNodeGenerator ::= Identifier { TokenLeftBracket TokenRightBracket }
 ```
 
 ### AccessDescriptor

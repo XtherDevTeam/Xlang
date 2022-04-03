@@ -6,14 +6,17 @@
 
 #include <utility>
 
-AST::AST() : Type(TreeType::NotMatch) {}
+AST::AST() : Type(TreeType::NotMatch), TypeSpecifierArrayDimensionsCount(0) {}
 
 AST::AST(AST::TreeType Type, Lexer::Token Node, XArray<AST> Subtrees) : Type(Type), Node(std::move(Node)),
-                                                                        Subtrees(std::move(Subtrees)) {}
+                                                                        Subtrees(std::move(Subtrees)),
+                                                                        TypeSpecifierArrayDimensionsCount(0) {}
 
-AST::AST(AST::TreeType Type, Lexer::Token Node) : Type(Type), Subtrees(), Node(std::move(Node)) {}
+AST::AST(AST::TreeType Type, Lexer::Token Node) : Type(Type), Subtrees(), Node(std::move(Node)),
+                                                  TypeSpecifierArrayDimensionsCount(0) {}
 
-AST::AST(AST::TreeType Type, XArray<AST> Subtrees) : Type(Type), Node(), Subtrees(std::move(Subtrees)) {}
+AST::AST(AST::TreeType Type, XArray<AST> Subtrees) : Type(Type), Node(), Subtrees(std::move(Subtrees)),
+                                                     TypeSpecifierArrayDimensionsCount(0) {}
 
 XBoolean AST::IsLeafNode() const {
     return Subtrees.empty();

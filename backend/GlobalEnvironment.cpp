@@ -24,8 +24,15 @@ XIndexType GlobalEnvironment::CreateEnvironment(XString CreateBy, XIndexType Par
     return Key;
 }
 
-void GlobalEnvironment::PushSymbolItem(XIndexType Environment, XString Key, const TypenameDerive &Value) {
-    Environments[Environment].SymbolTable.insert(std::make_pair(std::move(Key), Value));
+bool GlobalEnvironment::PushSymbolItem(XIndexType Environment, XString Key, const TypenameDerive &Value) {
+    if (SearchSymbol(Environment, Key).second != -1) {
+        return false;
+    }
+    Environments[Environment].SymbolItem.emplace_back(
+            (SymbolTableItem) {std::move(Key), Value, SymbolTableItem::Access::Public, 0});
+    Environments[Environment].SymbolItem.back().StackIndex = EmuStack.StackFrames.back().PushItem(
+            (EmulateStack::Item) {Environment, Environments[Environment].SymbolItem.size() - 1});
+    return true;
 }
 
 void GlobalEnvironment::PushFunction(const XlangFunction &Function) {
@@ -59,4 +66,17 @@ void GlobalEnvironment::PushClass(const XlangClass &Class) {
         ClassPool.emplace_back(Class);
         return;
     }
+}
+
+std::pair<XIndexType, XIndexType> GlobalEnvironment::SearchSymbol(XIndexType Environment, const XString &SymbolName) {
+    for (XIndexType Index = Environment;
+         Environments[Index].ParentEnvironment != Index; Index = Environments[Index].ParentEnvironment) {
+        auto Iter = Environments[Index].SymbolItem.begin();
+        for (; Iter != Environments[Index].SymbolItem.end(); Iter++) {
+            if (Iter->Name == SymbolName) {
+                return {Environment, Iter - Environments[Index].SymbolItem.begin()};
+            }
+        }
+    }
+    return {Environment, -1};
 }

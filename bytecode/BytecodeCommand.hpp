@@ -60,6 +60,16 @@ public:
         jump_if_true,
         jump_if_false,
         jump,
+        /* extended commands : array */
+        new_array_int,
+        new_array_decimal,
+        new_array_boolean,
+        new_array_object,
+        new_multi_dimension_array_int,
+        new_multi_dimension_array_decimal,
+        new_multi_dimension_array_boolean,
+        new_multi_dimension_array_object,
+        array_index,
     } Command;
     BytecodeOperandType Operand;
 

@@ -15,10 +15,13 @@
 class BytecodeGenerator {
 public:
     GlobalEnvironment Environment;
+    XIndexType EnvIndex;
 
     BytecodeGenerator();
 
     BytecodeCommandArray Generate(AST &Target);
+
+    TypenameDerive GetTypeOfAST(AST &Target);
 };
 
 

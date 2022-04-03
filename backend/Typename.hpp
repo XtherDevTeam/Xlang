@@ -41,6 +41,8 @@ public:
 
     Typename(TypenameKind Kind, XIndexType Index);
 
+    Typename& operator=(const Typename& rhs);
+
     ~Typename();
 };
 

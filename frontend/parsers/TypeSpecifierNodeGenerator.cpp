@@ -11,19 +11,16 @@ TypeSpecifierNodeGenerator::TypeSpecifierNodeGenerator(Lexer &L) : BaseGenerator
 AST TypeSpecifierNodeGenerator::Parse() {
     if (L.LastToken.Kind == Lexer::TokenKind::Identifier) {
         AST First = {AST::TreeType::Identifier, L.LastToken};
+        AST Second = {AST::TreeType::ArrayDimensionsCount, (Lexer::Token) {}};
         L.Scan();
-        if (L.LastToken.Kind != Lexer::TokenKind::LeftBracket) {
-            return {AST::TreeType::TypeSpecifier, {First}};
+        while (L.LastToken.Kind == Lexer::TokenKind::LeftBracket) {
+            L.Scan();
+            if (L.LastToken.Kind != Lexer::TokenKind::RightBracket) {
+                MakeException(L"Expected a right bracket to close the left bracket.");
+            }
+            L.Scan();
+            Second.TypeSpecifierArrayDimensionsCount++;
         }
-        L.Scan();
-        if (L.LastToken.Kind != Lexer::TokenKind::RightBracket) {
-            Rollback();
-            return {};
-        }
-
-        AST Second = {AST::TreeType::ArrayLiteral, (XArray<AST>) {}};
-        L.Scan();
-
         return {AST::TreeType::TypeSpecifier, {First, Second}};
     } else {
         return {};

@@ -80,4 +80,4 @@ add_executable(Xlang2
         frontend/parsers/TypeSpecifierNodeGenerator.cpp
         frontend/parsers/TypeSpecifierNodeGenerator.hpp
         frontend/parsers/AccessDescriptorNodeGenerator.cpp
-        frontend/parsers/AccessDescriptorNodeGenerator.hpp frontend/parsers/VariableDescriptorNodeGenerator.cpp frontend/parsers/VariableDescriptorNodeGenerator.hpp frontend/parsers/MethodDescriptorNodeGenerator.cpp frontend/parsers/MethodDescriptorNodeGenerator.hpp frontend/parsers/VariableDefinitionNodeGenerator.cpp frontend/parsers/VariableDefinitionNodeGenerator.hpp)
+        frontend/parsers/AccessDescriptorNodeGenerator.hpp frontend/parsers/VariableDescriptorNodeGenerator.cpp frontend/parsers/VariableDescriptorNodeGenerator.hpp frontend/parsers/MethodDescriptorNodeGenerator.cpp frontend/parsers/MethodDescriptorNodeGenerator.hpp frontend/parsers/VariableDefinitionNodeGenerator.cpp frontend/parsers/VariableDefinitionNodeGenerator.hpp backend/SymbolTableItem.cpp backend/SymbolTableItem.hpp backend/EmulateStack.cpp backend/EmulateStack.hpp)

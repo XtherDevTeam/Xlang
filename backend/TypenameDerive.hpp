@@ -10,21 +10,19 @@
 #include "Typename.hpp"
 
 class TypenameDerive {
+public:
     enum class DeriveKind : int {
         ArrayDerive,
         FunctionDerive,
         NoDerive
     } Kind;
-    enum class Access : int {
-        Public,
-        Private,
-    } AccessDerive;
+
     Typename OriginalType;
 
     /**
      * @biref Array dimensions for saving a array derive.
      */
-    XArray<XInteger> ArrayDimensions;
+    XIndexType ArrayDimensionCount;
 
     /**
      * @biref Arguments list for function derive.
@@ -35,13 +33,19 @@ class TypenameDerive {
      * @biref Construct a array derive typename.
      * @param ArrayDimensions Array dimensions for saving a array derive.
      */
-    explicit TypenameDerive(XArray<XInteger> ArrayDimensions);
+    explicit TypenameDerive(XIndexType ArrayDimensions);
 
     /**
      * @biref Construct a function derive typename.
      * @param FunctionArgumentsList Arguments list for function derive.
      */
     explicit TypenameDerive(XArray<Typename> FunctionArgumentsList);
+
+    /**
+     * @biref Construct a no-derive typename with a original typename
+     * @param OriginalTypename
+     */
+    explicit TypenameDerive(const Typename& OriginalTypename);
 
     /**
      * @biref Construct a no-derive typename.
