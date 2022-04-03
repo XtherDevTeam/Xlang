@@ -3,8 +3,8 @@ project(Xlang2)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "-static")
-set(CMAKE_C_FLAGS "-static")
+#set(CMAKE_CXX_FLAGS "-static")
+#set(CMAKE_C_FLAGS "-static")
 
 add_executable(Xlang2
         main.cpp

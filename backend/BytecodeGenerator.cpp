@@ -125,6 +125,48 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
             break;
         }
+        case AST::TreeType::IncrementExpression: {
+            /* do type check */
+            TypenameDerive TypeOfExpression = GetTypeOfAST(Target);
+            Environment.EmuStack.StackFrames.back().PopItem(1);
+            Environment.EmuStack.StackFrames.back().PushItem(
+                    (EmulateStack::Item) {TypeOfExpression});
+
+            /* generate codes */
+            Result.Merge(Generate(Target.Subtrees[0]));
+
+            /* do not need to throw exception, we did type check before. */
+            if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
+                break;
+            } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
+                    Result.PushCommand({BytecodeCommand::Instruction::increment_integer, {}});
+                } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                    Result.PushCommand({BytecodeCommand::Instruction::increment_decimal, {}});
+                }
+            }
+        }
+        case AST::TreeType::DecrementExpression: {
+            /* do type check */
+            TypenameDerive TypeOfExpression = GetTypeOfAST(Target);
+            Environment.EmuStack.StackFrames.back().PopItem(1);
+            Environment.EmuStack.StackFrames.back().PushItem(
+                    (EmulateStack::Item) {TypeOfExpression});
+
+            /* generate codes */
+            Result.Merge(Generate(Target.Subtrees[0]));
+
+            /* do not need to throw exception, we did type check before. */
+            if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
+                break;
+            } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
+                    Result.PushCommand({BytecodeCommand::Instruction::decrement_integer, {}});
+                } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                    Result.PushCommand({BytecodeCommand::Instruction::decrement_decimal, {}});
+                }
+            }
+        }
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -203,6 +245,27 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                     throw BytecodeGenerateException(O.Line, O.Column,
                                                     L"Unexpected expression type : The type of expression is not integer or decimal");
                 }
+            }
+        }
+        case AST::TreeType::IncrementExpression:
+        case AST::TreeType::DecrementExpression: {
+            TypenameDerive TypeOfExpression = GetTypeOfAST(Target.Subtrees[0]);
+            if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
+                break;
+            } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer or
+                    TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                    Result = TypeOfExpression;
+                    break;
+                } else {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Unexpected expression type : The type of expression is not integer or decimal");
+                }
+            } else {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Unexpected expression type : The type of the expression is not NoDerive type.");
             }
         }
         case AST::TreeType::AdditionExpression:
