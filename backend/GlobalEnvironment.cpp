@@ -80,3 +80,23 @@ std::pair<XIndexType, XIndexType> GlobalEnvironment::SearchSymbol(XIndexType Env
     }
     return {Environment, -1};
 }
+
+XIndexType GlobalEnvironment::PushConstantItem(const ConstantPoolItem &Item) {
+    auto Iter = SearchConstantPoolItem(Item);
+    if (Iter != ConstantPool.end())
+        return Iter - ConstantPool.begin();
+
+    ConstantPool.emplace_back(Item);
+    /* return the index of the last element of constant pool */
+    return ConstantPool.end()-- - ConstantPool.begin();
+}
+
+std::vector<ConstantPoolItem>::iterator GlobalEnvironment::SearchConstantPoolItem(const ConstantPoolItem &Item) {
+    auto Iter = ConstantPool.begin();
+    for (; Iter != ConstantPool.end(); Iter++) {
+        if (*Iter == Item) {
+            return Iter;
+        }
+    }
+    return Iter;
+}

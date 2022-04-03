@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <clocale>
 
+using XBytes = std::string;
 using XString = std::wstring;
 using XInteger = long int;
 using XDecimal = float;

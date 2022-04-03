@@ -42,10 +42,15 @@ Lexer::Token Lexer::Scan() {
         XInteger Start = Position;
         while (String[Position] and (IsAlpha(String[Position]) or IsDigit(String[Position]))) NextCharacter();
         TempStr = String.substr(Start, Position - Start);
-
-        LastToken = {
-                std::find(LexerReservedWords.begin(), LexerReservedWords.end(), TempStr) != LexerReservedWords.end()
-                ? TokenKind::ReservedWords : TokenKind::Identifier, TempStr, Line, Column};
+        /* Identify boolean literals */
+        if (TempStr == L"True" or TempStr == L"False")
+            LastToken = {
+                    TokenKind::Boolean, TempStr, Line, Column
+            };
+        else
+            LastToken = {
+                    std::find(LexerReservedWords.begin(), LexerReservedWords.end(), TempStr) != LexerReservedWords.end()
+                    ? TokenKind::ReservedWords : TokenKind::Identifier, TempStr, Line, Column};
     }
         /* Digital literals */
     else if (IsDigit(String[Position])) {

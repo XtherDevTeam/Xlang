@@ -48,6 +48,7 @@ public:
         ReservedWords,
         Integer,
         Decimal,
+        Boolean,
         Plus,                       // +
         Minus,                      // -
         Asterisk,                   // *

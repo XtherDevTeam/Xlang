@@ -64,12 +64,19 @@ public:
         new_array_int,
         new_array_decimal,
         new_array_boolean,
-        new_array_object,
+        new_array_string,
+        new_array_class,
         new_multi_dimension_array_int,
         new_multi_dimension_array_decimal,
         new_multi_dimension_array_boolean,
-        new_multi_dimension_array_object,
+        new_multi_dimension_array_string,
+        new_multi_dimension_array_class,
         array_index,
+        /* extended commands : class */
+        put_field,
+        get_field,
+        /* extended commands : string */
+        get_const_string,
     } Command;
     BytecodeOperandType Operand;
 

@@ -26,8 +26,6 @@ public:
 
     XFunctionIndexType FunctionIndexInGlobalEnvironment{};
 
-    XIndexType StringReferenceToConstantPool{};
-
     /**
      * @biref Default constructor
      */

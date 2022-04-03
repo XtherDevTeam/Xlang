@@ -9,6 +9,7 @@
 #include "XlangFunction.hpp"
 #include "XlangClass.hpp"
 #include "EmulateStack.hpp"
+#include "ConstantPoolItem.hpp"
 
 class GlobalEnvironment {
 public:
@@ -17,6 +18,7 @@ public:
     EmulateStack EmuStack;
     std::vector<XlangFunction> FunctionPool;
     std::vector<XlangClass> ClassPool;
+    std::vector<ConstantPoolItem> ConstantPool;
 
     void LeaveEnvironment(XIndexType LocalIndex);
 
@@ -50,12 +52,26 @@ public:
     void PushClass(const XlangClass &Class);
 
     /**
-     * Search a symbol from Environment.
+     * @biref Search a symbol from Environment.
      * @param Environment To searching from.
      * @param SymbolName Symbol name to search.
      * @return The index of this symbol, if it is -1, then it cannot find a symbol with this name.
      */
     std::pair<XIndexType, XIndexType> SearchSymbol(XIndexType Environment, const XString &SymbolName);
+
+    /**
+     * @biref Push a constant value to constant pool.
+     * @param Item Item to push.
+     * @return The index of this constant.
+     */
+    XIndexType PushConstantItem(const ConstantPoolItem& Item);
+
+    /**
+     * @biref Find a constant that has a same value with param.
+     * @param Item Item to find.
+     * @return The iterator of this constant if it's end of vector, then it means it isn't exist.
+     */
+    std::vector<ConstantPoolItem>::iterator SearchConstantPoolItem(const ConstantPoolItem& Item);
 };
 
 

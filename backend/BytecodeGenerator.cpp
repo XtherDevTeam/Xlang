@@ -1,14 +1,15 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "misc-no-recursion"
 //
 // Created by Jerry Chou on 2022/4/2.
 //
 
 #include "BytecodeGenerator.hpp"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
+
 BytecodeGenerator::BytecodeGenerator() : Environment(), EnvIndex(0) {
     Environment.Environments.emplace_back((LocalEnvironment) {L"XlangGlobalScope", 0});
-};
+}
 
 BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
     BytecodeCommandArray Result;
@@ -18,6 +19,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 case Lexer::TokenKind::Integer: {
                     Environment.EmuStack.StackFrames.back().PushItem(
                             (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Integer}}});
+
                     Result.PushCommand({BytecodeCommand::Instruction::push_integer, (BytecodeOperandType) {
                             std::stol(Target.Node.Value)}});
                     break;
@@ -25,8 +27,26 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 case Lexer::TokenKind::Decimal: {
                     Environment.EmuStack.StackFrames.back().PushItem(
                             (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Decimal}}});
+
                     Result.PushCommand({BytecodeCommand::Instruction::push_decimal, (BytecodeOperandType) {
                             std::stof(Target.Node.Value)}});
+                    break;
+                }
+                case Lexer::TokenKind::Boolean: {
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Boolean}}});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::push_boolean,
+                                        (BytecodeOperandType) {Target.Node.Value == L"True"}});
+                    break;
+                }
+                case Lexer::TokenKind::String: {
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::String}}});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::get_const_string,
+                                        (BytecodeOperandType) {
+                                                Environment.PushConstantItem((ConstantPoolItem) {Target.Node.Value})}});
                     break;
                 }
                 default: {
@@ -57,7 +77,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
 
             TypenameDerive TypeOfExpression = GetTypeOfAST(Target);
             Environment.EmuStack.StackFrames.back().PopItem(2);
-            Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item){TypeOfExpression});
+            Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfExpression});
             Result.PushCommand({BytecodeCommand::Instruction::array_index, {}});
             break;
         }
@@ -81,6 +101,10 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                 }
                 case Lexer::TokenKind::Decimal: {
                     Result.OriginalType = Typename(Typename::TypenameKind::Decimal);
+                    break;
+                }
+                case Lexer::TokenKind::Boolean: {
+                    Result.OriginalType = Typename(Typename::TypenameKind::Boolean);
                     break;
                 }
                 case Lexer::TokenKind::String: {
