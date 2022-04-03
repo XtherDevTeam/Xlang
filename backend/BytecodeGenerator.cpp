@@ -81,6 +81,50 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Result.PushCommand({BytecodeCommand::Instruction::array_index, {}});
             break;
         }
+        case AST::TreeType::MemberExpression: {
+            break;
+        }
+        case AST::TreeType::NegativeExpression: {
+            TypenameDerive TypeOfExpression = GetTypeOfAST(Target.Subtrees[0]);
+            if (TypeOfExpression.Kind != TypenameDerive::DeriveKind::NoDerive) {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Unexpected expression type : The type of the expression is not NoDerive type.");
+            }
+            Result.Merge(Generate(Target.Subtrees[0]));
+            switch (TypeOfExpression.OriginalType.Kind) {
+                case Typename::TypenameKind::Integer: {
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Integer}}});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::negate_integer, {}});
+                    break;
+                }
+                case Typename::TypenameKind::Decimal: {
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Decimal}}});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::negate_decimal, {}});
+                    break;
+                }
+                case Typename::TypenameKind::Boolean: {
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {(TypenameDerive) {(Typename) {Typename::TypenameKind::Boolean}}});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::negate_boolean, {}});
+                    break;
+                }
+                default: {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Unexpected expression type : The type of expression is not integer or decimal");
+                }
+            }
+            break;
+        }
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -138,6 +182,28 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                 }
             }
             break;
+        }
+        case AST::TreeType::NegativeExpression: {
+            TypenameDerive TypeOfExpression = GetTypeOfAST(Target.Subtrees[0]);
+            if (TypeOfExpression.Kind != TypenameDerive::DeriveKind::NoDerive) {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Unexpected expression type : The type of the expression is not NoDerive type.");
+            }
+            switch (TypeOfExpression.OriginalType.Kind) {
+                case Typename::TypenameKind::Integer:
+                case Typename::TypenameKind::Decimal:
+                case Typename::TypenameKind::Boolean: {
+                    Result = TypeOfExpression;
+                    break;
+                }
+
+                default: {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Unexpected expression type : The type of expression is not integer or decimal");
+                }
+            }
         }
         case AST::TreeType::AdditionExpression:
         case AST::TreeType::MultiplicationExpression: {

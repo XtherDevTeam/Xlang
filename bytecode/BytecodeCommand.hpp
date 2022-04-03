@@ -22,12 +22,16 @@ public:
         mul_integer,
         div_integer,
         mod_integer,
+        negate_integer,
         /* operating commands (decimal) */
         add_decimal,
         sub_decimal,
         mul_decimal,
         div_decimal,
         mod_decimal,
+        negate_decimal,
+        /* operating commands (boolean) */
+        negate_boolean,
         /* binary values operating commands */
         binary_or,
         binary_and,
