@@ -60,6 +60,7 @@ Lexer::Token Lexer::Scan() {
         TempStr = String.substr(Start, Position - Start);
 
         if (String[Position] == L'.') {
+            NextCharacter();
             Start = Position;
             while (String[Position] and IsDigit(String[Position])) NextCharacter();
             TempStr += L'.' + String.substr(Start, Position - Start);
