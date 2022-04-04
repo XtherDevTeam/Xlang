@@ -81,6 +81,9 @@ public:
         get_field,
         /* extended commands : string */
         get_const_string,
+        /* extended commands : functions */
+        push_function,
+        invoke_function,
     } Command;
     BytecodeOperandType Operand;
 

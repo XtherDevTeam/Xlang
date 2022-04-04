@@ -18,10 +18,6 @@ Typename::Typename(Typename::TypenameKind Kind) : Kind(Kind), ClassIndexInGlobal
 
 Typename::Typename(Typename::TypenameKind Kind, XIndexType Index) : Kind(Kind) {
     switch (Kind) {
-        case TypenameKind::Function: {
-            FunctionIndexInGlobalEnvironment = Index;
-            break;
-        }
         case TypenameKind::Class: {
             ClassIndexInGlobalEnvironment = Index;
             break;
@@ -30,6 +26,11 @@ Typename::Typename(Typename::TypenameKind Kind, XIndexType Index) : Kind(Kind) {
             break;
         }
     }
+}
+
+bool Typename::operator==(const Typename &rhs) const {
+    return Kind == rhs.Kind and ClassIndexInGlobalEnvironment == rhs.ClassIndexInGlobalEnvironment and
+           FunctionIndexInGlobalEnvironment == rhs.FunctionIndexInGlobalEnvironment;
 }
 
 Typename &Typename::operator=(const Typename &rhs) = default;

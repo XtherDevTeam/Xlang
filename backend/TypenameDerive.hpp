@@ -9,7 +9,7 @@
 
 #include "Typename.hpp"
 
-class TypenameDerive {
+class TypenameDerive : public Typename {
 public:
     enum class DeriveKind : int {
         ArrayDerive,
@@ -27,7 +27,8 @@ public:
     /**
      * @biref Arguments list for function derive.
      */
-    XArray<Typename> FunctionArgumentsList;
+    XArray<TypenameDerive> FunctionArgumentsList;
+    XFunctionIndexType FunctionIndexInPool{};
 
     /**
      * @biref Construct a array derive typename.
@@ -39,18 +40,22 @@ public:
      * @biref Construct a function derive typename.
      * @param FunctionArgumentsList Arguments list for function derive.
      */
-    explicit TypenameDerive(XArray<Typename> FunctionArgumentsList);
+    explicit TypenameDerive(XArray<TypenameDerive> FunctionArgumentsList, XFunctionIndexType FunctionIndex);
 
     /**
      * @biref Construct a no-derive typename with a original typename
      * @param OriginalTypename
      */
-    explicit TypenameDerive(const Typename& OriginalTypename);
+    explicit TypenameDerive(const Typename &OriginalTypename);
 
     /**
      * @biref Construct a no-derive typename.
      */
     TypenameDerive();
+
+    bool operator==(const TypenameDerive &rhs) const;
+
+    bool operator!=(const TypenameDerive &rhs) const;
 };
 
 

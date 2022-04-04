@@ -9,10 +9,13 @@
 
 #include "Typename.hpp"
 #include "../bytecode/BytecodeCommandArray.hpp"
+#include "TypenameDerive.hpp"
 
 class XlangFunction {
 public:
     XString FunctionName;
+
+    TypenameDerive ReturnValueType;
 
     BytecodeCommandArray Bytecodes;
 };

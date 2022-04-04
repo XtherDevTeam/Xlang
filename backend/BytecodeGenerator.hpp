@@ -11,6 +11,7 @@
 
 #include "../frontend/AST.hpp"
 #include "GlobalEnvironment.hpp"
+#include "../share/HashLib.hpp"
 
 class BytecodeGenerator {
 public:
@@ -22,6 +23,10 @@ public:
     BytecodeCommandArray Generate(AST &Target);
 
     TypenameDerive GetTypeOfAST(AST &Target);
+
+    BytecodeCommandArray GetLvalueExpression(AST &Target);
+
+    BytecodeCommandArray ParseMemberExpression(AST &Target, XClassIndexType &ParseTo);
 };
 
 

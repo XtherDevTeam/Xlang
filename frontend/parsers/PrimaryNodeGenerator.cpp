@@ -15,6 +15,6 @@ AST PrimaryNodeGenerator::Parse() {
         L.Scan(); // prepare for next time.
         return Result;
     }
-    MakeException(L"Excepted a primary node.");
+    Rollback();
     return {};
 }

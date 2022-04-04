@@ -19,12 +19,11 @@ AST MemberExpressionNodeGenerator::Parse() {
     while (true) {
         AST Temp = FunctionCallingExpressionNodeGenerator(L).Parse();
         if (Temp.IsNotMatchNode()) break;
+        Result = {AST::TreeType::MemberExpression, {Result, Temp}};
         if (L.LastToken.Kind != Lexer::TokenKind::Dot) {
             break;
         }
         L.Scan();
-
-        Result = {AST::TreeType::MemberExpression, {Result, Temp}};
     }
     return Result;
 }

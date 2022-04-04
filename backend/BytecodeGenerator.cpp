@@ -56,17 +56,12 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
             break;
         }
-        case AST::TreeType::Identifier: {
-            /* Emulate the stack process. */
-            Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {GetTypeOfAST(Target)});
-
-            /* It's already checked variable is or isn't exist, we don't need to check in here again.*/
-            auto Iter = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
-
-            /* Duplicate value from original stack index. */
-            Result.PushCommand({BytecodeCommand::Instruction::duplicate,
-                                (BytecodeOperandType) {
-                                        Environment.Environments[Iter.first].SymbolItem[Iter.second].StackIndex}});
+        case AST::TreeType::Identifier:
+        case AST::TreeType::FunctionCallingExpression:
+        case AST::TreeType::MemberExpression: {
+            /* use ParseMemberExpression to generate codes for these expressions */
+            XClassIndexType ParseTo = -1;
+            Result.Merge(ParseMemberExpression(Target, ParseTo));
             break;
         }
         case AST::TreeType::IndexExpression: {
@@ -79,9 +74,6 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Environment.EmuStack.StackFrames.back().PopItem(2);
             Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfExpression});
             Result.PushCommand({BytecodeCommand::Instruction::array_index, {}});
-            break;
-        }
-        case AST::TreeType::MemberExpression: {
             break;
         }
         case AST::TreeType::NegativeExpression: {
@@ -170,13 +162,14 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
-                                            L"Unexpected AST type.");
+                                            L"Generate: Unexpected AST type.");
         }
     }
     return Result;
 }
 
 TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
+    /* This function CANNOT CHANGE ANYTHING from emulate stack!!! */
     TypenameDerive Result;
     switch (Target.Type) {
         case AST::TreeType::Primary: {
@@ -322,7 +315,152 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
-                                            L"Unexpected AST type.");
+                                            L"GetTypeOfAST: Unexpected AST type.");
+        }
+    }
+    return Result;
+}
+
+BytecodeCommandArray BytecodeGenerator::GetLvalueExpression(AST &Target) {
+    BytecodeCommandArray Result{};
+    switch (Target.Type) {
+        case AST::TreeType::Identifier: {
+            auto Val = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
+            if (Val.second != -1) {
+                Result.PushCommand({BytecodeCommand::Instruction::duplicate,
+                                    (BytecodeOperandType) {
+                                            Environment.Environments[Val.first].SymbolItem[Val.second].StackIndex}});
+            } else {
+                throw BytecodeGenerateException(Target.Node.Line, Target.Node.Column,
+                                                L"Undefined symbol : " + Target.Node.Value);
+            }
+            break;
+        }
+        case AST::TreeType::MemberExpression: {
+            break;
+        }
+        default: {
+            Lexer::Token O = Target.GetFirstNotNullToken();
+            throw BytecodeGenerateException(O.Line, O.Column,
+                                            L"GetLvalueExpression: Unexpected AST type.");
+        }
+    }
+    return Result;
+}
+
+BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClassIndexType &ParseTo) {
+    BytecodeCommandArray Result{};
+    switch (Target.Type) {
+        case AST::TreeType::MemberExpression: {
+            ParseMemberExpression(Target.Subtrees[0], ParseTo);
+            if (Environment.EmuStack.StackFrames.back().Items.back().Kind == EmulateStack::Item::ItemKind::Temp and
+                Environment.EmuStack.StackFrames.back().Items.back().Temp.Kind ==
+                TypenameDerive::DeriveKind::NoDerive and
+                Environment.EmuStack.StackFrames.back().Items.back().Temp.OriginalType.Kind ==
+                Typename::TypenameKind::Class) {
+                ParseTo = Environment.EmuStack.StackFrames.back().Items.back().Temp.OriginalType.ClassIndexInGlobalEnvironment;
+            } else {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"LeftExpression is not class-type.");
+            }
+            ParseMemberExpression(Target.Subtrees[1], ParseTo);
+            break;
+        }
+        case AST::TreeType::Identifier: {
+            if (ParseTo == -1) {
+                /* Is not searching, find the way to start */
+                /* do type checking */
+                TypenameDerive TypeOfAST = GetTypeOfAST(Target);
+                /* Emulate the stack process. */
+                Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
+
+                auto Val = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
+                Result.PushCommand({BytecodeCommand::Instruction::duplicate, (BytecodeOperandType) {
+                        Environment.Environments[Val.first].SymbolItem[Val.second].StackIndex}});
+            } else {
+                /* Is searching, find fields in XlangClass structure */
+                if (Environment.ClassPool[ParseTo].Members.count(Target.Node.Value)) {
+                    /* Field exist */
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {Environment.ClassPool[ParseTo].Members[Target.Node.Value]});
+                    /* get field */
+                    Result.PushCommand({BytecodeCommand::Instruction::get_field,
+                                        (BytecodeOperandType) {HashLib::StringHash(Target.Node.Value)}});
+                } else {
+                    /* Field doesn't exist, make exception */
+                    throw BytecodeGenerateException(Target.Node.Line, Target.Node.Column,
+                                                    Environment.ClassPool[ParseTo].ClassName +
+                                                    L" doesn't contains a field which is named " + Target.Node.Value);
+                }
+            }
+            break;
+        }
+        case AST::TreeType::FunctionCallingExpression: {
+            if (ParseTo == -1) {
+                /* Is not searching, find methods in root field */
+                auto Iter = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
+                if (Iter.second != -1) {
+                    if (Environment.Environments[Iter.first].SymbolItem[Iter.second].Type.Kind !=
+                        TypenameDerive::DeriveKind::FunctionDerive) {
+                        throw BytecodeGenerateException(Target.Node.Line, Target.Node.Column,
+                                                        Target.Node.Value + L" isn't a function derive.");
+                    }
+
+                    /* check function arguments count */
+                    if (Target.Subtrees[1].Subtrees.size() !=
+                        Environment.Environments[Iter.first].SymbolItem[Iter.second].Type.FunctionArgumentsList.size()) {
+                        Lexer::Token O = Target.GetFirstNotNullToken();
+                        throw BytecodeGenerateException(O.Line, O.Column,
+                                                        Target.Node.Value +
+                                                        L": Cannot call a function with different arguments count.");
+                    }
+
+                    /* generate codes for arguments */
+                    for (XIndexType Index = 0; Index < Target.Subtrees[1].Subtrees.size(); Index++) {
+                        /* Not the same type */
+                        if (GetTypeOfAST(Target.Subtrees[1].Subtrees[Index]) !=
+                            Environment.Environments[Iter.first].SymbolItem[Iter.second].Type.FunctionArgumentsList[Index]) {
+                            Lexer::Token O = Target.GetFirstNotNullToken();
+                            throw BytecodeGenerateException(O.Line, O.Column,
+                                                            L"Function arguments value is not the same.");
+                        }
+                        Result.Merge(Generate(Target.Subtrees[1].Subtrees[Index]));
+                    }
+
+                    /* push function */
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {Environment.Environments[Iter.first].SymbolItem[Iter.second].Type});
+
+                    Result.PushCommand({BytecodeCommand::Instruction::push_function,
+                                        (BytecodeOperandType) {HashLib::StringHash(Target.Node.Value)}});
+
+                    /* generate invoke command */
+                    Result.PushCommand({BytecodeCommand::Instruction::invoke_function,
+                                        (BytecodeOperandType) {(XIndexType) Target.Subtrees[1].Subtrees.size()}});
+
+                    /* restore emulation, store result into stack */
+                    Environment.EmuStack.StackFrames.back().PopItem(Target.Subtrees[1].Subtrees.size() + 1);
+                    Environment.EmuStack.StackFrames.back().PushItem(
+                            (EmulateStack::Item) {
+                                    Environment.FunctionPool[Environment.Environments[Iter.first].SymbolItem[Iter.second].Type.FunctionIndexInPool].ReturnValueType});
+                } else {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Function pool doesn't contains a function which is named " +
+                                                    Target.Node.Value);
+                }
+            } else {
+                /* Is searching, find methods with ParseTo */
+            }
+            break;
+        }
+        default: {
+            Lexer::Token O = Target.GetFirstNotNullToken();
+            throw BytecodeGenerateException(O.Line, O.Column,
+                                            L"ParseMemberExpression: Unexpected AST type.");
         }
     }
     return Result;

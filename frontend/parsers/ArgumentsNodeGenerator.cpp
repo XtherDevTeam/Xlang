@@ -18,7 +18,7 @@ AST ArgumentsNodeGenerator::Parse() {
     while(true) {
         AST Temp = ExpressionNodeGenerator(L).Parse();
         if (Temp.IsNotMatchNode()) {
-            MakeException(L"Expected a rvalue expression.");
+            break;
         }
         Result.Subtrees.emplace_back(Temp);
         if (L.LastToken.Kind != Lexer::TokenKind::Colon) break;

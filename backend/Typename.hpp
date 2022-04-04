@@ -19,7 +19,6 @@ public:
         String,
         Array,
         Class,
-        Function,
     } Kind;
 
     XClassIndexType ClassIndexInGlobalEnvironment{};
@@ -39,7 +38,9 @@ public:
 
     Typename(TypenameKind Kind, XIndexType Index);
 
-    Typename& operator=(const Typename& rhs);
+    Typename &operator=(const Typename &rhs);
+
+    bool operator==(const Typename &rhs) const;
 
     ~Typename();
 };

@@ -5,7 +5,7 @@
 
 int main() {
     setlocale(LC_ALL, "zh_CN");
-    Lexer Lex{L"0 - -1"};
+    Lexer Lex{L"a().b()"};
     try {
         for (Lexer::Token T = Lex.Scan(); T.Kind != Lexer::TokenKind::EoF; T = Lex.Scan()) {
             std::cout << wstring2string(T.Value) << "\n" << std::flush;
