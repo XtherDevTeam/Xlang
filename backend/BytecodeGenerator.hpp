@@ -24,8 +24,6 @@ public:
 
     TypenameDerive GetTypeOfAST(AST &Target);
 
-    BytecodeCommandArray GetLvalueExpression(AST &Target);
-
     BytecodeCommandArray ParseMemberExpression(AST &Target, XClassIndexType &ParseTo);
 };
 
