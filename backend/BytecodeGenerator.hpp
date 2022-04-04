@@ -24,7 +24,7 @@ public:
 
     TypenameDerive GetTypeOfAST(AST &Target);
 
-    BytecodeCommandArray ParseMemberExpression(AST &Target, XClassIndexType &ParseTo);
+    BytecodeCommandArray ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo);
 };
 
 

@@ -61,7 +61,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
         case AST::TreeType::MemberExpression: {
             /* use ParseMemberExpression to generate codes for these expressions */
             XClassIndexType ParseTo = -1;
-            Result.Merge(ParseMemberExpression(Target, ParseTo));
+            Result.Merge(ParseMemberExpression(Target, false, ParseTo));
             break;
         }
         case AST::TreeType::IndexExpression: {
@@ -120,33 +120,36 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
         case AST::TreeType::IncrementExpression: {
             /* do type check */
             TypenameDerive TypeOfExpression = GetTypeOfAST(Target);
-            Environment.EmuStack.StackFrames.back().PopItem(1);
-            Environment.EmuStack.StackFrames.back().PushItem(
-                    (EmulateStack::Item) {TypeOfExpression});
 
             /* generate codes */
-            Result.Merge(Generate(Target.Subtrees[0]));
+            XIndexType ParseTo = -1;
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
 
             /* do not need to throw exception, we did type check before. */
             if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
                 break;
             } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
                 if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
-                    Result.PushCommand({BytecodeCommand::Instruction::increment_integer, {}});
+                    Result.PushCommand({BytecodeCommand::Instruction::add_integer, (BytecodeOperandType){(XInteger)1}});
                 } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
-                    Result.PushCommand({BytecodeCommand::Instruction::increment_decimal, {}});
+                    Result.PushCommand({BytecodeCommand::Instruction::add_decimal, (BytecodeOperandType){(XDecimal)1}});
                 }
             }
+
+            /* generate assignment codes */
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
+
+            Environment.EmuStack.StackFrames.back().PopItem(1);
+            Environment.EmuStack.StackFrames.back().PushItem(
+                    (EmulateStack::Item) {TypeOfExpression});
         }
         case AST::TreeType::DecrementExpression: {
             /* do type check */
             TypenameDerive TypeOfExpression = GetTypeOfAST(Target);
-            Environment.EmuStack.StackFrames.back().PopItem(1);
-            Environment.EmuStack.StackFrames.back().PushItem(
-                    (EmulateStack::Item) {TypeOfExpression});
 
             /* generate codes */
-            Result.Merge(Generate(Target.Subtrees[0]));
+            XIndexType ParseTo = -1;
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
 
             /* do not need to throw exception, we did type check before. */
             if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
@@ -158,6 +161,13 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                     Result.PushCommand({BytecodeCommand::Instruction::decrement_decimal, {}});
                 }
             }
+
+            /* generate assignment codes */
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
+
+            Environment.EmuStack.StackFrames.back().PopItem(1);
+            Environment.EmuStack.StackFrames.back().PushItem(
+                    (EmulateStack::Item) {TypeOfExpression});
         }
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
@@ -321,11 +331,12 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
     return Result;
 }
 
-BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClassIndexType &ParseTo) {
+BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo) {
     BytecodeCommandArray Result{};
     switch (Target.Type) {
         case AST::TreeType::MemberExpression: {
-            ParseMemberExpression(Target.Subtrees[0], ParseTo);
+            /* use EndWithAssignment in last expression */
+            ParseMemberExpression(Target.Subtrees[0], false, ParseTo);
             if (Environment.EmuStack.StackFrames.back().Items.back().Kind == EmulateStack::Item::ItemKind::Temp and
                 Environment.EmuStack.StackFrames.back().Items.back().Temp.Kind ==
                 TypenameDerive::DeriveKind::NoDerive and
@@ -337,7 +348,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClas
                 throw BytecodeGenerateException(O.Line, O.Column,
                                                 L"LeftExpression is not class-type.");
             }
-            ParseMemberExpression(Target.Subtrees[1], ParseTo);
+            ParseMemberExpression(Target.Subtrees[1], EndWithAssignment, ParseTo);
             break;
         }
         case AST::TreeType::Identifier: {
@@ -349,7 +360,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClas
                 Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
 
                 auto Val = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
-                Result.PushCommand({BytecodeCommand::Instruction::duplicate, (BytecodeOperandType) {
+                Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::store : BytecodeCommand::Instruction::duplicate, (BytecodeOperandType) {
                         Environment.Environments[Val.first].SymbolItem[Val.second].StackIndex}});
             } else {
                 /* Is searching, find fields in XlangClass structure */
@@ -359,7 +370,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClas
                     Environment.EmuStack.StackFrames.back().PushItem(
                             (EmulateStack::Item) {Environment.ClassPool[ParseTo].Members[Target.Node.Value]});
                     /* get field */
-                    Result.PushCommand({BytecodeCommand::Instruction::get_field,
+                    Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::put_field : BytecodeCommand::Instruction::get_field,
                                         (BytecodeOperandType) {HashLib::StringHash(Target.Node.Value)}});
                 } else {
                     /* Field doesn't exist, make exception */
@@ -371,6 +382,11 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, XClas
             break;
         }
         case AST::TreeType::FunctionCallingExpression: {
+            if (EndWithAssignment) {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Cannot assign for a right-value expression.");
+            }
             if (ParseTo == -1) {
                 /* Is not searching, find methods in root field */
                 auto Iter = Environment.SearchSymbol(EnvIndex, Target.Node.Value);

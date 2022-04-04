@@ -50,9 +50,7 @@ public:
         decrement_integer,
         increment_decimal,
         decrement_decimal,
-        storage_integer,
-        storage_decimal,
-        storage_boolean,
+        store,
         /* cast operating commands */
         int_to_deci,
         deci_to_int,
