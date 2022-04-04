@@ -28,7 +28,7 @@ EmulateStack::Frame::Frame(XIndexType OwnerEnvironment) : OwnerEnvironment(Owner
 }
 
 XIndexType EmulateStack::Frame::PushItem(EmulateStack::Item ToPush) {
-    Items.emplace_back(std::move(ToPush));
+    Items.push_back(std::move(ToPush));
     return Items.size() - 1;
 }
 

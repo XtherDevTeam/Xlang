@@ -83,11 +83,16 @@ public:
         push_function,
         invoke_function,
     } Command;
+
+    static XString InstructionKindToString(Instruction Inst);
+
     BytecodeOperandType Operand;
 
     BytecodeCommand();
 
     BytecodeCommand(Instruction Command, BytecodeOperandType Operand);
+
+    [[nodiscard]] XString ToString() const;
 };
 
 

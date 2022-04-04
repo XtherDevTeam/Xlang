@@ -2,23 +2,19 @@
 #include "share/config.hpp"
 #include "frontend/Lexer.hpp"
 #include "frontend/parsers/ExpressionNodeGenerator.hpp"
+#include "backend/BytecodeGenerator.hpp"
 
 int main() {
     setlocale(LC_ALL, "zh_CN");
-    Lexer Lex{L"a().b()"};
-    try {
-        for (Lexer::Token T = Lex.Scan(); T.Kind != Lexer::TokenKind::EoF; T = Lex.Scan()) {
-            std::cout << wstring2string(T.Value) << "\n" << std::flush;
-        }
-    } catch (LexerException &E) {
-        std::cout << E.what() << std::endl;
-    }
-    Lex.Reset();
+    BytecodeGenerator Generator;
+    Generator.Environment.EmuStack.CreateStackFrame(0);
+    Lexer Lex{L"True + 1.0"};
     Lex.Scan();
     try {
-        AST Tree = ExpressionNodeGenerator(Lex).Parse();
-        std::cout << "?" << std::endl;
-    } catch (ParserException &E) {
+        AST Result = ExpressionNodeGenerator(Lex).Parse();
+        std::cout << wstring2string(Generator.Generate(Result).ToString());
+        std::cout << std::endl;
+    } catch (BytecodeGenerateException &E) {
         std::cout << E.what() << std::endl;
     }
     return 0;

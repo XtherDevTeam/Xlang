@@ -10,8 +10,16 @@ BytecodeCommandArray &BytecodeCommandArray::PushCommand(BytecodeCommand Command)
 }
 
 BytecodeCommandArray &BytecodeCommandArray::Merge(const BytecodeCommandArray &rhs) {
-    for (auto &i : rhs.Set) {
+    for (auto &i: rhs.Set) {
         Set.emplace_back(i);
     }
     return *this;
+}
+
+XString BytecodeCommandArray::ToString() const {
+    XString Result{};
+    for (auto &i: Set) {
+        Result += i.ToString() + L"\n";
+    }
+    return Result;
 }

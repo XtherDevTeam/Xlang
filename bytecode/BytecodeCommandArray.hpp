@@ -18,14 +18,20 @@ public:
      * @param Command Command to push
      * @return Reference to this structure
      */
-    BytecodeCommandArray& PushCommand(BytecodeCommand Command);
+    BytecodeCommandArray &PushCommand(BytecodeCommand Command);
 
     /**
      * @biref Merge a BytecodeCommandArray to the back of this Set
      * @param rhs Array to merge
      * @return Reference to this structure
      */
-    BytecodeCommandArray& Merge(const BytecodeCommandArray& rhs);
+    BytecodeCommandArray &Merge(const BytecodeCommandArray &rhs);
+
+    /**
+     * @biref Return a string of this command array
+     * @return A string
+     */
+    [[nodiscard]] XString ToString() const;
 };
 
 

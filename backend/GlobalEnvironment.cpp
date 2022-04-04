@@ -88,7 +88,7 @@ XIndexType GlobalEnvironment::PushConstantItem(const ConstantPoolItem &Item) {
 
     ConstantPool.emplace_back(Item);
     /* return the index of the last element of constant pool */
-    return ConstantPool.end()-- - ConstantPool.begin();
+    return ConstantPool.size() - 1;
 }
 
 std::vector<ConstantPoolItem>::iterator GlobalEnvironment::SearchConstantPoolItem(const ConstantPoolItem &Item) {
