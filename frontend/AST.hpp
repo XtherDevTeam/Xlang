@@ -50,6 +50,10 @@ public:
 /* Variable definition statements */
         VariableDefinition,
         VariableDeclaration,
+/* Easy to implement statements */
+        ReturnStatement,
+        ContinueStatement,
+        BreakStatement,
     } Type;
     Lexer::Token Node;
     XArray<AST> Subtrees;

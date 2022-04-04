@@ -186,14 +186,14 @@ Expression ::= LogicExpression
              | AssignmentExpression
 ```
 
-### TypeSpecifierNodeGenerator
+### TypeSpecifier
 
 Status: `Implmented`
 
 Syntax:
 
 ```
-TypeSpecifierNodeGenerator ::= Identifier { TokenLeftBracket TokenRightBracket }
+TypeSpecifier ::= Identifier { TokenLeftBracket TokenRightBracket }
 ```
 
 ### AccessDescriptor
@@ -233,7 +233,7 @@ Status: `Implmented`
 Syntax:
 
 ```
-VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifierNodeGenerator Identifier TokenEqual Expression
+VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifier Identifier TokenEqual Expression
 ```
 
 ### VariableDeclaration
@@ -243,5 +243,72 @@ Status: `Implmented`
 Syntax:
 
 ```
-VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifierNodeGenerator Identifier
+VariableDeclaration ::= [AccessDescriptor] [VariableDescriptor] TypeSpecifier Identifier
+```
+
+### CodeBlock
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+CodeBlock ::= TokenLeftBraces [ Statement { TokenSemiColon Statement } ] TokenRightBraces
+```
+
+### FunctionDefinition
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+FunctionDefinition ::= [AccessDescriptor] [FunctionDescriptor] TypeSpecifier Identifier Arguments CodeBlock
+```
+
+### ReturnStatement
+
+Status: `Implmented`
+
+Syntax:
+
+```
+ReturnStatement ::= "return" Expression
+```
+
+### ContinueStatement
+
+Status: `Implmented`
+
+Syntax:
+
+```
+ContinueStatement ::= "continue"
+```
+
+### BreakStatement
+
+Status: `Implmented`
+
+Syntax:
+
+```
+BreakStatement ::= "break"
+```
+
+### Statement
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+Statement ::= VariableDefinition
+            | VariableDeclaration
+            | FunctionDefinition
+            | ReturnStatement
+            | ContinueStatement
+            | BreakStatement
+            | CodeBlock
+            | Expression
 ```

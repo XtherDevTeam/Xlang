@@ -34,7 +34,7 @@ Lexer::Token AST::GetFirstNotNullToken() {
     } else {
         for (auto &i: Subtrees) {
             Lexer::Token R = i.GetFirstNotNullToken();
-            if (R != Lexer::Token())
+            if (R.Kind != Lexer::TokenKind::EoF)
                 return R;
         }
         return {};

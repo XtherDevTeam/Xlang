@@ -3,6 +3,10 @@ import lib.xlang.IO;
 public class Main {
     String Message;
 
+    public function Integer Method() {
+        return 8;
+    };
+
     constructor() {
         Message = "Hello, world!";
         lib.xlang.IO.printString(Message);

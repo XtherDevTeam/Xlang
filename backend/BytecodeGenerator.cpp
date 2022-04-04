@@ -133,9 +133,11 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 break;
             } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
                 if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
-                    Result.PushCommand({BytecodeCommand::Instruction::add_integer, (BytecodeOperandType){(XInteger)1}});
+                    Result.PushCommand(
+                            {BytecodeCommand::Instruction::add_integer, (BytecodeOperandType) {(XInteger) 1}});
                 } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
-                    Result.PushCommand({BytecodeCommand::Instruction::add_decimal, (BytecodeOperandType){(XDecimal)1}});
+                    Result.PushCommand(
+                            {BytecodeCommand::Instruction::add_decimal, (BytecodeOperandType) {(XDecimal) 1}});
                 }
             }
 
@@ -262,6 +264,13 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
             break;
         }
+        case AST::TreeType::BinaryMoveExpression: {
+            /* do type check */
+            TypenameDerive LeftTree = GetTypeOfAST(Target.Subtrees[0]);
+            TypenameDerive RightTree = GetTypeOfAST(Target.Subtrees[2]);
+            TypenameDerive TypeOfAST = GetTypeOfAST(Target);
+            break;
+        }
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -377,6 +386,25 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
             }
             break;
         }
+        case AST::TreeType::BinaryMoveExpression: {
+            auto Left = GetTypeOfAST(Target.Subtrees[0]);
+            auto Right = GetTypeOfAST(Target.Subtrees[2]);
+            if (Left.Kind == TypenameDerive::DeriveKind::NoDerive and
+                Right.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                if (Left.OriginalType.Kind != Typename::TypenameKind::Integer or
+                    Right.OriginalType.Kind != Typename::TypenameKind::Integer) {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Unexpected expression type : BinaryMoveExpression expected a Integer type.");
+                }
+                Result = Left;
+            } else {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Unexpected expression type : The type of the expression is not NoDerive type.");
+            }
+            break;
+        }
         case AST::TreeType::LogicExpression:
         case AST::TreeType::EqualExpression:
         case AST::TreeType::ComparingExpression: {
@@ -422,7 +450,8 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
     return Result;
 }
 
-BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo) {
+BytecodeCommandArray
+BytecodeGenerator::ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo) {
     BytecodeCommandArray Result{};
     switch (Target.Type) {
         case AST::TreeType::MemberExpression: {
@@ -451,7 +480,8 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool 
                 Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
 
                 auto Val = Environment.SearchSymbol(EnvIndex, Target.Node.Value);
-                Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::store : BytecodeCommand::Instruction::duplicate, (BytecodeOperandType) {
+                Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::store
+                                                      : BytecodeCommand::Instruction::duplicate, (BytecodeOperandType) {
                         Environment.Environments[Val.first].SymbolItem[Val.second].StackIndex}});
             } else {
                 /* Is searching, find fields in XlangClass structure */
@@ -461,7 +491,8 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool 
                     Environment.EmuStack.StackFrames.back().PushItem(
                             (EmulateStack::Item) {Environment.ClassPool[ParseTo].Members[Target.Node.Value]});
                     /* get field */
-                    Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::put_field : BytecodeCommand::Instruction::get_field,
+                    Result.PushCommand({EndWithAssignment ? BytecodeCommand::Instruction::put_field
+                                                          : BytecodeCommand::Instruction::get_field,
                                         (BytecodeOperandType) {HashLib::StringHash(Target.Node.Value)}});
                 } else {
                     /* Field doesn't exist, make exception */
@@ -493,7 +524,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool 
                         Environment.Environments[Iter.first].SymbolItem[Iter.second].Type.FunctionArgumentsList.size()) {
                         Lexer::Token O = Target.GetFirstNotNullToken();
                         throw BytecodeGenerateException(O.Line, O.Column,
-                                                        Target.Node.Value +
+                                                        O.Value +
                                                         L": Cannot call a function with different arguments count.");
                     }
 
@@ -532,7 +563,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool 
                     Lexer::Token O = Target.GetFirstNotNullToken();
                     throw BytecodeGenerateException(O.Line, O.Column,
                                                     L"Function pool doesn't contains a function which is named " +
-                                                    Target.Node.Value);
+                                                    O.Value);
                 }
             } else {
                 /* Is searching, find methods with ParseTo */
@@ -547,7 +578,7 @@ BytecodeCommandArray BytecodeGenerator::ParseMemberExpression(AST &Target, bool 
                     if (Target.Subtrees[1].Subtrees.size() != Func.FunctionArgumentsList.size()) {
                         Lexer::Token O = Target.GetFirstNotNullToken();
                         throw BytecodeGenerateException(O.Line, O.Column,
-                                                        Target.Node.Value +
+                                                        O.Value +
                                                         L": Cannot call a function with different arguments count.");
                     }
 
