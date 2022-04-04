@@ -181,20 +181,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             TypenameDerive TypeOfAST = GetTypeOfAST(Target);
 
             /* generate codes */
-            Result.Merge(Generate(Target.Subtrees[0]));
-
-            /* do type casting for left tree */
-            if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Integer and
-                TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Decimal) {
-                Result.PushCommand({BytecodeCommand::Instruction::int_to_deci, {}});
-            } else if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
-                       TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Decimal) {
-                Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
-            } else if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
-                       TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Integer) {
-                Result.PushCommand({BytecodeCommand::Instruction::bool_to_int, {}});
-            }
-
+            /* fix priority of expression subtrees */
             Result.Merge(Generate(Target.Subtrees[2]));
 
             /* do type casting for right tree */
@@ -205,6 +192,20 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                        TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Decimal) {
                 Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
             } else if (RightTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
+                       TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Integer) {
+                Result.PushCommand({BytecodeCommand::Instruction::bool_to_int, {}});
+            }
+
+            Result.Merge(Generate(Target.Subtrees[0]));
+
+            /* do type casting for left tree */
+            if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Integer and
+                TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                Result.PushCommand({BytecodeCommand::Instruction::int_to_deci, {}});
+            } else if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
+                       TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
+            } else if (LeftTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
                        TypeOfAST.OriginalType.Kind == Typename::TypenameKind::Integer) {
                 Result.PushCommand({BytecodeCommand::Instruction::bool_to_int, {}});
             }

@@ -8,7 +8,7 @@ int main() {
     setlocale(LC_ALL, "zh_CN");
     BytecodeGenerator Generator;
     Generator.Environment.EmuStack.CreateStackFrame(0);
-    Lexer Lex{L"True + 1.0"};
+    Lexer Lex{L"1 + 1 + 2.0"};
     Lex.Scan();
     try {
         AST Result = ExpressionNodeGenerator(Lex).Parse();
