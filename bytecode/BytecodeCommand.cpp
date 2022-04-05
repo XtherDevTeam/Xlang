@@ -29,7 +29,10 @@ XString BytecodeCommand::ToString() const {
              Command == Instruction::mul_decimal or Command == Instruction::negate_decimal or
              Command == Instruction::deci_to_bool or Command == Instruction::deci_to_int or
              Command == Instruction::negate_boolean or Command == Instruction::bool_to_int or
-             Command == Instruction::bool_to_deci);
+             Command == Instruction::bool_to_deci or Command == Instruction::binary_lm or
+             Command == Instruction::binary_rm or Command == Instruction::logic_and or
+             Command == Instruction::logic_or or Command == Instruction::logic_le or Command == Instruction::logic_me or
+             Command == Instruction::logic_lt or Command == Instruction::logic_mt);
     else
         Result += std::to_wstring(Operand.Reference);
 

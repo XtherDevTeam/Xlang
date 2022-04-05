@@ -9,23 +9,26 @@ MultiplicationExpressionNodeGenerator::MultiplicationExpressionNodeGenerator(Lex
 }
 
 AST MultiplicationExpressionNodeGenerator::Parse() {
-    AST Left = IncrementExpressionNodeGenerator(L).Parse();
-    if (Left.IsNotMatchNode()) {
-        Left = DecrementExpressionNodeGenerator(L).Parse();
-        if (Left.IsNotMatchNode()) {
+    AST LeftTree = IncrementExpressionNodeGenerator(L).Parse();
+    if (LeftTree.IsNotMatchNode()) {
+        if ((LeftTree = DecrementExpressionNodeGenerator(L).Parse()).IsNotMatchNode()) {
             Rollback();
             return {};
         }
     }
-    if (L.LastToken.Kind != Lexer::TokenKind::Asterisk and L.LastToken.Kind != Lexer::TokenKind::PercentSign and
-        L.LastToken.Kind != Lexer::TokenKind::Slash) {
-        return Left;
+    while (L.LastToken.Kind == Lexer::TokenKind::Asterisk or L.LastToken.Kind == Lexer::TokenKind::Slash or
+           L.LastToken.Kind == Lexer::TokenKind::PercentSign) {
+        AST Operator = {AST::TreeType::Operator, L.LastToken};
+        L.Scan();
+        AST RightTree = IndexExpressionNodeGenerator(L).Parse();
+        if (RightTree.IsNotMatchNode()) {
+            if ((LeftTree = DecrementExpressionNodeGenerator(L).Parse()).IsNotMatchNode()) {
+                Rollback();
+                return {};
+            }
+            MakeException(L"AdditionExpression: Expected a MultiplicationExpression");
+        }
+        LeftTree = {AST::TreeType::AdditionExpression, {LeftTree, Operator, RightTree}};
     }
-    AST Operator = {AST::TreeType::Operator, L.LastToken};
-    L.Scan();
-    AST Right = MultiplicationExpressionNodeGenerator(L).Parse();
-    if (Right.IsNotMatchNode()) {
-        MakeException(L"Expected a rvalue expression.");
-    }
-    return {AST::TreeType::MultiplicationExpression, {Left, Operator, Right}};
+    return LeftTree;
 }

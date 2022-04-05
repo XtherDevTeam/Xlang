@@ -9,19 +9,19 @@ AdditionExpressionNodeGenerator::AdditionExpressionNodeGenerator(Lexer &L) : Bas
 }
 
 AST AdditionExpressionNodeGenerator::Parse() {
-    AST Left = MultiplicationExpressionNodeGenerator(L).Parse();
-    if (Left.IsNotMatchNode()) {
+    AST LeftTree = MultiplicationExpressionNodeGenerator(L).Parse();
+    if (LeftTree.IsNotMatchNode()) {
         Rollback();
         return {};
     }
-    if (L.LastToken.Kind != Lexer::TokenKind::Plus and L.LastToken.Kind != Lexer::TokenKind::Minus) {
-        return Left;
+    while (L.LastToken.Kind == Lexer::TokenKind::Plus or L.LastToken.Kind == Lexer::TokenKind::Minus) {
+        AST Operator = {AST::TreeType::Operator, L.LastToken};
+        L.Scan();
+        AST RightTree = MultiplicationExpressionNodeGenerator(L).Parse();
+        if (RightTree.IsNotMatchNode()) {
+            MakeException(L"AdditionExpression: Expected a MultiplicationExpression");
+        }
+        LeftTree = {AST::TreeType::AdditionExpression, {LeftTree, Operator, RightTree}};
     }
-    AST Operator = {AST::TreeType::Operator, L.LastToken};
-    L.Scan();
-    AST Right = AdditionExpressionNodeGenerator(L).Parse();
-    if (Right.IsNotMatchNode()) {
-        MakeException(L"Expected a rvalue expression.");
-    }
-    return {AST::TreeType::AdditionExpression, {Left, Operator, Right}};
+    return LeftTree;
 }
