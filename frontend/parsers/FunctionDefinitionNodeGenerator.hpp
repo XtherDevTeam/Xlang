@@ -6,6 +6,12 @@
 #define XLANG2_FUNCTIONDEFINITIONNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "AccessDescriptorNodeGenerator.hpp"
+#include "MethodDescriptorNodeGenerator.hpp"
+#include "TypeSpecifierNodeGenerator.hpp"
+#include "IdentifierNodeGenerator.hpp"
+#include "ArgumentsNodeGenerator.hpp"
+#include "CodeBlockNodeGenerator.hpp"
 
 class FunctionDefinitionNodeGenerator : BaseGenerator {
 public:

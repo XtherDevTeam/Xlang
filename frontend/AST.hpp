@@ -54,6 +54,8 @@ public:
         ReturnStatement,
         ContinueStatement,
         BreakStatement,
+/* Function definition */
+        FunctionDefinition
     } Type;
     Lexer::Token Node;
     XArray<AST> Subtrees;

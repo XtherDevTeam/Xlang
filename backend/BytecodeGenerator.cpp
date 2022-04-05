@@ -269,6 +269,30 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             TypenameDerive LeftTree = GetTypeOfAST(Target.Subtrees[0]);
             TypenameDerive RightTree = GetTypeOfAST(Target.Subtrees[2]);
             TypenameDerive TypeOfAST = GetTypeOfAST(Target);
+
+            /* generate codes */
+            Result.Merge(Generate(Target.Subtrees[2]));
+            Result.Merge(Generate(Target.Subtrees[0]));
+
+            switch (Target.Subtrees[1].Node.Kind) {
+                case Lexer::TokenKind::BinaryLeftMove: {
+                    Result.PushCommand({BytecodeCommand::Instruction::binary_lm, {}});
+                    break;
+                }
+                case Lexer::TokenKind::BinaryRightMove: {
+                    Result.PushCommand({BytecodeCommand::Instruction::binary_rm, {}});
+                    break;
+                }
+                default: {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Internal Error");
+                }
+            }
+
+            Environment.EmuStack.StackFrames.back().PopItem(2);
+            Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
+
             break;
         }
         default: {
