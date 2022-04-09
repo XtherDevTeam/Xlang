@@ -295,6 +295,87 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
 
             break;
         }
+
+        case AST::TreeType::LogicExpression:
+        case AST::TreeType::EqualExpression:
+        case AST::TreeType::ComparingExpression: {
+            /* type checking */
+            TypenameDerive TypeOfLeftTree = GetTypeOfAST(Target.Subtrees[0]);
+            TypenameDerive TypeOfRightTree = GetTypeOfAST(Target.Subtrees[2]);
+            if (TypeOfLeftTree.Kind == TypenameDerive::DeriveKind::NoDerive and
+                TypeOfRightTree.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                if (TypeOfLeftTree.OriginalType.Kind == Typename::TypenameKind::Class) {
+                    /* Finish the class comparing process */
+                } else {
+                    /* type casting for left tree */
+                    Result.Merge(Generate(Target.Subtrees[0]));
+
+                    if (TypeOfLeftTree.OriginalType.Kind == Typename::TypenameKind::Integer and
+                        TypeOfRightTree.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                        Result.PushCommand({BytecodeCommand::Instruction::int_to_deci, {}});
+                    } else if (TypeOfLeftTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
+                               TypeOfRightTree.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                        Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
+                    }
+
+                    /* type casting for right tree */
+                    Result.Merge(Generate(Target.Subtrees[2]));
+
+                    if (TypeOfRightTree.OriginalType.Kind == Typename::TypenameKind::Integer and
+                        TypeOfLeftTree.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                        Result.PushCommand({BytecodeCommand::Instruction::int_to_deci, {}});
+                    } else if (TypeOfRightTree.OriginalType.Kind == Typename::TypenameKind::Boolean and
+                               TypeOfLeftTree.OriginalType.Kind == Typename::TypenameKind::Decimal) {
+                        Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
+                    }
+
+                    switch (Target.Subtrees[1].Node.Kind) {
+                        case Lexer::TokenKind::LessThanOrEqual: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_le, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::LessThan: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_lt, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::MoreThanOrEqual: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_me, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::MoreThan: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_mt, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::Equal: {
+                            Result.PushCommand({BytecodeCommand::Instruction::binary_and, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::NotEqual: {
+                            Result.PushCommand({BytecodeCommand::Instruction::binary_xor, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::LogicAnd: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_and, {}});
+                            break;
+                        }
+                        case Lexer::TokenKind::LogicOr: {
+                            Result.PushCommand({BytecodeCommand::Instruction::logic_or, {}});
+                            break;
+                        }
+                        default: {
+                            break;
+                        }
+                    }
+
+                    Environment.EmuStack.StackFrames.back().PopItem(2);
+                    Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item){GetTypeOfAST(Target)});
+                }
+            } else {
+                /* cannot compare with a deriving type*/
+            }
+            break;
+        }
+
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
