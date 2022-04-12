@@ -39,5 +39,5 @@ bool IsDigit(wchar_t Char) {
 }
 
 bool IsAlpha(wchar_t Char) {
-    return (Char >= L'A' && Char <= L'z' || Char == L'_');
+    return ((Char >= L'A' && Char <= L'Z')  || (Char >= L'a' && Char <= 'z') || Char == L'_');
 }
