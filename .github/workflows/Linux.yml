@@ -1,0 +1,18 @@
+name: C/C++ CI on Linux
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  Workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install CMake
+        run: sudo apt install cmake -y
+      - name： Run CI
+        run: mkdir build; cd build; cmake ..; make
