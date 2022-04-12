@@ -264,6 +264,8 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {TypeOfAST});
             break;
         }
+
+        case AST::TreeType::BinaryExpression:
         case AST::TreeType::BinaryMoveExpression: {
             /* do type check */
             TypenameDerive LeftTree = GetTypeOfAST(Target.Subtrees[0]);
@@ -281,6 +283,18 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 }
                 case Lexer::TokenKind::BinaryRightMove: {
                     Result.PushCommand({BytecodeCommand::Instruction::binary_rm, {}});
+                    break;
+                }
+                case Lexer::TokenKind::BinaryXOR: {
+                    Result.PushCommand({BytecodeCommand::Instruction::binary_xor, {}});
+                    break;
+                }
+                case Lexer::TokenKind::BinaryOr: {
+                    Result.PushCommand({BytecodeCommand::Instruction::binary_or, {}});
+                    break;
+                }
+                case Lexer::TokenKind::BinaryAnd: {
+                    Result.PushCommand({BytecodeCommand::Instruction::binary_and, {}});
                     break;
                 }
                 default: {
@@ -368,7 +382,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                     }
 
                     Environment.EmuStack.StackFrames.back().PopItem(2);
-                    Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item){GetTypeOfAST(Target)});
+                    Environment.EmuStack.StackFrames.back().PushItem((EmulateStack::Item) {GetTypeOfAST(Target)});
                 }
             } else {
                 /* cannot compare with a deriving type*/
@@ -491,6 +505,7 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
             }
             break;
         }
+        case AST::TreeType::BinaryExpression:
         case AST::TreeType::BinaryMoveExpression: {
             auto Left = GetTypeOfAST(Target.Subtrees[0]);
             auto Right = GetTypeOfAST(Target.Subtrees[2]);
@@ -514,13 +529,6 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         case AST::TreeType::EqualExpression:
         case AST::TreeType::ComparingExpression: {
             Result.OriginalType = (Typename) {Typename::TypenameKind::Boolean};
-            Result.Kind = TypenameDerive::DeriveKind::NoDerive;
-            Result.ArrayDimensionCount = 0;
-            Result.FunctionArgumentsList = {};
-            break;
-        }
-        case AST::TreeType::BinaryExpression: {
-            Result.OriginalType = (Typename) {Typename::TypenameKind::Integer};
             Result.Kind = TypenameDerive::DeriveKind::NoDerive;
             Result.ArrayDimensionCount = 0;
             Result.FunctionArgumentsList = {};

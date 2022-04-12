@@ -32,7 +32,10 @@ XString BytecodeCommand::ToString() const {
              Command == Instruction::bool_to_deci or Command == Instruction::binary_lm or
              Command == Instruction::binary_rm or Command == Instruction::logic_and or
              Command == Instruction::logic_or or Command == Instruction::logic_le or Command == Instruction::logic_me or
-             Command == Instruction::logic_lt or Command == Instruction::logic_mt);
+             Command == Instruction::logic_lt or Command == Instruction::logic_mt or
+             Command == Instruction::binary_xor or Command == Instruction::binary_and or
+             Command == Instruction::binary_or or Command == Instruction::binary_lm or
+             Command == Instruction::binary_rm);
     else
         Result += std::to_wstring(Operand.Reference);
 
