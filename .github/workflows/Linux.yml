@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install CMake
-        run: sudo apt install cmake -y
-      - name： Run CI
-        run: mkdir build; cd build; cmake ..; make
+      - name: Prepare
+        run: sudo apt install cmake g++ -y
+      - name: Run CMake
+        run: mkdir build;cd build;cmake ..;make;
