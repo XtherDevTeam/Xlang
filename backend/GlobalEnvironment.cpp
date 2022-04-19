@@ -69,13 +69,19 @@ void GlobalEnvironment::PushClass(const XlangClass &Class) {
 }
 
 std::pair<XIndexType, XIndexType> GlobalEnvironment::SearchSymbol(XIndexType Environment, const XString &SymbolName) {
-    for (XIndexType Index = Environment;
-         Environments[Index].ParentEnvironment != Index; Index = Environments[Index].ParentEnvironment) {
+    XIndexType Index = Environment;
+    for (; Environments[Index].ParentEnvironment != Index; Index = Environments[Index].ParentEnvironment) {
         auto Iter = Environments[Index].SymbolItem.begin();
         for (; Iter != Environments[Index].SymbolItem.end(); Iter++) {
             if (Iter->Name == SymbolName) {
                 return {Environment, Iter - Environments[Index].SymbolItem.begin()};
             }
+        }
+    }
+    auto Iter = Environments[Index].SymbolItem.begin();
+    for (; Iter != Environments[Index].SymbolItem.end(); Iter++) {
+        if (Iter->Name == SymbolName) {
+            return {Environment, Iter - Environments[Index].SymbolItem.begin()};
         }
     }
     return {Environment, -1};

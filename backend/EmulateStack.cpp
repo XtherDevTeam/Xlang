@@ -10,12 +10,12 @@ EmulateStack::Item::Item() : Temp(), VariableIndex(0), VariableEnvironmentIndex(
 
 }
 
-EmulateStack::Item::Item(TypenameDerive Temp) : Temp(std::move(Temp)) {
+EmulateStack::Item::Item(TypenameDerive Temp) : Temp(std::move(Temp)), Kind(ItemKind::Temp) {
 
 }
 
 EmulateStack::Item::Item(XIndexType VariableEnvironmentIndex, XIndexType VariableIndex) : VariableEnvironmentIndex(
-        VariableEnvironmentIndex), VariableIndex(VariableIndex) {
+        VariableEnvironmentIndex), VariableIndex(VariableIndex), Kind(ItemKind::Variable) {
 
 }
 

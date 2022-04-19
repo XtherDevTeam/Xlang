@@ -14,7 +14,8 @@ public:
     enum class DeriveKind : int {
         ArrayDerive,
         FunctionDerive,
-        NoDerive
+        NoDerive,
+        InvalidTypename
     } Kind;
 
     Typename OriginalType;

@@ -390,6 +390,36 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             break;
         }
 
+        case AST::TreeType::VariableDefinition:
+        case AST::TreeType::VariableDeclaration: {
+            TypenameDerive CompiledObject = GetTypeOfAST(Target.Subtrees[1]);
+            if (!Environment.PushSymbolItem(EnvIndex, Target.Subtrees[2].Node.Value, CompiledObject)) {
+                throw BytecodeGenerateException(Target.GetFirstNotNullToken().Line,
+                                                Target.GetFirstNotNullToken().Column, L"Cannot create a variable with the same name '" + Target.Subtrees[2].Node.Value + L"'");
+            }
+
+            auto &CreatedResult = Environment.Environments[EnvIndex].SymbolItem.back();
+
+            for (auto &Subtree: Target.Subtrees[0].Subtrees) {
+                if (Subtree.Type == AST::TreeType::AccessDescriptor) {
+                    if (Subtree.Node.Value == L"public") {
+                        CreatedResult.AccessDescriptor = SymbolTableItem::Access::Public;
+                    } else if (Subtree.Node.Value == L"private") {
+                        CreatedResult.AccessDescriptor = SymbolTableItem::Access::Private;
+                    }
+                } else if (Subtree.Type == AST::TreeType::VariableDescriptor) {
+                    /* Finish variable description process */
+                }
+            }
+
+            if (Target.Type == AST::TreeType::VariableDefinition) {
+                XClassIndexType ParseTo = -1;
+                Result.Merge(Generate(Target.Subtrees[3]));
+                Result.Merge(ParseMemberExpression(Target.Subtrees[2], true, ParseTo));
+            }
+            break;
+        }
+
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -552,6 +582,11 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                 Result.Kind = TypenameDerive::DeriveKind::NoDerive;
                 Result.ArrayDimensionCount = 0;
             }
+            break;
+        }
+        case AST::TreeType::VariableDeclaration:
+        case AST::TreeType::VariableDefinition: {
+            Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;
         }
         default: {
