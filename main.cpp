@@ -9,7 +9,7 @@ int main() {
     setlocale(LC_ALL, "zh_CN");
     BytecodeGenerator Generator;
     Generator.Environment.EmuStack.CreateStackFrame(0);
-    Lexer Lex{L"public Integer A = 0"};
+    Lexer Lex{L"public Boolean val;"};
     Lex.Scan();
     try {
         AST Result = StatementNodeGenerator(Lex).Parse();

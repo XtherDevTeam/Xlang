@@ -395,7 +395,9 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             TypenameDerive CompiledObject = GetTypeOfAST(Target.Subtrees[1]);
             if (!Environment.PushSymbolItem(EnvIndex, Target.Subtrees[2].Node.Value, CompiledObject)) {
                 throw BytecodeGenerateException(Target.GetFirstNotNullToken().Line,
-                                                Target.GetFirstNotNullToken().Column, L"Cannot create a variable with the same name '" + Target.Subtrees[2].Node.Value + L"'");
+                                                Target.GetFirstNotNullToken().Column,
+                                                L"Cannot create a variable with the same name '" +
+                                                Target.Subtrees[2].Node.Value + L"'");
             }
 
             auto &CreatedResult = Environment.Environments[EnvIndex].SymbolItem.back();
@@ -416,6 +418,48 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 XClassIndexType ParseTo = -1;
                 Result.Merge(Generate(Target.Subtrees[3]));
                 Result.Merge(ParseMemberExpression(Target.Subtrees[2], true, ParseTo));
+            } else {
+                switch (CompiledObject.Kind) {
+                    case TypenameDerive::DeriveKind::ArrayDerive:
+                    case TypenameDerive::DeriveKind::FunctionDerive: {
+                        Lexer::Token O = Target.GetFirstNotNullToken();
+                        throw BytecodeGenerateException(O.Line, O.Column,
+                                                        L"Generate: Cannot parse a object address declaration without a initial value.");
+                    }
+                    case TypenameDerive::DeriveKind::NoDerive: {
+                        switch (CompiledObject.OriginalType.Kind) {
+                            case Typename::TypenameKind::Integer: {
+                                Result.PushCommand({BytecodeCommand::Instruction::push_integer,
+                                                    (BytecodeOperandType) {(XInteger) 0}});
+                                break;
+                            }
+                            case Typename::TypenameKind::Decimal: {
+                                Result.PushCommand({BytecodeCommand::Instruction::push_decimal,
+                                                    (BytecodeOperandType) {(XDecimal) 0}});
+                                break;
+                            }
+                            case Typename::TypenameKind::Boolean: {
+                                Result.PushCommand({BytecodeCommand::Instruction::push_boolean,
+                                                    (BytecodeOperandType) {false}});
+                                break;
+                            }
+                            case Typename::TypenameKind::String: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"Generate: Cannot parse a object address declaration without a initial value.");
+                            }
+                            case Typename::TypenameKind::Class: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"Generate: Cannot parse a object address declaration without a initial value.");
+                            }
+                        }
+                        break;
+                    }
+                    case TypenameDerive::DeriveKind::InvalidTypename: {
+                        break;
+                    }
+                }
             }
             break;
         }
@@ -470,7 +514,7 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         }
         case AST::TreeType::IndexExpression: {
             auto Val = GetTypeOfAST(Target.Subtrees[0]);
-            if (Val.OriginalType.Kind == Typename::TypenameKind::Array) {
+            if (Val.Kind != TypenameDerive::DeriveKind::ArrayDerive) {
                 Result = Val;
                 Result.ArrayDimensionCount--;
                 if (!Result.ArrayDimensionCount) {

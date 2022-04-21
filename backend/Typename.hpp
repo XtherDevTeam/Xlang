@@ -17,7 +17,6 @@ public:
         Decimal,
         Boolean,
         String,
-        Array,
         Class,
     } Kind;
 
