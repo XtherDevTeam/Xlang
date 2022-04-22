@@ -19,7 +19,8 @@ AST AssignmentExpressionNodeGenerator::Parse() {
         L.LastToken.Kind != Lexer::TokenKind::MultiplicationAssignment and
         L.LastToken.Kind != Lexer::TokenKind::DivisionAssignment and
         L.LastToken.Kind != Lexer::TokenKind::RemainderAssignment) {
-        MakeException(L"Expected one of '=', '+=', '-=', '*=', '/=', '%='.");
+        Rollback();
+        return {};
     }
     AST Operator = {AST::TreeType::Operator, L.LastToken};
     L.Scan();

@@ -54,6 +54,7 @@ public:
         ReturnStatement,
         ContinueStatement,
         BreakStatement,
+        CodeBlockStatement,
 /* Function definition */
         FunctionDefinition
     } Type;

@@ -9,9 +9,9 @@ ExpressionNodeGenerator::ExpressionNodeGenerator(Lexer &L) : BaseGenerator(L) {
 }
 
 AST ExpressionNodeGenerator::Parse() {
-    AST Result = LogicExpressionNodeGenerator(L).Parse();
+    AST Result = AssignmentExpressionNodeGenerator(L).Parse();
     if (Result.IsNotMatchNode()) {
-        Result = AssignmentExpressionNodeGenerator(L).Parse();
+        Result = LogicExpressionNodeGenerator(L).Parse();
         return Result;
     }
     return Result;

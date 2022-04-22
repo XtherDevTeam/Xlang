@@ -6,6 +6,7 @@
 #define XLANG2_CODEBLOCKNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "StatementNodeGenerator.hpp"
 
 class CodeBlockNodeGenerator : BaseGenerator {
 public:

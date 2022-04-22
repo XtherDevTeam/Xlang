@@ -134,10 +134,18 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
                 if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
                     Result.PushCommand(
+                            {BytecodeCommand::Instruction::push_integer, (BytecodeOperandType) {(XInteger) 1}});
+                    Result.PushCommand(
                             {BytecodeCommand::Instruction::add_integer, (BytecodeOperandType) {(XInteger) 1}});
                 } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
                     Result.PushCommand(
+                            {BytecodeCommand::Instruction::push_decimal, (BytecodeOperandType) {(XDecimal) 1}});
+                    Result.PushCommand(
                             {BytecodeCommand::Instruction::add_decimal, (BytecodeOperandType) {(XDecimal) 1}});
+                } else {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Generate: IncrementExpression : Unsupported value type.");
                 }
             }
 
@@ -147,6 +155,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Environment.EmuStack.StackFrames.back().PopItem(1);
             Environment.EmuStack.StackFrames.back().PushItem(
                     (EmulateStack::Item) {TypeOfExpression});
+            break;
         }
         case AST::TreeType::DecrementExpression: {
             /* do type check */
@@ -161,10 +170,18 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 break;
             } else if (TypeOfExpression.Kind == TypenameDerive::DeriveKind::NoDerive) {
                 if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Integer) {
-                    Result.PushCommand({BytecodeCommand::Instruction::decrement_integer, {}});
+                    Result.PushCommand(
+                            {BytecodeCommand::Instruction::push_integer, (BytecodeOperandType) {(XInteger) -1}});
+                    Result.PushCommand({BytecodeCommand::Instruction::add_integer, {}});
                 } else if (TypeOfExpression.OriginalType.Kind == Typename::TypenameKind::Decimal) {
-                    Result.PushCommand({BytecodeCommand::Instruction::decrement_decimal, {}});
+                    Result.PushCommand(
+                            {BytecodeCommand::Instruction::push_integer, (BytecodeOperandType) {(XDecimal) -1}});
+                    Result.PushCommand({BytecodeCommand::Instruction::add_decimal, {}});
                 }
+            } else {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Generate: DecrementExpression : Unsupported value type.");
             }
 
             /* generate assignment codes */
@@ -173,6 +190,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Environment.EmuStack.StackFrames.back().PopItem(1);
             Environment.EmuStack.StackFrames.back().PushItem(
                     (EmulateStack::Item) {TypeOfExpression});
+            break;
         }
 
         case AST::TreeType::AdditionExpression:
@@ -416,8 +434,19 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
 
             if (Target.Type == AST::TreeType::VariableDefinition) {
                 XClassIndexType ParseTo = -1;
+                if (GetTypeOfAST(Target.Subtrees[3]) != CompiledObject) {
+                    Lexer::Token O = Target.GetFirstNotNullToken();
+                    throw BytecodeGenerateException(O.Line, O.Column,
+                                                    L"Generate: Cannot resolve variable definition of type different from declaration.");
+                }
                 Result.Merge(Generate(Target.Subtrees[3]));
-                Result.Merge(ParseMemberExpression(Target.Subtrees[2], true, ParseTo));
+                /* 堆栈平衡 */
+                /* It generated a 'push' command.
+                 * In fact, it's the place of the variable, so we don't need to generate an assignment command.
+                 * This idea is sucks, but it works, actually.
+                 */
+                Environment.EmuStack.StackFrames.back().PopItem(1);
+
             } else {
                 switch (CompiledObject.Kind) {
                     case TypenameDerive::DeriveKind::ArrayDerive:
@@ -459,6 +488,30 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                     case TypenameDerive::DeriveKind::InvalidTypename: {
                         break;
                     }
+                }
+            }
+            break;
+        }
+        case AST::TreeType::CodeBlockStatement: {
+            for (auto &Statement: Target.Subtrees) {
+                Result.Merge(Generate(Statement));
+                if (Statement.Type == AST::TreeType::IncrementExpression or
+                    Statement.Type == AST::TreeType::DecrementExpression or
+                    Statement.Type == AST::TreeType::AdditionExpression or
+                    Statement.Type == AST::TreeType::MultiplicationExpression or
+                    Statement.Type == AST::TreeType::BinaryExpression or
+                    Statement.Type == AST::TreeType::BinaryMoveExpression or
+                    Statement.Type == AST::TreeType::LogicExpression or
+                    Statement.Type == AST::TreeType::EqualExpression or
+                    Statement.Type == AST::TreeType::ComparingExpression or
+                    Statement.Type == AST::TreeType::NegativeExpression or
+                    Statement.Type == AST::TreeType::Primary or
+                    Statement.Type == AST::TreeType::Identifier or
+                    Statement.Type == AST::TreeType::IndexExpression or
+                    Statement.Type == AST::TreeType::MemberExpression or
+                    Statement.Type == AST::TreeType::FunctionCallingExpression) {
+                    Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
+                    Environment.EmuStack.StackFrames.back().PopItem(1);
                 }
             }
             break;
@@ -629,7 +682,8 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
             break;
         }
         case AST::TreeType::VariableDeclaration:
-        case AST::TreeType::VariableDefinition: {
+        case AST::TreeType::VariableDefinition:
+        case AST::TreeType::CodeBlockStatement: {
             Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;
         }

@@ -16,6 +16,7 @@ public:
         push_decimal,
         push_boolean,
         duplicate,
+        pop_value,
         /* operating commands (integer) */
         add_integer,
         sub_integer,
@@ -46,10 +47,6 @@ public:
         logic_me,
         logic_le,
         /* assign operating commands */
-        increment_integer,
-        decrement_integer,
-        increment_decimal,
-        decrement_decimal,
         store,
         /* cast operating commands */
         int_to_deci,

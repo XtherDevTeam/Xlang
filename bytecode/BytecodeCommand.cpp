@@ -35,7 +35,7 @@ XString BytecodeCommand::ToString() const {
              Command == Instruction::logic_lt or Command == Instruction::logic_mt or
              Command == Instruction::binary_xor or Command == Instruction::binary_and or
              Command == Instruction::binary_or or Command == Instruction::binary_lm or
-             Command == Instruction::binary_rm);
+             Command == Instruction::binary_rm or Command == Instruction::pop_value);
     else
         Result += std::to_wstring(Operand.Reference);
 
@@ -52,6 +52,8 @@ XString BytecodeCommand::InstructionKindToString(BytecodeCommand::Instruction In
             return L"push_boolean";
         case Instruction::duplicate:
             return L"duplicate";
+        case Instruction::pop_value:
+            return L"pop_value";
         case Instruction::add_integer:
             return L"add_integer";
         case Instruction::sub_integer:
@@ -100,14 +102,6 @@ XString BytecodeCommand::InstructionKindToString(BytecodeCommand::Instruction In
             return L"logic_me";
         case Instruction::logic_le:
             return L"logic_le";
-        case Instruction::increment_integer:
-            return L"increment_integer";
-        case Instruction::decrement_integer:
-            return L"decrement_integer";
-        case Instruction::increment_decimal:
-            return L"increment_decimal";
-        case Instruction::decrement_decimal:
-            return L"decrement_decimal";
         case Instruction::store:
             return L"store";
         case Instruction::int_to_deci:
