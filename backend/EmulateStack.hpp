@@ -33,6 +33,7 @@ public:
     public:
         XIndexType OwnerEnvironment;
         XArray<Item> Items;
+        XArray<XIndexType> InnerBlockFrames;
 
         Frame();
 
@@ -41,6 +42,10 @@ public:
         XIndexType PushItem(Item ToPush);
 
         void PopItem(XIndexType Count);
+
+        void CreateInnerBlockFrame();
+
+        void LeaveInnerBlockFrame();
     };
 
     std::vector<Frame> StackFrames;

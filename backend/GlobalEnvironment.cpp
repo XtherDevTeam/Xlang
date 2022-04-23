@@ -106,3 +106,13 @@ std::vector<ConstantPoolItem>::iterator GlobalEnvironment::SearchConstantPoolIte
     }
     return Iter;
 }
+
+void GlobalEnvironment::CreateInnerBlockFrame(XIndexType EnvIndex) {
+    EmuStack.StackFrames.back().CreateInnerBlockFrame();
+    Environments[EnvIndex].CreateInnerBlockFrame();
+}
+
+void GlobalEnvironment::LeaveInnerBlockFrame(XIndexType EnvIndex) {
+    EmuStack.StackFrames.back().LeaveInnerBlockFrame();
+    Environments[EnvIndex].LeaveInnerBlockFrame();
+}

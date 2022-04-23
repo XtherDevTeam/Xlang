@@ -37,8 +37,19 @@ void EmulateStack::Frame::PopItem(XIndexType Count) {
         Items.pop_back();
 }
 
-EmulateStack::EmulateStack() : StackFrames() {
+void EmulateStack::Frame::CreateInnerBlockFrame() {
+    InnerBlockFrames.push_back(Items.size());
+}
 
+void EmulateStack::Frame::LeaveInnerBlockFrame() {
+    XIndexType Top = InnerBlockFrames.back();
+    while (Items.size() != Top) {
+        Items.pop_back();
+    }
+    InnerBlockFrames.pop_back();
+}
+
+EmulateStack::EmulateStack() : StackFrames() {
 }
 
 void EmulateStack::CreateStackFrame(XIndexType OwnerEnvironment) {

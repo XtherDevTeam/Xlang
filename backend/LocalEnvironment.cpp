@@ -16,3 +16,15 @@ LocalEnvironment::LocalEnvironment(XString CreateBy, XIndexType ParentEnvironmen
                                                                                      SymbolItem() {
 
 }
+
+void LocalEnvironment::CreateInnerBlockFrame() {
+    InnerBlockFrames.push_back(SymbolItem.size());
+}
+
+void LocalEnvironment::LeaveInnerBlockFrame() {
+    XIndexType Top = InnerBlockFrames.back();
+    while (SymbolItem.size() != Top) {
+        SymbolItem.pop_back();
+    }
+    InnerBlockFrames.pop_back();
+}

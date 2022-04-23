@@ -11,6 +11,9 @@
 #include "EmulateStack.hpp"
 #include "ConstantPoolItem.hpp"
 
+/**
+ * A Xlang2 package for 1 environment
+ */
 class GlobalEnvironment {
 public:
     std::vector<LocalEnvironment> Environments;
@@ -64,14 +67,19 @@ public:
      * @param Item Item to push.
      * @return The index of this constant.
      */
-    XIndexType PushConstantItem(const ConstantPoolItem& Item);
+    XIndexType PushConstantItem(const ConstantPoolItem &Item);
 
     /**
      * @biref Find a constant that has a same value with param.
      * @param Item Item to find.
      * @return The iterator of this constant if it's end of vector, then it means it isn't exist.
      */
-    std::vector<ConstantPoolItem>::iterator SearchConstantPoolItem(const ConstantPoolItem& Item);
+    std::vector<ConstantPoolItem>::iterator SearchConstantPoolItem(const ConstantPoolItem &Item);
+
+
+    void LeaveInnerBlockFrame(XIndexType EnvIndex);
+
+    void CreateInnerBlockFrame(XIndexType EnvIndex);
 };
 
 

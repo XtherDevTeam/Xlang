@@ -559,6 +559,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             break;
         }
         case AST::TreeType::CodeBlockStatement: {
+            Environment.CreateInnerBlockFrame(EnvIndex);
             for (auto &Statement: Target.Subtrees) {
                 Result.Merge(Generate(Statement));
                 if (Statement.Type == AST::TreeType::IncrementExpression or
@@ -580,6 +581,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                     Environment.EmuStack.StackFrames.back().PopItem(1);
                 }
             }
+            Environment.LeaveInnerBlockFrame(EnvIndex);
             break;
         }
 

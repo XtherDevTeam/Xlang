@@ -14,10 +14,15 @@ public:
     XString CreateBy;
     XIndexType ParentEnvironment;
     XArray<SymbolTableItem> SymbolItem;
+    XArray<XIndexType> InnerBlockFrames;
 
     LocalEnvironment();
 
     LocalEnvironment(XString CreateBy, XIndexType ParentEnvironment);
+
+    void CreateInnerBlockFrame();
+
+    void LeaveInnerBlockFrame();
 };
 
 
