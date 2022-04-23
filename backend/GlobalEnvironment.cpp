@@ -25,11 +25,13 @@ XIndexType GlobalEnvironment::CreateEnvironment(XString CreateBy, XIndexType Par
 }
 
 bool GlobalEnvironment::PushSymbolItem(XIndexType Environment, XString Key, const TypenameDerive &Value) {
-    if (SearchSymbol(Environment, Key).second != -1) {
-        return false;
+    auto Try = SearchSymbol(Environment, Key);
+    if (Try.second != -1) {
+        if (Environments[Environment].InnerBlockFrames.empty() or Environments[Environment].InnerBlockFrames.back() < Try.second)
+            return false;
     }
     Environments[Environment].SymbolItem.emplace_back(
-            (SymbolTableItem) {std::move(Key), Value, SymbolTableItem::Access::Public, 0});
+            (SymbolTableItem) {std::move(Key), Value, SymbolTableItem::Access::Public, Environments[Environment].SymbolItem.size()});
     Environments[Environment].SymbolItem.back().StackIndex = EmuStack.StackFrames.back().PushItem(
             (EmulateStack::Item) {Environment, Environments[Environment].SymbolItem.size() - 1});
     return true;
@@ -71,18 +73,14 @@ void GlobalEnvironment::PushClass(const XlangClass &Class) {
 std::pair<XIndexType, XIndexType> GlobalEnvironment::SearchSymbol(XIndexType Environment, const XString &SymbolName) {
     XIndexType Index = Environment;
     for (; Environments[Index].ParentEnvironment != Index; Index = Environments[Index].ParentEnvironment) {
-        auto Iter = Environments[Index].SymbolItem.begin();
-        for (; Iter != Environments[Index].SymbolItem.end(); Iter++) {
-            if (Iter->Name == SymbolName) {
-                return {Environment, Iter - Environments[Index].SymbolItem.begin()};
-            }
+        for (XIndexType Iter = Environments[Index].SymbolItem.empty() ? -1 : Environments[Index].SymbolItem.size() - 1; Iter + 1; Iter--) {
+            if (Environments[Index].SymbolItem[Iter].Name == SymbolName)
+                return {Environment, Iter};
         }
     }
-    auto Iter = Environments[Index].SymbolItem.begin();
-    for (; Iter != Environments[Index].SymbolItem.end(); Iter++) {
-        if (Iter->Name == SymbolName) {
-            return {Environment, Iter - Environments[Index].SymbolItem.begin()};
-        }
+    for (XIndexType Iter = Environments[Index].SymbolItem.empty() ? -1 : Environments[Index].SymbolItem.size() - 1; Iter + 1; Iter--) {
+        if (Environments[Index].SymbolItem[Iter].Name == SymbolName)
+            return {Environment, Iter};
     }
     return {Environment, -1};
 }

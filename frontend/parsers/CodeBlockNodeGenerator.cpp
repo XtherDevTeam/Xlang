@@ -26,6 +26,7 @@ AST CodeBlockNodeGenerator::Parse() {
     if (L.LastToken.Kind != Lexer::TokenKind::RightBraces) {
         MakeException(L"CodeBlockNodeGenerator: Excepted a right brace to close the code block.");
     }
+    L.Scan();
     AST Result {AST::TreeType::CodeBlockStatement, StatementList};
     return Result;
 }
