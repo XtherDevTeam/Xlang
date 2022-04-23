@@ -542,19 +542,56 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                         Environment.EmuStack.StackFrames.back().PopItem(1); /* Tsyunbeu tantse. */
                         break;
                     }
-                    case Typename::TypenameKind::Decimal:
+                    case Typename::TypenameKind::Decimal: {
+                        switch (Target.Subtrees[1].Node.Kind) {
+                            case Lexer::TokenKind::AdditionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::add_decimal, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::SubtractionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::sub_decimal, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::MultiplicationAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::mul_decimal, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::DivisionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::div_decimal, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::RemainderAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::mod_decimal, {}});
+                                break;
+                            }
+                            default: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"Generate: Unsupported operations.");
+                            }
+                        }
+                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Laudai ye go. */
+                        XIndexType ParseTo = -1;
+                        Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
+                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Tsyunbeu tantse. */
                         break;
+                    }
                     case Typename::TypenameKind::Boolean:
-                        break;
                     case Typename::TypenameKind::String:
-                        break;
-                    case Typename::TypenameKind::Class:
-                        break;
+                    case Typename::TypenameKind::Class: {
+                        Lexer::Token O = Target.GetFirstNotNullToken();
+                        throw BytecodeGenerateException(O.Line, O.Column,
+                                                        L"Generate: Unsupported operations.");
+                    }
                 }
             } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
-
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Generate: Unsupported operations.");
             } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::ArrayDerive) {
-
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Generate: Unsupported operations.");
             }
             break;
         }
