@@ -22,6 +22,7 @@ public:
         Identifier,
         Arguments,
         Operator,
+        TypeCastingExpression,
 /* Expression */
         IndexExpression,
         FunctionCallingExpression,

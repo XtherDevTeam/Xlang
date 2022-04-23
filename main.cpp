@@ -9,7 +9,11 @@ int main() {
     setlocale(LC_ALL, "zh_CN");
     BytecodeGenerator Generator;
     Generator.Environment.EmuStack.CreateStackFrame(0);
-    Lexer Lex{L"{public Integer val;val = 114514;{public Integer val;val = 2;};}"};
+    XString Tests[] = {
+            L"{public Integer val;val = 114514;{public Integer val;val = 2;};}",
+            L"{(114.514)=>Integer;}",
+            };
+    Lexer Lex{Tests[1]};
     Lex.Scan();
     try {
         AST Result = CodeBlockNodeGenerator(Lex).Parse();

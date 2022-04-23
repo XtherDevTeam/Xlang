@@ -14,6 +14,20 @@ AST PrimaryNodeGenerator::Parse() {
         AST Result = {AST::TreeType::Primary, L.LastToken};
         L.Scan(); // prepare for next time.
         return Result;
+    } else if (L.LastToken.Kind == Lexer::TokenKind::LeftParentheses) {
+        L.Scan();
+        AST Expr = ExpressionNodeGenerator(L).Parse();
+        if (Expr.IsNotMatchNode() or L.LastToken.Kind != Lexer::TokenKind::RightParentheses) {
+            Rollback();
+            return {};
+        }
+        L.Scan();
+        if (L.LastToken.Kind == Lexer::TokenKind::TypeCastingSign) {
+            L.Scan();
+            AST Spec = TypeSpecifierNodeGenerator(L).Parse();
+            return {AST::TreeType::TypeCastingExpression, {Expr, Spec}};
+        }
+        return Expr;
     }
     Rollback();
     return {};

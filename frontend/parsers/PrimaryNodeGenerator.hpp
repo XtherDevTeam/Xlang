@@ -6,6 +6,8 @@
 #define XLANG2_PRIMARYNODEGENERATOR_HPP
 
 #include "BaseGenerator.hpp"
+#include "ExpressionNodeGenerator.hpp"
+#include "TypeSpecifierNodeGenerator.hpp"
 
 class PrimaryNodeGenerator : BaseGenerator {
 public:

@@ -8,13 +8,24 @@ We are still developing on AST generating.
 
 Status: `Implmented`
 
-Syntax: `Primary ::= TokenInteger | TokenDecimal | TokenString`
+Syntax:
+
+```
+Primary ::= TokenInteger | TokenDecimal | TokenString
+          | TokenLeftParentheses Expression TokenRightParentheses
+```
 
 ### Identifier
 
 Status: `Implmented`
 
 Syntax: `Identifier ::= TokenIdentifier`
+
+### TypeCastingExpression
+
+Status: `Implmented`
+
+Syntax: `TypeCastingExpression ::= TokenLeftParentheses Expression TokenRightParentheses TokenTypeCastingSign TypeSpecifier`
 
 ### Arguments
 

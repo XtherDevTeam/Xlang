@@ -74,6 +74,7 @@ public:
         NotEqual,                   // !=
         LogicAnd,                   // &&
         LogicOr,                    // ||
+        TypeCastingSign,            // =>
         AssignSign,                 // =
         LeftParentheses,            // (
         RightParentheses,           // )

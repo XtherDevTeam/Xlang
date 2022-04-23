@@ -176,6 +176,9 @@ Lexer::Token Lexer::Scan() {
         if (String[Position] == L'=') {
             NextCharacter();   // Read after '='
             LastToken = {TokenKind::Equal, L"==", Line, Column};
+        } else if (String[Position] == L'>') {
+            NextCharacter();   // Read after '>'
+            LastToken = {TokenKind::TypeCastingSign, L"=>", Line, Column};
         } else {
             LastToken = {TokenKind::AssignSign, L"=", Line, Column};
         }
