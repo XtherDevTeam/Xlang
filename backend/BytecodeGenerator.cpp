@@ -492,6 +492,72 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
             break;
         }
+        case AST::TreeType::AssignmentExpression: {
+            TypenameDerive TypeOfVal = GetTypeOfAST(Target.Subtrees[0]);
+            if (GetTypeOfAST(Target.Subtrees[2]) != TypeOfVal) {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"Generate: Cannot assign to lvalue which is different from rvalue.");
+            }
+            if (Target.Subtrees[1].Node.Kind == Lexer::TokenKind::AssignSign) {
+                XIndexType ParseTo = -1;
+                Result.Merge(Generate(Target.Subtrees[2]));
+                Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
+                Environment.EmuStack.StackFrames.back().PopItem(1);
+            } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                Result.Merge(Generate(Target.Subtrees[0]));
+                Result.Merge(Generate(Target.Subtrees[2]));
+                switch (TypeOfVal.OriginalType.Kind) {
+                    case Typename::TypenameKind::Integer: {
+                        switch (Target.Subtrees[1].Node.Kind) {
+                            case Lexer::TokenKind::AdditionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::add_integer, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::SubtractionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::sub_integer, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::MultiplicationAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::mul_integer, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::DivisionAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::div_integer, {}});
+                                break;
+                            }
+                            case Lexer::TokenKind::RemainderAssignment: {
+                                Result.PushCommand({BytecodeCommand::Instruction::mod_integer, {}});
+                                break;
+                            }
+                            default: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"Generate: Unsupported operations.");
+                            }
+                        }
+                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Laudai ye go. */
+                        XIndexType ParseTo = -1;
+                        Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
+                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Tsyunbeu tantse. */
+                        break;
+                    }
+                    case Typename::TypenameKind::Decimal:
+                        break;
+                    case Typename::TypenameKind::Boolean:
+                        break;
+                    case Typename::TypenameKind::String:
+                        break;
+                    case Typename::TypenameKind::Class:
+                        break;
+                }
+            } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::FunctionDerive) {
+
+            } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::ArrayDerive) {
+
+            }
+            break;
+        }
         case AST::TreeType::CodeBlockStatement: {
             for (auto &Statement: Target.Subtrees) {
                 Result.Merge(Generate(Statement));
@@ -683,7 +749,8 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         }
         case AST::TreeType::VariableDeclaration:
         case AST::TreeType::VariableDefinition:
-        case AST::TreeType::CodeBlockStatement: {
+        case AST::TreeType::CodeBlockStatement:
+        case AST::TreeType::AssignmentExpression: {
             Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;
         }
