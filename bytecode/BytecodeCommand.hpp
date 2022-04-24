@@ -74,6 +74,8 @@ public:
         /* extended commands : class */
         put_field,
         get_field,
+        up_cast,
+        down_cast,
         /* extended commands : string */
         get_const_string,
         /* extended commands : functions */

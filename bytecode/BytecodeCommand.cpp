@@ -154,6 +154,10 @@ XString BytecodeCommand::InstructionKindToString(BytecodeCommand::Instruction In
             return L"push_function";
         case Instruction::invoke_function:
             return L"invoke_function";
+        case Instruction::up_cast:
+            return L"up_cast";
+        case Instruction::down_cast:
+            return L"down_cast";
     }
     return {};
 }

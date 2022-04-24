@@ -56,6 +56,96 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
             break;
         }
+        case AST::TreeType::TypeCastingExpression: {
+            /* do type checking */
+            TypenameDerive TypeOfAST = GetTypeOfAST(Target);
+            TypenameDerive Left = GetTypeOfAST(Target.Subtrees[0]);
+            TypenameDerive Right = GetTypeOfAST(Target.Subtrees[1]);
+
+            if (Left.Kind == TypenameDerive::DeriveKind::NoDerive and
+                Right.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                Result.Merge(Generate(Target.Subtrees[0]));
+                switch (Left.OriginalType.Kind) {
+                    case Typename::TypenameKind::Integer: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::Decimal: {
+                                Result.PushCommand({BytecodeCommand::Instruction::int_to_deci, {}});
+                                break;
+                            }
+                            case Typename::TypenameKind::Boolean: {
+                                Result.PushCommand({BytecodeCommand::Instruction::int_to_bool, {}});
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case Typename::TypenameKind::Decimal: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::Integer: {
+                                Result.PushCommand({BytecodeCommand::Instruction::deci_to_int, {}});
+                                break;
+                            }
+                            case Typename::TypenameKind::Boolean: {
+                                Result.PushCommand({BytecodeCommand::Instruction::deci_to_bool, {}});
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case Typename::TypenameKind::Boolean: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::Integer: {
+                                Result.PushCommand({BytecodeCommand::Instruction::bool_to_int, {}});
+                                break;
+                            }
+                            case Typename::TypenameKind::Decimal: {
+                                Result.PushCommand({BytecodeCommand::Instruction::bool_to_deci, {}});
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case Typename::TypenameKind::Class: {
+                        /* Goal: Finish the class upcast and downcast*/
+                        if (Right.OriginalType.Kind == Typename::TypenameKind::Class) {
+                            /* up-cast */
+                            /* 现在只能向上一层的父类进行转换 不能向父类的父类进行转换 */
+                            if (Environment.ClassPool[Left.OriginalType.ClassIndexInGlobalEnvironment].Extends ==
+                                Right.OriginalType.ClassIndexInGlobalEnvironment) {
+                                Result.PushCommand({BytecodeCommand::Instruction::up_cast,
+                                                    (BytecodeOperandType) {
+                                                            (XClassIndexType) Right.OriginalType.ClassIndexInGlobalEnvironment}});
+                            } else if (
+                                    Environment.ClassPool[Right.OriginalType.ClassIndexInGlobalEnvironment].Extends ==
+                                    Left.OriginalType.ClassIndexInGlobalEnvironment) {
+                                Result.PushCommand({BytecodeCommand::Instruction::down_cast,
+                                                    (BytecodeOperandType) {
+                                                            (XClassIndexType) Right.OriginalType.ClassIndexInGlobalEnvironment}});
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+                Environment.EmuStack.StackFrames.back().PopItem(1);
+                Environment.EmuStack.StackFrames.back().PushItem(
+                        (EmulateStack::Item) {TypeOfAST});
+            } else {
+                /* never get in */
+            }
+            break;
+        }
 
         case AST::TreeType::Identifier:
         case AST::TreeType::FunctionCallingExpression:
@@ -613,7 +703,8 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                     Statement.Type == AST::TreeType::Identifier or
                     Statement.Type == AST::TreeType::IndexExpression or
                     Statement.Type == AST::TreeType::MemberExpression or
-                    Statement.Type == AST::TreeType::FunctionCallingExpression) {
+                    Statement.Type == AST::TreeType::FunctionCallingExpression or
+                    Statement.Type == AST::TreeType::TypeCastingExpression) {
                     Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
                     Environment.EmuStack.StackFrames.back().PopItem(1);
                 }
@@ -655,9 +746,99 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                 }
                 default: {
                     throw BytecodeGenerateException(Target.Node.Line, Target.Node.Column,
-                                                    L"Unexpected primary token type.");
+                                                    L"GetTypeOfAST: Unexpected primary token type.");
                 }
             }
+            break;
+        }
+        case AST::TreeType::TypeCastingExpression: {
+            TypenameDerive Left = GetTypeOfAST(Target.Subtrees[0]);
+            TypenameDerive Right = GetTypeOfAST(Target.Subtrees[1]);
+            if (Left == Right) {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"GetTypeOfAST: Cannot cast to a type as the same as the value.");
+            }
+            if (Left.Kind == TypenameDerive::DeriveKind::NoDerive and
+                Right.Kind == TypenameDerive::DeriveKind::NoDerive) {
+                switch (Left.OriginalType.Kind) {
+                    case Typename::TypenameKind::Integer: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::String:
+                            case Typename::TypenameKind::Class: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"GetTypeOfAST: Cannot parse integer value to string or class.");
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case Typename::TypenameKind::Decimal: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::String:
+                            case Typename::TypenameKind::Class: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"GetTypeOfAST: Cannot parse decimal value to string or class.");
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case Typename::TypenameKind::Boolean: {
+                        switch (Right.OriginalType.Kind) {
+                            case Typename::TypenameKind::String:
+                            case Typename::TypenameKind::Class: {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"GetTypeOfAST: Cannot parse boolean value to string or class.");
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                         break;
+                    }
+                    case Typename::TypenameKind::String: {
+                        Lexer::Token O = Target.GetFirstNotNullToken();
+                        throw BytecodeGenerateException(O.Line, O.Column,
+                                                        L"GetTypeOfAST: Cannot parse string value to integer, boolean, decimal or class.");
+                    }
+                    case Typename::TypenameKind::Class: {
+                        /* Goal: Finish the class upcast and downcast*/
+                        if (Right.OriginalType.Kind == Typename::TypenameKind::Class) {
+                            /* up-cast */
+                            /* 现在只能向上一层的父类进行转换 不能向父类的父类进行转换 */
+                            if (Environment.ClassPool[Left.OriginalType.ClassIndexInGlobalEnvironment].Extends ==
+                                Right.OriginalType.ClassIndexInGlobalEnvironment) {
+                                /* do nothing */
+                            } else if (
+                                    Environment.ClassPool[Right.OriginalType.ClassIndexInGlobalEnvironment].Extends ==
+                                    Left.OriginalType.ClassIndexInGlobalEnvironment) {
+                                /* do nothing */
+                            } else {
+                                Lexer::Token O = Target.GetFirstNotNullToken();
+                                throw BytecodeGenerateException(O.Line, O.Column,
+                                                                L"GetTypeOfAST: Cannot covert '" +
+                                                                Environment.ClassPool[Left.OriginalType.ClassIndexInGlobalEnvironment].ClassName +
+                                                                L"' to '" +
+                                                                Environment.ClassPool[Right.OriginalType.ClassIndexInGlobalEnvironment].ClassName);
+                            }
+                        }
+                        break;
+                    }
+                }
+            } else {
+                Lexer::Token O = Target.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"GetTypeOfAST: Cannot covert function derive or array derive to any other types.");
+            }
+            Result = Right;
             break;
         }
         case AST::TreeType::Identifier: {
@@ -666,7 +847,7 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                 Result = Environment.Environments[Val.first].SymbolItem[Val.second].Type;
             } else {
                 throw BytecodeGenerateException(Target.Node.Line, Target.Node.Column,
-                                                L"Undefined symbol : " + Target.Node.Value);
+                                                L"GetTypeOfAST: Undefined symbol : " + Target.Node.Value);
             }
             break;
         }
