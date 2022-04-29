@@ -629,7 +629,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                         Environment.EmuStack.StackFrames.back().PopItem(1); /* Laudai ye go. */
                         XIndexType ParseTo = -1;
                         Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
-                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Tsyunbeu tantse. */
+                        Environment.EmuStack.StackFrames.back().PopItem(2); /* Tsyunbeu tantse. */
                         break;
                     }
                     case Typename::TypenameKind::Decimal: {
@@ -663,7 +663,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                         Environment.EmuStack.StackFrames.back().PopItem(1); /* Laudai ye go. */
                         XIndexType ParseTo = -1;
                         Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
-                        Environment.EmuStack.StackFrames.back().PopItem(1); /* Tsyunbeu tantse. */
+                        Environment.EmuStack.StackFrames.back().PopItem(2); /* Tsyunbeu tantse. */
                         break;
                     }
                     case Typename::TypenameKind::Boolean:

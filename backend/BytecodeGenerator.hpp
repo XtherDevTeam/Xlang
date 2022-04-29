@@ -24,6 +24,14 @@ public:
 
     TypenameDerive GetTypeOfAST(AST &Target);
 
+    /**
+     * @biref Parse a member expression (Identifier, MemberExpression, etc.)
+     * @warning When you're end with a assignment, it won't pop the last result from the emulating stack, you should pop it MANUALLY.
+     * @param Target The AST to parse.
+     * @param EndWithAssignment Method will generate a `store` command if this param is true.
+     * @param ParseTo Default as -1.
+     * @return Return a command array contains the parse result.
+     */
     BytecodeCommandArray ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo);
 };
 
