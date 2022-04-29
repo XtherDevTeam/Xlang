@@ -593,7 +593,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 XIndexType ParseTo = -1;
                 Result.Merge(Generate(Target.Subtrees[2]));
                 Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
-                Environment.EmuStack.StackFrames.back().PopItem(1);
+                Environment.EmuStack.StackFrames.back().PopItem(2);
             } else if (TypeOfVal.Kind == TypenameDerive::DeriveKind::NoDerive) {
                 Result.Merge(Generate(Target.Subtrees[0]));
                 Result.Merge(Generate(Target.Subtrees[2]));

@@ -13,7 +13,7 @@ int main() {
             L"{public Integer val;val = 114514;{public Integer val;val = 2;};}",
             L"{(114.514)=>Integer;}",
             };
-    Lexer Lex{Tests[1]};
+    Lexer Lex{Tests[0]};
     Lex.Scan();
     try {
         AST Result = CodeBlockNodeGenerator(Lex).Parse();
