@@ -15,7 +15,11 @@ AST CodeBlockNodeGenerator::Parse() {
     L.Scan();
     XArray<AST> StatementList;
     for (auto Stmt = StatementNodeGenerator(L).Parse(); !Stmt.IsNotMatchNode();) {
-        if (L.LastToken.Kind == Lexer::TokenKind::Semicolon) {
+        if (Stmt.Type == AST::TreeType::CodeBlockStatement or Stmt.Type == AST::TreeType::IfElseStatement or
+            Stmt.Type == AST::TreeType::IfStatement or
+            Stmt.Type == AST::TreeType::WhileStatement or Stmt.Type == AST::TreeType::ForStatement) {
+            /* do nothing */
+        } else if (L.LastToken.Kind == Lexer::TokenKind::Semicolon) {
             L.Scan();
         } else {
             MakeException(L"CodeBlockNodeGenerator: Excepted a semicolon after statement.");
@@ -27,6 +31,6 @@ AST CodeBlockNodeGenerator::Parse() {
         MakeException(L"CodeBlockNodeGenerator: Excepted a right brace to close the code block.");
     }
     L.Scan();
-    AST Result {AST::TreeType::CodeBlockStatement, StatementList};
+    AST Result{AST::TreeType::CodeBlockStatement, StatementList};
     return Result;
 }
