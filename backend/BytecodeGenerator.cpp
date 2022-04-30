@@ -713,8 +713,20 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             break;
         }
 
-        case AST::TreeType::IfStatement: {
+        case AST::TreeType::IfStatement:
+        case AST::TreeType::IfElseStatement: {
+            BytecodeCommandArray IfTrueBlock = Generate(Target.Subtrees[1]);
+            Result.Merge(Generate(Target.Subtrees[0]));
+            /* Stack Emulation */
+            Environment.EmuStack.StackFrames.back().PopItem(1);
 
+            /* Skip to the command after code block */
+            Result.PushCommand({BytecodeCommand::Instruction::jump_if_false,
+                                (BytecodeOperandType) {(XIndexType) IfTrueBlock.Set.size() + 1}});
+            Result.Merge(IfTrueBlock);
+            if (Target.Type == AST::TreeType::IfElseStatement)
+                Result.Merge(Generate(Target.Subtrees[2]));
+            break;
         }
 
         default: {
@@ -806,7 +818,7 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
                                 break;
                             }
                         }
-                         break;
+                        break;
                     }
                     case Typename::TypenameKind::String: {
                         Lexer::Token O = Target.GetFirstNotNullToken();
