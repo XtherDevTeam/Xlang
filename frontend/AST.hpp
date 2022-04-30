@@ -56,6 +56,12 @@ public:
         ContinueStatement,
         BreakStatement,
         CodeBlockStatement,
+/* Statements */
+        IfStatement,
+        IfElseStatement,
+        WhileStatement,
+        ForStatement,
+        SwitchStatement,
 /* Function definition */
         FunctionDefinition
     } Type;

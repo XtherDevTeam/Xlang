@@ -307,6 +307,17 @@ Syntax:
 BreakStatement ::= "break"
 ```
 
+### IfStatement
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+IfStatement ::= "if" TokenLeftParentheses Expression TokenRightParentheses CodeBlock
+              | "if" TokenLeftParentheses Expression TokenRightParentheses CodeBlock { "else" Statement }
+```
+
 ### Statement
 
 Status: `Unimplmented`

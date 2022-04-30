@@ -713,6 +713,10 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             break;
         }
 
+        case AST::TreeType::IfStatement: {
+
+        }
+
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -970,6 +974,8 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         case AST::TreeType::VariableDeclaration:
         case AST::TreeType::VariableDefinition:
         case AST::TreeType::CodeBlockStatement:
+        case AST::TreeType::IfStatement:
+        case AST::TreeType::IfElseStatement:
         case AST::TreeType::AssignmentExpression: {
             Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;

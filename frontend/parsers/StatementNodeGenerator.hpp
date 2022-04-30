@@ -14,6 +14,8 @@
 #include "CodeBlockNodeGenerator.hpp"
 #include "ExpressionNodeGenerator.hpp"
 
+#include "IfStatementNodeGenerator.hpp"
+
 class StatementNodeGenerator : BaseGenerator {
 public:
     explicit StatementNodeGenerator(Lexer &L);

@@ -12,8 +12,9 @@ int main() {
     XString Tests[] = {
             L"{public Integer val;val += 114514;{public Integer val;val += 2;};}",
             L"{(114.514)=>Integer;}",
+            L"{if(True){Integer A = 0;};}"
             };
-    Lexer Lex{Tests[0]};
+    Lexer Lex{Tests[2]};
     Lex.Scan();
     try {
         AST Result = CodeBlockNodeGenerator(Lex).Parse();
