@@ -309,13 +309,23 @@ BreakStatement ::= "break"
 
 ### IfStatement
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Syntax:
 
 ```
 IfStatement ::= "if" TokenLeftParentheses Expression TokenRightParentheses CodeBlock
               | "if" TokenLeftParentheses Expression TokenRightParentheses CodeBlock { "else" Statement }
+```
+
+### ForStatement
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+ForStatement ::= "for" TokenLeftParentheses Statement TokenSemicolon Expression TokenSemicolon Statement TokenRightParentheses CodeBlock
 ```
 
 ### Statement

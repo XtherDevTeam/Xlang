@@ -15,6 +15,7 @@
 #include "ExpressionNodeGenerator.hpp"
 
 #include "IfStatementNodeGenerator.hpp"
+#include "ForStatementNodeGenerator.hpp"
 
 class StatementNodeGenerator : BaseGenerator {
 public:
