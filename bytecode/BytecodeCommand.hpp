@@ -81,6 +81,9 @@ public:
         /* extended commands : functions */
         push_function,
         invoke_function,
+        /* fake command in compiling times */
+        fake_command_jump_out_of_loop,
+        fake_command_skip_to_next_round_loop,
     } Command;
 
     static XString InstructionKindToString(Instruction Inst);

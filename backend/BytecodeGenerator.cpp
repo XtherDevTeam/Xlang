@@ -729,6 +729,15 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             break;
         }
 
+        case AST::TreeType::BreakStatement: {
+            Result.PushCommand({BytecodeCommand::Instruction::fake_command_jump_out_of_loop, {}});
+            break;
+        }
+        case AST::TreeType::ContinueStatement: {
+            Result.PushCommand({BytecodeCommand::Instruction::fake_command_skip_to_next_round_loop, {}});
+            break;
+        }
+
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
             throw BytecodeGenerateException(O.Line, O.Column,
@@ -988,7 +997,10 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         case AST::TreeType::CodeBlockStatement:
         case AST::TreeType::IfStatement:
         case AST::TreeType::IfElseStatement:
-        case AST::TreeType::AssignmentExpression: {
+        case AST::TreeType::AssignmentExpression:
+        case AST::TreeType::ContinueStatement:
+        case AST::TreeType::BreakStatement:
+        case AST::TreeType::ForStatement: {
             Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;
         }

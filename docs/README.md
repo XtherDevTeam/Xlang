@@ -1,6 +1,6 @@
 ### About
 
-Xlang2 is a kind of static, compiled, strong-type programming language.
+Xlang2 is a kind of static, compiled, strong-type programming languages.
 
 Developed with <img alt="CLion logo." height="40px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/CLion.png"/>
 
