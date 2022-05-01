@@ -34,7 +34,7 @@ public:
      */
     BytecodeCommandArray ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo);
 
-    BytecodeCommandArray CovertExpressionResultToStatementResult(AST &Target);
+    BytecodeCommandArray CovertExpressionResultToStatementResult(AST &Target, XBoolean GeneratePopValueCommand = true);
 };
 
 

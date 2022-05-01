@@ -757,6 +757,33 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Result.Merge(UpdateStatement);
             break;
         }
+        case AST::TreeType::WhileStatement: {
+            BytecodeCommandArray ConditionExpr = Generate(Target.Subtrees[0]);
+            Environment.EmuStack.StackFrames.back().PopItem(1); // pop condition result
+
+            BytecodeCommandArray CodeBlockStmt = Generate(Target.Subtrees[1]);
+            ConditionExpr.PushCommand({BytecodeCommand::Instruction::jump_if_false, (BytecodeOperandType) {
+                    static_cast<XInteger>(CodeBlockStmt.Set.size() + 2)}}); // included jump back statement
+            CodeBlockStmt.PushCommand({BytecodeCommand::Instruction::jump, (BytecodeOperandType) {
+                    -static_cast<XInteger>(CodeBlockStmt.Set.size() + ConditionExpr.Set.size())}});
+
+            /* replacing fake commands */
+            for (XInteger Index = 0; Index < CodeBlockStmt.Set.size(); Index++) {
+                auto &Command = CodeBlockStmt.Set[Index];
+                if (Command.Command == BytecodeCommand::Instruction::fake_command_jump_out_of_loop) {
+                    Command = {BytecodeCommand::Instruction::jump,
+                               (BytecodeOperandType) {static_cast<XInteger>(CodeBlockStmt.Set.size() - Index + 1)}};
+                } else if (Command.Command == BytecodeCommand::Instruction::fake_command_skip_to_next_round_loop) {
+                    Command = {BytecodeCommand::Instruction::jump,
+                               (BytecodeOperandType) {static_cast<XInteger>(CodeBlockStmt.Set.size() - Index)}};
+                }
+            }
+
+            Result.Merge(ConditionExpr);
+            Result.Merge(CodeBlockStmt);
+
+            break;
+        }
 
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();
@@ -1210,7 +1237,8 @@ BytecodeGenerator::ParseMemberExpression(AST &Target, bool EndWithAssignment, XC
     return Result;
 }
 
-BytecodeCommandArray BytecodeGenerator::CovertExpressionResultToStatementResult(AST &Target) {
+BytecodeCommandArray
+BytecodeGenerator::CovertExpressionResultToStatementResult(AST &Target, XBoolean GeneratePopValueCommand) {
     BytecodeCommandArray Result;
     Result.Merge(Generate(Target));
     if (Target.Type == AST::TreeType::IncrementExpression or
@@ -1229,7 +1257,8 @@ BytecodeCommandArray BytecodeGenerator::CovertExpressionResultToStatementResult(
         Target.Type == AST::TreeType::MemberExpression or
         Target.Type == AST::TreeType::FunctionCallingExpression or
         Target.Type == AST::TreeType::TypeCastingExpression) {
-        Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
+        if (GeneratePopValueCommand)
+            Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
         Environment.EmuStack.StackFrames.back().PopItem(1);
     }
     return Result;
