@@ -737,6 +737,43 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             Result.PushCommand({BytecodeCommand::Instruction::fake_command_skip_to_next_round_loop, {}});
             break;
         }
+        case AST::TreeType::ForStatement: {
+            Environment.CreateInnerBlockFrame(EnvIndex);
+            Result.Merge(Generate(Target.Subtrees[0]));
+            BytecodeCommandArray ConditionExpr = Generate(Target.Subtrees[1]);
+            BytecodeCommandArray CodeBlockStmt = Generate(Target.Subtrees[3]);
+            BytecodeCommandArray UpdateStatement = Generate(Target.Subtrees[2]);
+
+            UpdateStatement.PushCommand(
+                    {BytecodeCommand::Instruction::jump, (BytecodeOperandType) {
+                            -static_cast<XInteger>(ConditionExpr.Set.size() + CodeBlockStmt.Set.size() +
+                                                   UpdateStatement.Set.size() + 1)}});
+
+            ConditionExpr.PushCommand({BytecodeCommand::Instruction::jump_if_false,
+                                       (BytecodeOperandType) {
+                                               static_cast<XInteger>(CodeBlockStmt.Set.size() +
+                                                                     UpdateStatement.Set.size() + 1)}});
+
+            /* Process fake commands */
+            for (XIndexType Index = 0; Index < CodeBlockStmt.Set.size(); Index++) {
+                auto &Command = CodeBlockStmt.Set[Index];
+
+                if (Command.Command == BytecodeCommand::Instruction::fake_command_skip_to_next_round_loop) {
+                    Command = {BytecodeCommand::Instruction::jump,
+                               (BytecodeOperandType) {static_cast<XInteger>(CodeBlockStmt.Set.size() - Index + 1)}};
+                } else if (Command.Command == BytecodeCommand::Instruction::fake_command_jump_out_of_loop) {
+                    Command = {BytecodeCommand::Instruction::jump,
+                               (BytecodeOperandType) {static_cast<XInteger>(CodeBlockStmt.Set.size() - Index +
+                                                                            UpdateStatement.Set.size() + 1)}};
+                }
+            }
+
+            Environment.LeaveInnerBlockFrame(EnvIndex);
+            Result.Merge(ConditionExpr);
+            Result.Merge(CodeBlockStmt);
+            Result.Merge(UpdateStatement);
+            break;
+        }
 
         default: {
             Lexer::Token O = Target.GetFirstNotNullToken();

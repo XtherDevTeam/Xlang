@@ -14,7 +14,8 @@ XString BytecodeCommand::ToString() const {
     Result += InstructionKindToString(Command);
     Result += L" ";
 
-    if (Command == Instruction::push_integer)
+    if (Command == Instruction::push_integer or Command == Instruction::jump or Command == Instruction::jump_if_false or
+        Command == Instruction::jump_if_true)
         Result += std::to_wstring(Operand.Integer);
     else if (Command == Instruction::push_decimal)
         Result += std::to_wstring(Operand.Decimal);
