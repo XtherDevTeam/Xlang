@@ -27,6 +27,10 @@ AST StatementNodeGenerator::Parse() {
     if (!Result.IsNotMatchNode())
         return Result;
 
+    Result = WhileStatementNodeGenerator(L).Parse();
+    if (!Result.IsNotMatchNode())
+        return Result;
+
     Result = ReturnStatementNodeGenerator(L).Parse();
     if (!Result.IsNotMatchNode())
         return Result;

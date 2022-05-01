@@ -16,6 +16,7 @@
 
 #include "IfStatementNodeGenerator.hpp"
 #include "ForStatementNodeGenerator.hpp"
+#include "WhileStatementNodeGenerator.hpp"
 
 class StatementNodeGenerator : BaseGenerator {
 public:

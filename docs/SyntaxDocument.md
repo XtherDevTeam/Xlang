@@ -320,12 +320,22 @@ IfStatement ::= "if" TokenLeftParentheses Expression TokenRightParentheses CodeB
 
 ### ForStatement
 
-Status: `Unimplmented`
+Status: `Implmented`
 
 Syntax:
 
 ```
 ForStatement ::= "for" TokenLeftParentheses Statement TokenSemicolon Expression TokenSemicolon Statement TokenRightParentheses CodeBlock
+```
+
+### WhileStatement
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+WhilStatement ::= "while" TokenLeftParentheses Expression TokenRightParentheses CodeBlock
 ```
 
 ### Statement
@@ -341,6 +351,10 @@ Statement ::= VariableDefinition
             | ReturnStatement
             | ContinueStatement
             | BreakStatement
+            | IfStatement
+            | IfElseStatement
+            | ForStatement
+            | WhileStatement
             | CodeBlock
             | Expression
 ```
