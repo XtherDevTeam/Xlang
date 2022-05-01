@@ -727,11 +727,13 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             BytecodeCommandArray UpdateStatement = CovertExpressionResultToStatementResult(
                     Target.Subtrees[2]); // generate and covert
 
+            // Jump to the condition expression, before the initial statement
             UpdateStatement.PushCommand(
                     {BytecodeCommand::Instruction::jump, (BytecodeOperandType) {
                             -static_cast<XInteger>(ConditionExpr.Set.size() + CodeBlockStmt.Set.size() +
                                                    UpdateStatement.Set.size() + 1)}});
 
+            // Jump out of the loop
             ConditionExpr.PushCommand({BytecodeCommand::Instruction::jump_if_false,
                                        (BytecodeOperandType) {
                                                static_cast<XInteger>(CodeBlockStmt.Set.size() +
@@ -752,6 +754,8 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
 
             Environment.LeaveInnerBlockFrame(EnvIndex);
+
+            /* Merge the final result */
             Result.Merge(ConditionExpr);
             Result.Merge(CodeBlockStmt);
             Result.Merge(UpdateStatement);
@@ -779,6 +783,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
                 }
             }
 
+            /* Merge the final result */
             Result.Merge(ConditionExpr);
             Result.Merge(CodeBlockStmt);
 

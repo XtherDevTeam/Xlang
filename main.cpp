@@ -16,7 +16,7 @@ int main() {
             L"{for (Integer I = 0;I <= 10;I++) { I++; }}",
             L"{Integer I = 0; while (I <= 10) { I++; }}"
             };
-    Lexer Lex{Tests[4]};
+    Lexer Lex{Tests[3]};
     Lex.Scan();
     try {
         AST Result = CodeBlockNodeGenerator(Lex).Parse();
