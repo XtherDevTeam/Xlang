@@ -33,6 +33,8 @@ public:
      * @return Return a command array contains the parse result.
      */
     BytecodeCommandArray ParseMemberExpression(AST &Target, bool EndWithAssignment, XClassIndexType &ParseTo);
+
+    BytecodeCommandArray CovertExpressionResultToStatementResult(AST &Target);
 };
 
 

@@ -241,10 +241,9 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
 
             /* generate assignment codes */
             Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
-
             Environment.EmuStack.StackFrames.back().PopItem(1);
-            Environment.EmuStack.StackFrames.back().PushItem(
-                    (EmulateStack::Item) {TypeOfExpression});
+
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
             break;
         }
         case AST::TreeType::DecrementExpression: {
@@ -275,11 +274,10 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
             }
 
             /* generate assignment codes */
-            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
-
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], true, ParseTo));
             Environment.EmuStack.StackFrames.back().PopItem(1);
-            Environment.EmuStack.StackFrames.back().PushItem(
-                    (EmulateStack::Item) {TypeOfExpression});
+
+            Result.Merge(ParseMemberExpression(Target.Subtrees[0], false, ParseTo));
             break;
         }
 
@@ -688,26 +686,7 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
         case AST::TreeType::CodeBlockStatement: {
             Environment.CreateInnerBlockFrame(EnvIndex);
             for (auto &Statement: Target.Subtrees) {
-                Result.Merge(Generate(Statement));
-                if (Statement.Type == AST::TreeType::IncrementExpression or
-                    Statement.Type == AST::TreeType::DecrementExpression or
-                    Statement.Type == AST::TreeType::AdditionExpression or
-                    Statement.Type == AST::TreeType::MultiplicationExpression or
-                    Statement.Type == AST::TreeType::BinaryExpression or
-                    Statement.Type == AST::TreeType::BinaryMoveExpression or
-                    Statement.Type == AST::TreeType::LogicExpression or
-                    Statement.Type == AST::TreeType::EqualExpression or
-                    Statement.Type == AST::TreeType::ComparingExpression or
-                    Statement.Type == AST::TreeType::NegativeExpression or
-                    Statement.Type == AST::TreeType::Primary or
-                    Statement.Type == AST::TreeType::Identifier or
-                    Statement.Type == AST::TreeType::IndexExpression or
-                    Statement.Type == AST::TreeType::MemberExpression or
-                    Statement.Type == AST::TreeType::FunctionCallingExpression or
-                    Statement.Type == AST::TreeType::TypeCastingExpression) {
-                    Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
-                    Environment.EmuStack.StackFrames.back().PopItem(1);
-                }
+                Result.Merge(CovertExpressionResultToStatementResult(Statement));
             }
             Environment.LeaveInnerBlockFrame(EnvIndex);
             break;
@@ -740,9 +719,13 @@ BytecodeCommandArray BytecodeGenerator::Generate(AST &Target) {
         case AST::TreeType::ForStatement: {
             Environment.CreateInnerBlockFrame(EnvIndex);
             Result.Merge(Generate(Target.Subtrees[0]));
+
             BytecodeCommandArray ConditionExpr = Generate(Target.Subtrees[1]);
+            Environment.EmuStack.StackFrames.back().PopItem(1); // pop the condition value
+
             BytecodeCommandArray CodeBlockStmt = Generate(Target.Subtrees[3]);
-            BytecodeCommandArray UpdateStatement = Generate(Target.Subtrees[2]);
+            BytecodeCommandArray UpdateStatement = CovertExpressionResultToStatementResult(
+                    Target.Subtrees[2]); // generate and covert
 
             UpdateStatement.PushCommand(
                     {BytecodeCommand::Instruction::jump, (BytecodeOperandType) {
@@ -1223,6 +1206,31 @@ BytecodeGenerator::ParseMemberExpression(AST &Target, bool EndWithAssignment, XC
             throw BytecodeGenerateException(O.Line, O.Column,
                                             L"ParseMemberExpression: Unexpected AST type.");
         }
+    }
+    return Result;
+}
+
+BytecodeCommandArray BytecodeGenerator::CovertExpressionResultToStatementResult(AST &Target) {
+    BytecodeCommandArray Result;
+    Result.Merge(Generate(Target));
+    if (Target.Type == AST::TreeType::IncrementExpression or
+        Target.Type == AST::TreeType::DecrementExpression or
+        Target.Type == AST::TreeType::AdditionExpression or
+        Target.Type == AST::TreeType::MultiplicationExpression or
+        Target.Type == AST::TreeType::BinaryExpression or
+        Target.Type == AST::TreeType::BinaryMoveExpression or
+        Target.Type == AST::TreeType::LogicExpression or
+        Target.Type == AST::TreeType::EqualExpression or
+        Target.Type == AST::TreeType::ComparingExpression or
+        Target.Type == AST::TreeType::NegativeExpression or
+        Target.Type == AST::TreeType::Primary or
+        Target.Type == AST::TreeType::Identifier or
+        Target.Type == AST::TreeType::IndexExpression or
+        Target.Type == AST::TreeType::MemberExpression or
+        Target.Type == AST::TreeType::FunctionCallingExpression or
+        Target.Type == AST::TreeType::TypeCastingExpression) {
+        Result.PushCommand({BytecodeCommand::Instruction::pop_value, {}});
+        Environment.EmuStack.StackFrames.back().PopItem(1);
     }
     return Result;
 }
