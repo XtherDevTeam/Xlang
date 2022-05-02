@@ -40,7 +40,7 @@ public:
      * @biref Push a function to pool.
      * @param Function The function to push.
      */
-    void PushFunction(const XlangFunction &Function);
+    XIndexType PushFunction(const XlangFunction &Function);
 
     /**
      * @biref Search a class.

@@ -37,11 +37,12 @@ bool GlobalEnvironment::PushSymbolItem(XIndexType Environment, XString Key, cons
     return true;
 }
 
-void GlobalEnvironment::PushFunction(const XlangFunction &Function) {
+XIndexType GlobalEnvironment::PushFunction(const XlangFunction &Function) {
     if (SearchFunction(Function.FunctionName) != FunctionPool.end()) {
-        return;
+        return -1;
     } else {
         FunctionPool.emplace_back(Function);
+        return FunctionPool.size() - 1;
     }
 }
 

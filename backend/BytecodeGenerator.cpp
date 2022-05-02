@@ -1298,7 +1298,26 @@ void BytecodeGenerator::FileGenerator(XArray<AST> Nodes) {
                 break;
             }
             case AST::TreeType::FunctionDefinition: {
-                
+                std::vector<TypenameDerive> FunctionArguments;
+                for (auto &ArgumentNode: Node.Subtrees[4].Subtrees) {
+                    FunctionArguments.emplace_back(GetTypeOfAST(ArgumentNode));
+                }
+
+                auto FuncEnv = Environment.CreateEnvironment(L"_@PackageFunction_" + Node.Subtrees[3].Node.Value,
+                                                             EnvIndex);
+                BytecodeCommandArray CodeBlockBytecodes = Generate(Node.Subtrees[5]);
+                Environment.LeaveEnvironment(FuncEnv);
+
+                XlangFunction Func;
+                Func.FunctionName = Node.Subtrees[3].Node.Value;
+                Func.ReturnValueType = GetTypeOfAST(Node.Subtrees[2]);
+                Func.Bytecodes = CodeBlockBytecodes;
+
+                auto FuncIndex = Environment.PushFunction(Func);
+
+                TypenameDerive SymbolItem{FunctionArguments, FuncIndex};
+                Environment.PushSymbolItem(0, Node.Subtrees[3].Node.Value, SymbolItem);
+
                 break;
             }
             default: {
