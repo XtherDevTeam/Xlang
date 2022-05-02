@@ -347,7 +347,6 @@ Syntax:
 ```
 Statement ::= VariableDefinition
             | VariableDeclaration
-            | FunctionDefinition
             | ReturnStatement
             | ContinueStatement
             | BreakStatement
@@ -357,4 +356,16 @@ Statement ::= VariableDefinition
             | WhileStatement
             | CodeBlock
             | Expression
+```
+
+
+### GlobalStatement
+
+Status: `Unimplmented`
+
+Syntax:
+
+```
+GlobalStatement ::= VariableDeclaration
+                  | FunctionDefinition
 ```

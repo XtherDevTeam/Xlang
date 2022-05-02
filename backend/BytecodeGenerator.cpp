@@ -1052,7 +1052,8 @@ TypenameDerive BytecodeGenerator::GetTypeOfAST(AST &Target) {
         case AST::TreeType::AssignmentExpression:
         case AST::TreeType::ContinueStatement:
         case AST::TreeType::BreakStatement:
-        case AST::TreeType::ForStatement: {
+        case AST::TreeType::ForStatement:
+        case AST::TreeType::FunctionDefinition: {
             Result.Kind = TypenameDerive::DeriveKind::InvalidTypename;
             break;
         }
@@ -1267,6 +1268,46 @@ BytecodeGenerator::CovertExpressionResultToStatementResult(AST &Target, XBoolean
         Environment.EmuStack.StackFrames.back().PopItem(1);
     }
     return Result;
+}
+
+void BytecodeGenerator::FileGenerator(XArray<AST> Nodes) {
+    for (auto &Node: Nodes) {
+        switch (Node.Type) {
+            case AST::TreeType::VariableDeclaration: {
+                TypenameDerive CompiledObject = GetTypeOfAST(Node.Subtrees[1]);
+                if (!Environment.PushSymbolItem(0, Node.Subtrees[2].Node.Value, CompiledObject)) {
+                    throw BytecodeGenerateException(Node.GetFirstNotNullToken().Line,
+                                                    Node.GetFirstNotNullToken().Column,
+                                                    L"Cannot create a variable with the same name '" +
+                                                    Node.Subtrees[2].Node.Value + L"'");
+                }
+
+                auto &CreatedResult = Environment.Environments[EnvIndex].SymbolItem.back();
+
+                for (auto &Subtree: Node.Subtrees[0].Subtrees) {
+                    if (Subtree.Type == AST::TreeType::AccessDescriptor) {
+                        if (Subtree.Node.Value == L"public") {
+                            CreatedResult.AccessDescriptor = SymbolTableItem::Access::Public;
+                        } else if (Subtree.Node.Value == L"private") {
+                            CreatedResult.AccessDescriptor = SymbolTableItem::Access::Private;
+                        }
+                    } else if (Subtree.Type == AST::TreeType::VariableDescriptor) {
+                        /* Finish variable description process */
+                    }
+                }
+                break;
+            }
+            case AST::TreeType::FunctionDefinition: {
+                
+                break;
+            }
+            default: {
+                Lexer::Token O = Node.GetFirstNotNullToken();
+                throw BytecodeGenerateException(O.Line, O.Column,
+                                                L"FileGenerator: Unexpected AST type.");
+            }
+        }
+    }
 }
 
 #pragma clang diagnostic pop

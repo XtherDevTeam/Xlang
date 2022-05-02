@@ -16,12 +16,13 @@
  */
 class GlobalEnvironment {
 public:
-    std::vector<LocalEnvironment> Environments;
-    std::vector<XIndexType> RemovedEnvironmentsList;
+    XArray<LocalEnvironment> Environments;
+    XArray<XIndexType> RemovedEnvironmentsList;
     EmulateStack EmuStack;
-    std::vector<XlangFunction> FunctionPool;
-    std::vector<XlangClass> ClassPool;
-    std::vector<ConstantPoolItem> ConstantPool;
+    XArray<XlangFunction> FunctionPool;
+    XArray<XlangClass> ClassPool;
+    XArray<ConstantPoolItem> ConstantPool;
+    
 
     void LeaveEnvironment(XIndexType LocalIndex);
 
@@ -33,7 +34,7 @@ public:
      * @biref An O(n) searching function to search a function in function pool.
      * @param FunctionName Name to search
      */
-    std::vector<XlangFunction>::iterator SearchFunction(const XString &FunctionName);
+    XArray<XlangFunction>::iterator SearchFunction(const XString &FunctionName);
 
     /**
      * @biref Push a function to pool.
@@ -46,7 +47,7 @@ public:
      * @param ClassName The class name.
      * @return Return a iterator from ClassPool.
      */
-    std::vector<XlangClass>::iterator SearchClass(const XString &ClassName);
+    XArray<XlangClass>::iterator SearchClass(const XString &ClassName);
 
     /**
      * @biref Push a class to pool.
@@ -74,7 +75,7 @@ public:
      * @param Item Item to find.
      * @return The iterator of this constant if it's end of vector, then it means it isn't exist.
      */
-    std::vector<ConstantPoolItem>::iterator SearchConstantPoolItem(const ConstantPoolItem &Item);
+    XArray<ConstantPoolItem>::iterator SearchConstantPoolItem(const ConstantPoolItem &Item);
 
 
     void LeaveInnerBlockFrame(XIndexType EnvIndex);

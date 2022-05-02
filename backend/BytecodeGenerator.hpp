@@ -22,6 +22,8 @@ public:
 
     BytecodeCommandArray Generate(AST &Target);
 
+    void FileGenerator(XArray<AST> Nodes);
+
     TypenameDerive GetTypeOfAST(AST &Target);
 
     /**
